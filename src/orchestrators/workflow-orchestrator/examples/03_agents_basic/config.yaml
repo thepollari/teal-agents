@@ -1,0 +1,8 @@
+apiVersion: skagents/v1
+kind: WorkflowOrchestrator
+description: >
+  Agent workflow orchestrator for demo
+service_name: DemoAgentWorkflowOrchestrator
+version: 0.1
+entrypoint: AgentWorkflow
+input_type: InteractionInput

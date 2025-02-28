@@ -1,0 +1,8 @@
+apiVersion: skagents/v1
+kind: WorkflowOrchestrator
+description: >
+  Workflow Orchestrator for demo
+service_name: DemoOrderWorkflowOrchestrator
+version: 0.1
+entrypoint: OrderProcessingWorkflow
+input_type: OrderPayload

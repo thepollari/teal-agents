@@ -1,0 +1,26 @@
+[project]
+name = "workflow-orchestrator"
+version = "0.1.0"
+description = "Teal Agents - Workflow Orchestrator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi [standard]",
+    "python-dotenv",
+    "requests",
+    "pydantic",
+    "pydantic-yaml",
+    "black",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-grpc",
+    "ska-utils",
+    "dapr-ext-workflow==0.5.0",
+]
+
+[tool.uv.sources]
+ska-utils = { path = "../../../../shared/ska_utils" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

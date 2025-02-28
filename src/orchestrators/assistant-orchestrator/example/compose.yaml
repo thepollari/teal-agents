@@ -1,0 +1,137 @@
+services:
+  dynamodb:
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    ports:
+      - "8200:8000"
+    volumes:
+      - "./dynamo/data:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+  dynamodb-healthcheck:
+    entrypoint: ["/bin/sh", "-c", "--", "while true; do sleep 30; done;"]
+    image: "amazon/aws-cli:latest"
+    environment:
+      AWS_ACCESS_KEY_ID: "DUMMYVALUE"
+      AWS_SECRET_ACCESS_KEY: "DUMMYVALUE"
+    healthcheck:
+      test: "aws dynamodb list-tables --endpoint-url http://dynamodb:8000 --region us-east-1"
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  dynamodb-admin:
+    image: "dynamodb-admin:latest"
+    build:
+      context: ./dynamo-admin
+      no_cache: true
+    ports:
+      - "8400:8000"
+    depends_on:
+      dynamodb-healthcheck:
+        condition: service_healthy
+  aspire:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    ports:
+      - "18888:18888"
+      - "4317:18889"
+  kong:
+    image: kong:3.8
+    build:
+      context: ./kong
+      no_cache: true
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
+      - "8002:8002"
+      - "8445:8445"
+      - "8003:8003"
+      - "8004:8004"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yaml"
+      KONG_PROXY_ACCESS_LOG: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_STATUS_LISTEN: "0.0.0.0:8100"
+      KONG_ADMIN_GUI_URL: "http://localhost:8002"
+    volumes:
+      - ${KONG_ALT:-./kong/kong.yaml}:/kong/declarative/kong.yaml
+    healthcheck:
+      test: [ "CMD", "kong", "health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+  client:
+    image: demo-client:latest
+    build:
+      context: ./client
+      no_cache: true
+    ports:
+      - "3000:3000"
+  services:
+    image: ska-services:latest
+    ports:
+      - "8300:8000"
+    env_file: "services.env"
+    profiles:
+      - "with-services"
+    depends_on:
+      dynamodb-healthcheck:
+        condition: service_healthy
+  jose:
+    image: jose:latest
+    build:
+      context: ..
+      no_cache: true
+    ports:
+      - "8100:8000"
+    env_file: "jose.env"
+    volumes:
+      - ./jose:/app/src/orchestrators/assistant-orchestrator/orchestrator/conf
+    profiles:
+      - "with-jose"
+    depends_on:
+      kong:
+        condition: service_healthy
+      process-healthcheck:
+        condition: service_healthy
+  math:
+    image: sk-agents:latest
+    ports:
+      - "8102:8000"
+    env_file: "math.env"
+    volumes:
+      - ./math:/app/src/sk-agents/agents
+  weather:
+    image: sk-agents:latest
+    ports:
+      - "8103:8000"
+    env_file: "weather.env"
+    volumes:
+      - ./weather:/app/src/sk-agents/agents
+  general:
+    image: sk-agents:latest
+    ports:
+      - "8105:8000"
+    env_file: "general.env"
+    volumes:
+      - ./general:/app/src/sk-agents/agents
+  recipient:
+    image: sk-agents:latest
+    ports:
+      - "8101:8000"
+    env_file: "recipient.env"
+    volumes:
+      - ./recipient:/app/src/sk-agents/agents
+  test-agent:
+    image: sk-agents:latest
+    ports:
+      - "8106:8000"
+    env_file: "test-agent.env"
+    volumes:
+      - ./test-agent:/app/src/sk-agents/agents
+    profiles:
+      - "with-test-agent"

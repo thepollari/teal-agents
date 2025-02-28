@@ -1,0 +1,10 @@
+**/__pycache__
+**/.devcontainer
+**/.vscode
+**/.env
+**/.gitignore
+**/.idea
+**/.venv
+**/.git
+**/.github
+**/config.yaml

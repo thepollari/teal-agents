@@ -1,0 +1,52 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  An agent for adding/updating "memories" for a specific user.
+service_name: MemorizerAgent
+version: 0.1
+input_type: MemorizerInput
+spec:
+  agents:
+    - name: default
+      role: Default Agent
+      model: gpt-4o-2024-05-13
+      system_prompt: >
+        You are a memory manager responsible for assisting an LLM-powered 
+        assistant. Since the assistant is stateless and does not have the
+        ability to remember past interactions, it will rely on the memories you
+        are managing to provide context and continuity across many
+        conversations.
+      plugins:
+        - MemoryPlugin
+  tasks:
+    - name: create_update_task
+      task_no: 1
+      description: Create or update memories based on the current interaction
+      instructions: >
+        Given an interaction between a user and an assistant, extract any
+        information that might be useful in future interactions between the
+        assistant and user. This information might be in the form of facts or
+        inferences about the user or meaningful facts about the topics that the
+        user and assistant were discussing.
+        
+        When new memories are identified, transform any extracted information in
+        to simple statements of one or two sentences and store them.
+        
+        If there is a previous memory that is semantically similar to the new
+        memory, but there the facts have changed, then update the existing
+        memory.
+        
+        If there is a previous memory that is semantically similar to the new
+        memory and no facts have changed, then take no action.
+        
+        The ID of the user with whom the assistant is interacting is {{user_id}}
+        
+        Related memories:
+        {{memories}}
+        
+        User Message:
+        {{message}}
+        
+        Assistant Response:
+        {{response}}
+      agent: default

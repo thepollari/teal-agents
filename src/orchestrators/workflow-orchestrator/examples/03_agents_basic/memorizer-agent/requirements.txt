@@ -1,0 +1,6 @@
+pydantic
+openai
+qdrant-client
+python-dotenv
+black
+semantic-kernel

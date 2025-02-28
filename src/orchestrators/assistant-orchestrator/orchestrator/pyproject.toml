@@ -1,0 +1,23 @@
+[project]
+name = "orchestrator"
+version = "0.1.2"
+description = "Teal Agents - Orchestrators - Assistant Orchestrator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi [standard]",
+    "python-dotenv",
+    "requests",
+    "websockets",
+    "pydantic",
+    "pydantic-yaml",
+    "black",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-grpc",
+    "pynamodb",
+    "ska-utils",
+]
+
+[tool.uv.sources]
+ska-utils = { path = "../../../../shared/ska_utils" }
