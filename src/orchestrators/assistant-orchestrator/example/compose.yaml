@@ -35,9 +35,8 @@ services:
       - "4317:18889"
   kong:
     image: kong:3.8
-    build:
-      context: ./kong
-      no_cache: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
       - "8443:8443"
