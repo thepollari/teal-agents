@@ -15,9 +15,9 @@ both each other and the applications which leverage them. For more information
 on orchestrators, see [README.md](src/orchestrators/README.md).
 
 ## Getting Started
-Regardless of if you're experimenting with individual agents or orchestrators,
-or contributing to the developent of the platform, you'll need to build the base
-images. To do so, once cloning this repository locally, from the root directory
+Some of the demos and examples in this repository require docker images to be
+built locally on your machine. To do this, once cloning this repository locally,
+from the root directory
 run:
 ```bash
 $ git clone https://github.com/MSDLLCpapers/teal-agents.git
