@@ -1855,7 +1855,7 @@ wheels = [
 
 [[package]]
 name = "sk-agents"
-version = "0.1.2"
+version = "0.1.8"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },
@@ -1892,7 +1892,7 @@ requires-dist = [
 
 [[package]]
 name = "ska-utils"
-version = "0.1.11"
+version = "0.1.13"
 source = { directory = "../../shared/ska_utils" }
 dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-grpc" },

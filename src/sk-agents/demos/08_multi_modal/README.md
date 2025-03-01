@@ -22,7 +22,7 @@ spec:
   agents:
     - name: default
       role: Default Agent
-      model: gpt-4o-2024-05-13
+      model: gpt-4o
       system_prompt: >
         You are a helpful assistant.
   tasks:
@@ -129,7 +129,7 @@ spec:
   agents:
     - name: default
       role: Default Agent
-      model: gpt-4o-2024-05-13
+      model: gpt-4o
       system_prompt: >
         You are a helpful assistant.
   tasks:

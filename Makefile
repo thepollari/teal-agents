@@ -2,9 +2,9 @@
 
 all : | sk-agents orchestrator services
 
-sk-agents :
-	@echo "Building SK agents..."
-	@docker build ${DOCKER_FLAGS} -t sk-agents:latest -f sk-agents.Dockerfile .
+teal-agents :
+	@echo "Building Teal Agents..."
+	@docker build ${DOCKER_FLAGS} -t teal-agents:latest -f teal-agents.Dockerfile .
 
 orchestrator :
 	@echo "Building Orchestrator..."

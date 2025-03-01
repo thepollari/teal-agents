@@ -13,7 +13,7 @@ locally, build the base image by running the following command from the root.
 ```shell
 $ git clone https://github.com/MSDLLCpapers/teal-agents.git
 $ cd teal-agents
-$ make sk-agents
+$ make teal-agents
 ```
 
 ![Docker Build](/src/sk-agents/doc/assets/demo-5-1.png)
@@ -58,8 +58,8 @@ container.
 
 ```yaml
 services:
-  skagents:
-    image: localhost/sk-agents:latest
+  teal-agents:
+    image: localhost/teal-agents:latest
     ports:
       - "8000:8000"
     env_file: ".env"

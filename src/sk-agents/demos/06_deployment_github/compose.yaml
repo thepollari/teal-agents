@@ -1,6 +1,7 @@
 services:
   agent:
-    image: sk-agents:latest
+    image: dhdanie/teal-agents:latest
+    pull_policy: always
     ports:
       - "8110:8000"
     env_file: ".env"
