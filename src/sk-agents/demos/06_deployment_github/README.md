@@ -12,7 +12,7 @@ existing framework container.
 ### Testing it out locally
 In this demonstration, we'll make use of an existing agent configuration from
 the shared repository,
-[teal-agents-configs](https://github.com/dhdanie/teal-agents-configs).
+[teal-agents-configs](https://github.com/teal-agents/teal-agents-configs).
 
 For reference, the configuration in the shared repo is the same as that found in
 demo 03_plugins.
@@ -22,7 +22,7 @@ In order to run this demonstration, you'll need to set up your environment file
 ```text
 TA_API_KEY=<Your API key>
 TA_GITHUB=true
-TA_GH_ORG=dhdanie
+TA_GH_ORG=teal-agents
 TA_GH_REPO=teal-agents-configs
 TA_GH_BRANCH=main
 TA_AGENT_NAME=ChatWeatherAgent

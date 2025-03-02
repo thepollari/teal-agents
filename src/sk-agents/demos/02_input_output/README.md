@@ -6,7 +6,7 @@ This input can be either one of the standard types included with the SK Agents
 Framework or a type you define yourself.
 
 #### Available Standard Types
-* [BaseInput](/src/sk-agents/src/sk_agents/ska_types.py#L11) - A base input type containing chat history for
+* [BaseInput](/src/sk-agents/src/sk_agents/ska_types.py#L61) - A base input type containing chat history for
   chat-like interactions
 
 You also have the option to specify a custom output type which will be used in

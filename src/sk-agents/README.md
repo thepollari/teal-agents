@@ -14,7 +14,7 @@ enhance your agent's capability.
 ## Prerequisites
 - Python 3.11 or higher
 - An appropriate API key for the LLM of your choice
-- Docker (or comparable equivalent, e.g. podman)
+- Docker (or comparable equivalent)
 
 ## Running a simple demo
 Running locally will allow you to test your agent's configuration and code.
@@ -61,3 +61,4 @@ You can test the agent by visiting http://localhost:8000/docs
 - [Docker Deployment (Basic)](/src/sk-agents/demos/05_deployment/README.md)
 - [Github Deployment](/src/sk-agents/demos/06_deployment_github/README.md)
 - [Task Output](/src/sk-agents/demos/07_task_output/README.md)
+- [Multi-Modal Input](/src/sk-agents/demos/08_multi_modal/README.md)
