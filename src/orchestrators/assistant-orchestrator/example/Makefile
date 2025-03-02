@@ -141,14 +141,6 @@ prompt-api-keys-macos:
 		$(call create_or_update_key_macos,weather.env,TA_API_KEY) && \
 		$(call create_or_update_key_macos,test-agent.env,TA_API_KEY)
 	@echo "key changes saved"
-	@echo "Please enter your TA_BASE_URL:"
-	@read -p "Base URL: " TA_BASE_URL && \
-		$(call create_or_update_key_macos,general.env,TA_BASE_URL) && \
-		$(call create_or_update_key_macos,math.env,TA_BASE_URL) && \
-		$(call create_or_update_key_macos,recipient.env,TA_BASE_URL) && \
-		$(call create_or_update_key_macos,weather.env,TA_BASE_URL) && \
-		$(call create_or_update_key_macos,test-agent.env,TA_BASE_URL)
-	@echo "Base URL changes saved"
 # prompt-api-keys-bash:
 #   This target prompts the user to enter API keys for various services used in the project,
 #   and updates the corresponding environment files with the entered keys.
@@ -162,14 +154,6 @@ prompt-api-keys-bash:
 		$(call create_or_update_key_bash,weather.env,TA_API_KEY) && \
 		$(call create_or_update_key_bash,test-agent.env,TA_API_KEY)
 	@echo "key changes saved"
-	@echo "Please enter your TA_BASE_URL:"
-	@read -p "Base URL: " TA_BASE_URL && \
-		$(call create_or_update_key_bash,general.env,TA_BASE_URL) && \
-		$(call create_or_update_key_bash,math.env,TA_BASE_URL) && \
-		$(call create_or_update_key_bash,recipient.env,TA_BASE_URL) && \
-		$(call create_or_update_key_bash,weather.env,TA_BASE_URL) && \
-		$(call create_or_update_key_bash,test-agent.env,TA_BASE_URL)
-	@echo "Base URL changes saved"
 
 build-environments-macos:
 	@echo "generating env files from examples"

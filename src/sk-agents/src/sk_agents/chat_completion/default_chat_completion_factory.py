@@ -11,7 +11,7 @@ from sk_agents.ska_types import ChatCompletionFactory, ModelType
 
 
 class DefaultChatCompletionFactory(ChatCompletionFactory):
-    _OPENAI_MODELS: List[str] = ["openai-gpt-4o", "openai-gpt-4o-mini"]
+    _OPENAI_MODELS: List[str] = ["gpt-4o", "gpt-4o-mini"]
 
     @staticmethod
     def get_configs() -> List[UtilConfig] | None:

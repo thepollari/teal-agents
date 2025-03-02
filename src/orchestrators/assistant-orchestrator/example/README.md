@@ -31,7 +31,7 @@ $ make all
 
 ### Configuring the Environment
 
-- you can skip this step and go to "Running the Example" step
+- You can skip this step and go to "Running the Example" step
 
 Before starting the example, you'll first need to create environment files for
 each of them. To do so, copy the following files in the `example` directory to
@@ -39,7 +39,6 @@ one of the same name, but without the `.example` extension.
 * general.env.example
 * jose.env.example
 * math.env.example
-* process.env.example
 * recipient.env.example
 * services.env.example
 * test-agent.env.example

@@ -28,7 +28,7 @@ TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME = Config(
 TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL = Config(
     env_name="TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL",
     is_required=False,
-    default_value="openai-gpt-4o",
+    default_value="gpt-4o",
 )
 
 configs: List[Config] = [

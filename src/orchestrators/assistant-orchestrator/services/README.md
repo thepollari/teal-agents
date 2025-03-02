@@ -32,7 +32,6 @@ directory to one of the same name, but without the `.example` extension.
 * general.env.example
 * jose.env.example
 * math.env.example
-* process.env.example
 * recipient.env.example
 * services.env.example
 * weather.env.example
@@ -49,9 +48,9 @@ files: `general.env`, `math.env`, `process.env`, `recipient.env`, and
 `weather.env`.
 
 Note: To simplify this copying, we've provided a `make` target which will copy
-all of the files. Simply run `make copy-envs` from the `example` directory and
-all files will be copied for you, however, you will still need to manually
-update the `TA_API_KEY` value for the files mentioned above.
+all of the files and add your API key. Simply run `make
+build-environments-(bash | macos)` from the `example` directory and all files
+will be copied for you and your API key will be updated.
 
 Now, start all of the supporting services, except for the services itself,
 by running `make debug-services-up`.

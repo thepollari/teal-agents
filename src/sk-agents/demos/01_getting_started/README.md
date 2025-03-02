@@ -17,7 +17,7 @@ spec:
   agents:
     - name: default
       role: Default Agent
-      model: gpt-4o-2024-05-13
+      model: gpt-4o
       system_prompt: >
         You are a helpful assistant.
   tasks:
@@ -61,8 +61,5 @@ An agent configuration file can contain the following elements:
 
 ## Currently available models
 The models currently available for agent configuration include:
-* openai-4o (Not for MSD usage)
-* openai-4o-mini (Not for MSD usage)
-
-The openai-* models are an untested attempt to add support for directly
-leveraging OpenAI models with the appropriate API key
+* gpt-4o (Not for MSD usage)
+* gpt-4o-mini (Not for MSD usage)

@@ -10,4 +10,3 @@ spec:
   agents:
     - MathAgent:0.1
     - WeatherAgent:0.1
-    - ProcessAgent:0.1
