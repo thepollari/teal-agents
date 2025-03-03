@@ -42,7 +42,6 @@ class AgentBuilder:
             model_name=agent_config.model,
             model_type=model_type,
             agent=ChatCompletionAgent(
-                service_id=agent_config.name,
                 kernel=kernel,
                 name=agent_config.name,
                 instructions=agent_config.system_prompt,

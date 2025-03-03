@@ -5,7 +5,7 @@ description = "Teal Agents - Core Agent Framework"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "semantic-kernel",
+    "semantic-kernel==1.22.1",
     "pyyaml",
     "pydantic",
     "pydantic-yaml",

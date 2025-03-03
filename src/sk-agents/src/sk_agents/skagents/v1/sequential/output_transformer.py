@@ -44,7 +44,6 @@ class OutputTransformer:
         settings.response_format = output_type
 
         agent = ChatCompletionAgent(
-            service_id=self.NAME,
             kernel=kernel,
             name=self.NAME,
             instructions=self.SYSTEM_PROMPT,
