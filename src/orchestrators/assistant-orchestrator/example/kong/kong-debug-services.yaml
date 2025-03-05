@@ -141,7 +141,7 @@ services:
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
-  host: jose
+  host: ao
   name: DemoAppAssistantOrchestrator
   path: /DemoAgentOrchestrator/0.1/stream
   port: 8000
