@@ -23,7 +23,7 @@ define create_or_update_key_bash
 endef
 
 .PHONY: all-up all-down \
-		debug-jose-up debug-jose-down \
+		debug-ao-up debug-ao-down \
 		debug-services-up debug-services-down \
 		dependencies-up dependencies-down \
 		copy-envs \
@@ -33,33 +33,33 @@ endef
 all-up:
 	@echo "Starting base all services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	up -d
 
 all-down:
 	@echo "Stopping base all services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	down
 
 all-down-clean-images:
 	@echo "Stopping base all services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	down
 	@docker rmi demo-client:latest || true
 
-debug-jose-up:
+debug-ao-up:
 	@echo "Starting services..."
-	@KONG_ALT=./kong/kong-debug-jose.yaml \
+	@KONG_ALT=./kong/kong-debug-ao.yaml \
 	docker compose \
 	--profile with-services \
 	up -d
 
-debug-jose-down:
+debug-ao-down:
 	@echo "Stopping services..."
 	@docker compose \
 	--profile with-services \
@@ -69,21 +69,21 @@ debug-services-up:
 	@echo "Starting services..."
 	@KONG_ALT=./kong/kong-debug-services.yaml \
 	docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	up -d
 
 debug-services-down:
 	@echo "Stopping services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	down
 
 test-agent-up:
 	@echo "Starting services..."
 	@KONG_ALT=./kong/kong-test-agent.yaml \
-	JOSE_ALT=conf/config-w-test-agent.yaml \
+	AO_ALT=conf/config-w-test-agent.yaml \
 	docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	--profile with-test-agent \
 	up -d
@@ -91,7 +91,7 @@ test-agent-up:
 test-agent-down:
 	@echo "Stopping services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	--profile with-test-agent \
 	down
@@ -99,16 +99,16 @@ test-agent-down:
 debug-test-agent-up:
 	@echo "Starting services..."
 	@KONG_ALT=./kong/kong-debug-test-agent.yaml \
-	JOSE_ALT=conf/config-w-test-agent.yaml \
+	AO_ALT=conf/config-w-test-agent.yaml \
 	docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	up -d
 
 debug-test-agent-down:
 	@echo "Stopping services..."
 	@docker compose \
-	--profile with-jose \
+	--profile with-ao \
 	--profile with-services \
 	down
 
@@ -122,7 +122,7 @@ dependencies-down:
 
 copy-envs:
 	cp general.env.example general.env
-	cp jose.env.example jose.env
+	cp ao.env.example ao.env
 	cp recipient.env.example recipient.env
 	cp services.env.example services.env
 	cp weather.env.example weather.env
@@ -189,7 +189,7 @@ remove-local-db:
 
 remove-env-files:
 	rm -f general.env
-	rm -f jose.env
+	rm -f ao.env
 	rm -f recipient.env
 	rm -f services.env
 	rm -f weather.env

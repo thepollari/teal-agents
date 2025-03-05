@@ -71,7 +71,7 @@ services:
     ports:
       - "3000:3000"
   services:
-    image: ska-services:latest
+    image: ao-services:latest
     ports:
       - "8300:8000"
     env_file: "services.env"
@@ -80,18 +80,18 @@ services:
     depends_on:
       dynamodb-healthcheck:
         condition: service_healthy
-  jose:
-    image: jose:latest
+  ao:
+    image: ao:latest
     build:
       context: ..
       no_cache: true
     ports:
       - "8100:8000"
-    env_file: "jose.env"
+    env_file: "ao.env"
     volumes:
-      - ./jose:/app/src/orchestrators/assistant-orchestrator/orchestrator/conf
+      - ./ao:/app/src/orchestrators/assistant-orchestrator/orchestrator/conf
     profiles:
-      - "with-jose"
+      - "with-ao"
     depends_on:
       kong:
         condition: service_healthy

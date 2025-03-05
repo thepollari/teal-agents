@@ -37,7 +37,7 @@ Before starting the example, you'll first need to create environment files for
 each of them. To do so, copy the following files in the `example` directory to
 one of the same name, but without the `.example` extension.
 * general.env.example
-* jose.env.example
+* ao.env.example
 * math.env.example
 * recipient.env.example
 * services.env.example
@@ -185,7 +185,7 @@ src/orchestrators/assistant-orchestrator/example$ make debug-test-agent-up
 ## Other Make Targets
 In addition to `all-up` and `all-down`, there are a number of other `make`
 targets to achieve various tasks, including:
-* `debug-jose-[up/down]` - Enable [debugging of Orchestrator](../orchestrator/README.md)
+* `debug-ao-[up/down]` - Enable [debugging of Orchestrator](../orchestrator/README.md)
 * `debug-services-[up/down]` - Enable [debugging of Services](../services/README.md)
 * `test-agent-[up/down]` - Enable testing of an additional agent you define by
   adding configuration to the `test-agent` directory.

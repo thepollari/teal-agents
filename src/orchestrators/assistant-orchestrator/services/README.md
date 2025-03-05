@@ -30,7 +30,7 @@ To start up the supporting services, you'll first need to create environment
 files for each of them. To do so, copy the following files in the `example`
 directory to one of the same name, but without the `.example` extension.
 * general.env.example
-* jose.env.example
+* ao.env.example
 * math.env.example
 * recipient.env.example
 * services.env.example
@@ -91,7 +91,7 @@ or
 $ source .venv/bin/activate
 $ fastapi dev --host=0.0.0.0 --port=8300 ska_services.py
 ```
-![Output](/assets/ska-services-output.png)
+![Output](/assets/ao-services-output.png)
 
 ### Testing it out
 You should now be able to access the demo client app at

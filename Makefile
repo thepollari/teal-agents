@@ -8,14 +8,14 @@ teal-agents :
 
 orchestrator :
 	@echo "Building Orchestrator..."
-	@docker build ${DOCKER_FLAGS} -t jose:latest -f ao.Dockerfile .
+	@docker build ${DOCKER_FLAGS} -t ao:latest -f ao.Dockerfile .
 
 services :
 	@echo "Building Services..."
-	@docker build ${DOCKER_FLAGS} -t ska-services:latest -f ao-services.Dockerfile .
+	@docker build ${DOCKER_FLAGS} -t ao-services:latest -f ao-services.Dockerfile .
 
 clean:
 	@echo "Cleaning up..."
 	@docker rmi teal-agents:latest || true
-	@docker rmi jose:latest || true
-	@docker rmi ska-services:latest || true
+	@docker rmi ao:latest || true
+	@docker rmi ao-services:latest || true

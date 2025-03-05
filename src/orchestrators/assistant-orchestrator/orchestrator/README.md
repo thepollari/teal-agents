@@ -30,7 +30,7 @@ To start up the supporting services, you'll first need to create environment
 files for each of them. To do so, copy the following files in the `example`
 directory to one of the same name, but without the `.example` extension.
 * general.env.example
-* jose.env.example
+* ao.env.example
 * math.env.example
 * recipient.env.example
 * services.env.example
@@ -53,9 +53,9 @@ build-environments-(bash | macos)` from the `example` directory and all files
 will be copied for you and your API key will be updated.
 
 Now, start all of the supporting services, except for the orchestrator itself,
-by running `make debug-jose-up`.
+by running `make debug-ao-up`.
 ```bash
-$ make debug-jose-up
+$ make debug-ao-up
 ```
 
 Note: It may take a couple of minutes for everything to start because one of the
@@ -97,7 +97,7 @@ or
 $ source .venv/bin/activate
 $ fastapi dev --host=0.0.0.0 --port=8100 jose.py
 ```
-![Output](/assets/jose-output.png)
+![Output](/assets/ao-output.png)
 
 ### Testing it out
 You should now be able to access the demo client app at
