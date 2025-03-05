@@ -91,7 +91,7 @@ or
 $ source .venv/bin/activate
 $ fastapi dev --host=0.0.0.0 --port=8300 ska_services.py
 ```
-![Output](/assets/ska-services-output.png)
+![Output](/assets/ao-services-output.png)
 
 ### Testing it out
 You should now be able to access the demo client app at

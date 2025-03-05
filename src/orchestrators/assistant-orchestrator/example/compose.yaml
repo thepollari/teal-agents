@@ -71,7 +71,7 @@ services:
     ports:
       - "3000:3000"
   services:
-    image: ska-services:latest
+    image: ao-services:latest
     ports:
       - "8300:8000"
     env_file: "services.env"
