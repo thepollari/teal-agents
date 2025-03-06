@@ -30,6 +30,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t ghcr.io/teal-agents/ao-services:${{ steps.extract_version.outputs.VERSION }} -f ao-services.Dockerfile .
+          docker tag ghcr.io/teal-agents/ao-services:${{ steps.extract_version.outputs.VERSION }} ghcr.io/teal-agents/ao-services:latest
 
       - name: Log in to Docker registry
         uses: docker/login-action@v3
