@@ -42,3 +42,4 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ghcr.io/teal-agents/teal-agents:${{ steps.extract_version.outputs.VERSION }}
+          docker push ghcr.io/teal-agents/teal-agents:latest
