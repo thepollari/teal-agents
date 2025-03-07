@@ -1,0 +1,10 @@
+# CODEOWNERS File
+# This file defines the code owners for this repository, DO NOT DELETE!
+# Each owner listed will be automatically requested for review on pull requests.
+
+# Code owners for the entire repository
+* @dhdanie @knowelledge @michaelTurnbach @sdsmt05 @Yangarang
+
+# IMPORTANT:
+# - Update this file as team members change or if project ownership shifts.
+# - Add specific paths if different owners are responsible for different areas of the codebase.
