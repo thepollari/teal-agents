@@ -15,16 +15,6 @@
 - [ ] Documentation
 - [ ] Other (please specify): ____________
 
-## Related Issue
-<!-- Link to the issue that this PR addresses, if applicable. -->
-
-## Checklist
-<!-- Ensure you've completed the following: -->
-- [ ] Code is written and reviewed.
-- [ ] Tests have been added for new features or functionality.
-- [ ] All tests pass.
-- [ ] Documentation has been updated as needed.
-
 ## Screenshots (if applicable)
 <!-- Include screenshots to help explain the changes, if necessary. -->
 
