@@ -15,6 +15,14 @@ class ConversationManager:
     def get_conversation(self, user_id: str, session_id: str) -> Conversation:
         return self.services_client.get_conversation(user_id, session_id)
 
+    def get_last_response(self, conversation: Conversation):
+        return Conversation(
+            conversation_id=conversation.conversation_id,
+            user_id=conversation.user_id,
+            history=conversation.history[-2:] if len(conversation.history) >= 2 else conversation.history,
+            user_context=conversation.user_context
+        )
+    
     def add_user_message(
         self, conversation: Conversation, content: str, recipient: str
     ) -> None:

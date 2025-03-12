@@ -43,7 +43,7 @@ def initialize() -> None:
     for agent_name in _config.spec.agents:
         agents[agent_name] = agent_builder.build_agent(agent_name, api_key)
     _agent_catalog = AgentCatalog(agents=agents)
-
+    
     _fallback_agent = agent_builder.build_fallback_agent(
         _config.spec.fallback_agent, api_key, _agent_catalog
     )
