@@ -1,0 +1,107 @@
+from typing import Optional, Dict, Any, AsyncIterable
+
+from semantic_kernel.contents import ChatMessageContent
+
+from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
+from sk_agents.ska_types import (
+    BaseHandler,
+    Config as BaseConfig,
+    TokenUsage,
+    ModelType,
+    InvokeResponse,
+)
+from sk_agents.skagents.v1 import AgentBuilder
+from sk_agents.skagents.v1.chat.config import Config
+from sk_agents.skagents.v1.utils import parse_chat_history
+
+
+class ChatAgents(BaseHandler):
+    def __init__(self, config: BaseConfig, agent_builder: AgentBuilder):
+        if hasattr(config, "spec"):
+            self.config = Config(config=config)
+        else:
+            raise ValueError("Invalid config")
+
+        self.agent_builder = agent_builder
+
+    async def invoke_stream(
+        self, inputs: Optional[Dict[str, Any]] = None
+    ) -> AsyncIterable[str]:
+        extra_data_collector = ExtraDataCollector()
+        agent = self.agent_builder.build_agent(
+            self.config.get_agent(), extra_data_collector
+        )
+
+        chat_history = parse_chat_history(inputs)
+        async for content in agent.invoke(chat_history):
+            yield content.content
+        if not extra_data_collector.is_empty():
+            yield ExtraDataPartial(
+                extra_data=extra_data_collector.get_extra_data()
+            ).model_dump_json()
+
+    async def invoke(
+        self,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> InvokeResponse:
+        extra_data_collector = ExtraDataCollector()
+        agent = self.agent_builder.build_agent(
+            self.config.get_agent(), extra_data_collector
+        )
+
+        chat_history = parse_chat_history(inputs)
+        response_content = []
+        completion_tokens: int = 0
+        prompt_tokens: int = 0
+        total_tokens: int = 0
+        async for content in agent.invoke(chat_history):
+            response_content.append(content)
+            call_usage = self._get_token_usage_for_response(
+                agent.get_model_type(), content
+            )
+            completion_tokens += call_usage.completion_tokens
+            prompt_tokens += call_usage.prompt_tokens
+            total_tokens += call_usage.total_tokens
+        return InvokeResponse(
+            token_usage=TokenUsage(
+                completion_tokens=completion_tokens,
+                prompt_tokens=prompt_tokens,
+                total_tokens=total_tokens,
+            ),
+            extra_data=extra_data_collector.get_extra_data(),
+            output_raw=response_content[-1].content,
+        )
+
+    def _get_token_usage_for_response(
+        self, model_type: ModelType, content: ChatMessageContent
+    ) -> TokenUsage:
+        if model_type == ModelType.OPENAI:
+            return self._get_token_usage_for_openai_response(content)
+        elif model_type == ModelType.ANTHROPIC:
+            return self._get_token_usage_for_anthropic_response(content)
+        else:
+            return TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
+
+    @staticmethod
+    def _get_token_usage_for_openai_response(content: ChatMessageContent) -> TokenUsage:
+        return TokenUsage(
+            completion_tokens=content.inner_content.usage.completion_tokens,
+            prompt_tokens=content.inner_content.usage.prompt_tokens,
+            total_tokens=(
+                content.inner_content.usage.completion_tokens
+                + content.inner_content.usage.prompt_tokens
+            ),
+        )
+
+    @staticmethod
+    def _get_token_usage_for_anthropic_response(
+        content: ChatMessageContent,
+    ) -> TokenUsage:
+        return TokenUsage(
+            completion_tokens=content.inner_content.usage.output_tokens,
+            prompt_tokens=content.inner_content.usage.input_tokens,
+            total_tokens=(
+                content.inner_content.usage.output_tokens
+                + content.inner_content.usage.input_tokens
+            ),
+        )

@@ -12,7 +12,7 @@ from semantic_kernel.kernel_pydantic import KernelBaseModel
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import InvokeResponse, TokenUsage, ModelType, EmbeddedImage
-from sk_agents.skagents.v1.sequential.sk_agent import SKAgent
+from sk_agents.skagents.v1.sk_agent import SKAgent
 
 
 class StreamOptions(KernelBaseModel):

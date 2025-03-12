@@ -1,22 +1,11 @@
-from typing import List
-
 from pydantic import BaseModel, ConfigDict
 
 from sk_agents.ska_types import Config as BaseConfig
 from sk_agents.skagents.v1.config import AgentConfig
 
 
-class TaskConfig(BaseModel):
-    name: str
-    task_no: int
-    description: str
-    instructions: str
-    agent: str
-
-
 class Spec(BaseModel):
-    agents: List[AgentConfig]
-    tasks: List[TaskConfig]
+    agent: AgentConfig
 
 
 class V1Config(BaseConfig):
@@ -33,12 +22,8 @@ class Config:
             service_name=config.service_name,
             version=config.version,
             input_type=config.input_type,
-            output_type=config.output_type,
             spec=config.spec,
         )
 
-    def get_agents(self) -> List[AgentConfig]:
-        return self.config.spec.agents
-
-    def get_tasks(self) -> List[TaskConfig]:
-        return self.config.spec.tasks
+    def get_agent(self) -> AgentConfig:
+        return self.config.spec.agent

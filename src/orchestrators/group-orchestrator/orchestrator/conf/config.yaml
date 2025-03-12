@@ -1,0 +1,14 @@
+apiVersion: skagents/v1
+kind: GroupOrchestrator
+description: >
+  Group Orchestrator for demo
+service_name: AgentGroupOrchestrator
+version: 0.1
+spec:
+  planning_agent: PlanningAgent:0.1
+  re_planning_agent: RePlanningAgent:0.1
+  plan_completion_checker_agent: PlanCompletionCheckerAgent:0.1
+  agents:
+    - TeamMemberAgent1:0.1
+    - TeamMemberAgent2:0.2
+    - TeamMemberAgent3:0.1
