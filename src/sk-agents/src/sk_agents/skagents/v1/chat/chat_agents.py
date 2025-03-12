@@ -17,6 +17,13 @@ from sk_agents.skagents.v1.utils import parse_chat_history
 
 class ChatAgents(BaseHandler):
     def __init__(self, config: BaseConfig, agent_builder: AgentBuilder):
+        if config.input_type not in [
+            "BaseInput",
+            "BaseInputWithUserContext",
+            "BaseMultiModalInput",
+        ]:
+            raise ValueError("Invalid input type")
+
         if hasattr(config, "spec"):
             self.config = Config(config=config)
         else:
