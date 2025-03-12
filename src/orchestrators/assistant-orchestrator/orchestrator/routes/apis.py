@@ -9,6 +9,10 @@ from .deps import (
 from contextlib import nullcontext
 from fastapi import FastAPI, APIRouter
 from connection_manager import ConnectionManager
+from ska_utils import get_telemetry
+from jose_types import ExtraData
+from context_directive import parse_context_directives
+from model.requests import ConversationMessageRequest
 
 conv_manager = get_conv_manager()
 conn_manager = get_conn_manager()
@@ -25,10 +29,80 @@ async def get_conversation_by_id(user_id: str, session_id: str):
     conv = conv_manager.get_conversation(user_id, session_id)
     return {"conversation": conv}
 
+@router.put("/conversations/{session_id}", tags=["Conversations"],
+             description="Add a message to a conversation based on a session id.")
+async def add_conversation_message_by_id(user_id: str, session_id: str, request: ConversationMessageRequest):
+    jt = get_telemetry()
+    conv = conv_manager.get_conversation(user_id, session_id)
+
+    with (
+        jt.tracer.start_as_current_span("conversation-turn")
+        if jt.telemetry_enabled()
+        else nullcontext()
+    ):
+        with (
+            jt.tracer.start_as_current_span("choose-recipient")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            # Select an agent
+            selected_agent = await rec_chooser.choose_recipient(request.message, conv)
+            if selected_agent.agent_name not in agent_catalog.agents:
+                agent = fallback_agent
+                sel_agent_name = fallback_agent.name
+            else:
+                agent = agent_catalog.agents[selected_agent.agent_name]
+                sel_agent_name = agent.name
+        with (
+            jt.tracer.start_as_current_span("update-history-user")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            # Add the current message to conversation history
+            conv_manager.add_user_message(conv, request.message, sel_agent_name)
+
+        with (
+            jt.tracer.start_as_current_span("agent-response")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            response = agent.invoke_api(conv)
+            try:
+                # Set the agent response from raw output
+                agent_response = response.get('output_raw', "No output available.")
+                # Check for extra data and process it
+                extra_data = response.get('extra_data')
+                if extra_data is not None:
+                    extra_data_instance = ExtraData.new_from_json(extra_data)
+                    context_directives = parse_context_directives(extra_data_instance)
+                    conv_manager.process_context_directives(conv, context_directives)
+
+            except Exception as e:
+                print(f"Error processing extra data: {e}")
+                # Fallback to printing output_raw again if an error occurs
+                agent_response = response.get('output_raw', "No output available.")
+                print(agent_response)
+
+        with (
+            jt.tracer.start_as_current_span("update-history-assistant")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            # Add response to conversation history
+            conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
+        
+    return {"conversation": conv_manager.get_last_response(conv) }
+
 @router.post("/conversation/new_conversation", tags=["Conversations"],
          description="Start a new conversation. Returns new session ID and agent response.")
-async def add_conversation(user_id: str, is_resumed: bool):
-    conv = conv_manager.new_conversation(user_id, is_resumed)
+async def new_conversation(user_id: str, is_resumed: bool):
+    jt = get_telemetry()
+    with (
+        jt.tracer.start_as_current_span("init-conversation")
+        if jt.telemetry_enabled()
+        else nullcontext()
+    ):
+        conv = conv_manager.new_conversation(user_id, is_resumed)
     return {"conversation": conv}
 
 @router.get("/healthcheck", tags=["Health"],

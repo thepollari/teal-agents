@@ -37,6 +37,7 @@ class BaseAgent(ABC, BaseModel):
     name: str
     description: str
     endpoint: str
+    endpoint_api: str
     api_key: str
 
     @abstractmethod
@@ -59,6 +60,24 @@ class BaseAgent(ABC, BaseModel):
             async for message in ws:
                 yield message
 
+    def invoke_api(
+        self, conv: Conversation, authorization: str | None = None
+    ) -> AsyncIterable[str]:
+        """Invoke the agent via an HTTP API call."""
+        base_input = _conversation_to_agent_input(conv)
+        input_message = self.get_invoke_input(base_input)
+
+        headers = {
+            "taAgwKey": self.api_key,
+            "Authorization": authorization,
+            "Content-Type": "application/json"
+        }
+        response = requests.post(self.endpoint_api, data=input_message, headers=headers)
+        
+        if response.status_code != 200:
+            raise Exception(f"Failed to invoke agent API: {response.status_code} - {response.text}")
+
+        return response.json()
 
 class AgentCatalog(BaseModel):
     agents: Dict[str, BaseAgent]
@@ -150,6 +169,7 @@ class AgentBuilder:
             name=agent_name,
             description=description,
             endpoint=f"{self._ws_or_wss()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}/stream",
+            endpoint_api=f"{self._http_or_https()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}",
             api_key=api_key,
         )
 
@@ -161,6 +181,7 @@ class AgentBuilder:
             name=agent_name,
             description=description,
             endpoint=f"{self._ws_or_wss()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}/stream",
+            endpoint_api=f"{self._http_or_https()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}",
             api_key=api_key,
             agent_catalog=agent_catalog,
         )
@@ -173,6 +194,7 @@ class AgentBuilder:
             name=agent_name,
             description=description,
             endpoint=f"{self._http_or_https()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}",
+            endpoint_api=f"{self._http_or_https()}://{self.agpt_gw_host}/{AgentBuilder._agent_to_path(agent_name)}",
             api_key=api_key,
             agent_catalog=agent_catalog,
         )
