@@ -6,6 +6,8 @@ from semantic_kernel.contents.chat_history import ChatHistory
 from sk_agents.ska_types import (
     MultiModalItem,
     ContentType,
+    TokenUsage,
+    ModelType,
 )
 
 
@@ -46,3 +48,38 @@ def parse_chat_history(inputs: Optional[Dict[str, Any]] = None) -> ChatHistory:
             )
             chat_history.add_message(message_content)
     return chat_history
+
+
+def get_token_usage_for_response(
+    model_type: ModelType, content: ChatMessageContent
+) -> TokenUsage:
+    if model_type == ModelType.OPENAI:
+        return get_token_usage_for_openai_response(content)
+    elif model_type == ModelType.ANTHROPIC:
+        return get_token_usage_for_anthropic_response(content)
+    else:
+        return TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
+
+
+def get_token_usage_for_openai_response(content: ChatMessageContent) -> TokenUsage:
+    return TokenUsage(
+        completion_tokens=content.inner_content.usage.completion_tokens,
+        prompt_tokens=content.inner_content.usage.prompt_tokens,
+        total_tokens=(
+            content.inner_content.usage.completion_tokens
+            + content.inner_content.usage.prompt_tokens
+        ),
+    )
+
+
+def get_token_usage_for_anthropic_response(
+    content: ChatMessageContent,
+) -> TokenUsage:
+    return TokenUsage(
+        completion_tokens=content.inner_content.usage.output_tokens,
+        prompt_tokens=content.inner_content.usage.input_tokens,
+        total_tokens=(
+            content.inner_content.usage.output_tokens
+            + content.inner_content.usage.input_tokens
+        ),
+    )
