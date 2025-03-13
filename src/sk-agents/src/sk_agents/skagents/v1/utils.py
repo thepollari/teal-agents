@@ -21,8 +21,9 @@ def item_to_content(item: MultiModalItem) -> TextContent | ImageContent | None:
             return None
 
 
-def parse_chat_history(inputs: Optional[Dict[str, Any]] = None) -> ChatHistory:
-    chat_history = ChatHistory()
+def parse_chat_history(
+    chat_history: ChatHistory, inputs: Optional[Dict[str, Any]] = None
+) -> ChatHistory:
     if (
         inputs is not None
         and "chat_history" in inputs

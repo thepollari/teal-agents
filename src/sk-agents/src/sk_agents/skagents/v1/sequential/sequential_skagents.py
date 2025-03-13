@@ -1,6 +1,8 @@
 from copy import deepcopy
 from typing import Optional, Any, Dict, AsyncIterable
 
+from semantic_kernel.contents.chat_history import ChatHistory
+
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import (
     InvokeResponse,
@@ -82,7 +84,8 @@ class SequentialSkagents(BaseHandler):
         collector = ExtraDataCollector()
 
         task_no = 0
-        chat_history = parse_chat_history(inputs)
+        chat_history = ChatHistory()
+        parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
         for i in range(len(self.tasks) - 1):
             # TODO - Once usage stats are available, need to check if usage message and send consolidated stats
@@ -113,7 +116,8 @@ class SequentialSkagents(BaseHandler):
 
         collector = ExtraDataCollector()
 
-        chat_history = parse_chat_history(inputs)
+        chat_history = ChatHistory()
+        parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
         for task in self.tasks:
             i_response = await task.invoke(history=chat_history, inputs=task_inputs)

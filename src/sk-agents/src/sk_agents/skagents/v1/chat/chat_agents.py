@@ -1,5 +1,9 @@
 from typing import Optional, Dict, Any, AsyncIterable
 
+from semantic_kernel.contents import TextContent, ChatMessageContent
+from semantic_kernel.contents.chat_history import ChatHistory
+from semantic_kernel.contents.utils.author_role import AuthorRole
+
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import (
     BaseHandler,
@@ -31,6 +35,20 @@ class ChatAgents(BaseHandler):
 
         self.agent_builder = agent_builder
 
+    @staticmethod
+    def _augment_with_user_context(
+        inputs: Optional[Dict[str, Any]], chat_history: ChatHistory
+    ) -> None:
+        if inputs["user_context"]:
+            content = f"The following user context was provided:\n"
+            for key, value in inputs["user_context"].items():
+                content += f"  {key}: {value}\n"
+            chat_history.add_message(
+                ChatMessageContent(
+                    role=AuthorRole.USER, items=[TextContent(text=content)]
+                )
+            )
+
     async def invoke_stream(
         self, inputs: Optional[Dict[str, Any]] = None
     ) -> AsyncIterable[str]:
@@ -39,7 +57,9 @@ class ChatAgents(BaseHandler):
             self.config.get_agent(), extra_data_collector
         )
 
-        chat_history = parse_chat_history(inputs)
+        chat_history = ChatHistory()
+        ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
+        parse_chat_history(chat_history, inputs)
         async for content in agent.invoke(chat_history):
             yield content.content
         if not extra_data_collector.is_empty():
@@ -55,8 +75,9 @@ class ChatAgents(BaseHandler):
         agent = self.agent_builder.build_agent(
             self.config.get_agent(), extra_data_collector
         )
-
-        chat_history = parse_chat_history(inputs)
+        chat_history = ChatHistory()
+        ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
+        parse_chat_history(chat_history, inputs)
         response_content = []
         completion_tokens: int = 0
         prompt_tokens: int = 0
