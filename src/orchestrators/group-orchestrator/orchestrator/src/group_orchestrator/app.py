@@ -1,32 +1,12 @@
-from enum import Enum
+import uuid
 from typing import List
 
+from dapr.clients import DaprClient
 from pydantic import BaseModel
 
+from group_orchestrator.plan_manager import PlanManager
 from group_orchestrator.task_result_manager import TaskResultManager
-from group_orchestrator.types import TaskResult
-
-
-class StepStatus(Enum):
-    NOT_STARTED = "NOT_STARTED"
-    COMPLETED = "COMPLETED"
-
-
-class TaskAgent:
-    pass
-
-
-class Task:
-    task_id: str
-    prerequisite_tasks: List[str]
-    task_goal: str
-    task_agent: str
-
-
-class Step:
-    step_number: int
-    step_tasks: List[Task]
-    step_status: StepStatus
+from group_orchestrator.types import TaskResult, TaskAgent, Step, StepStatus
 
 
 class ExecutionTask(BaseModel):
@@ -44,30 +24,19 @@ class TaskExecutor:
         pass
 
 
-class PlanManager:
-    def generate_plan(
-        self, overall_goal: str, agent_list: List[TaskAgent]
-    ) -> List[Step]:
-        pass
+dapr_client = DaprClient()
+task_result_manager = TaskResultManager(dapr_client)
 
-    def re_plan(
-        self, overall_goal: str, agent_list: List[TaskAgent], current_plan: List[Step]
-    ) -> List[Step]:
-        pass
-
-    def plan_complete(self, plan: List[Step]) -> bool:
-        pass
-
-
-task_result_manager = TaskResultManager()
 task_executor = TaskExecutor()
 plan_manager = PlanManager()
 
 
-def execute_step(overall_goal: str, step: Step) -> None:
+def execute_step(run_id: str, overall_goal: str, step: Step) -> None:
     execution_tasks: List[ExecutionTask] = []
     for task in step.step_tasks:
-        task_prereqs = task_result_manager.get_tasks_results(task.prerequisite_tasks)
+        task_prereqs = task_result_manager.get_tasks_results(
+            run_id, task.prerequisite_tasks
+        )
         execution_tasks.append(
             ExecutionTask(
                 overall_goal=overall_goal,
@@ -77,24 +46,34 @@ def execute_step(overall_goal: str, step: Step) -> None:
             )
         )
     tasks_results = task_executor.execute_tasks(execution_tasks)
-    task_result_manager.save_tasks_results(tasks_results)
+    task_result_manager.save_tasks_results(run_id, tasks_results)
     step.step_status = StepStatus.COMPLETED
 
 
-def execute_next_step(overall_goal: str, step_list: List[Step]) -> None:
+def execute_next_step(run_id: str, overall_goal: str, step_list: List[Step]) -> None:
     for step in step_list:
         if step.step_status == StepStatus.NOT_STARTED:
-            execute_step(overall_goal, step)
+            execute_step(run_id, overall_goal, step)
             return
 
 
 def plan_and_execute(
     overall_goal: str, agent_list: List[TaskAgent]
 ) -> List[TaskResult]:
+    run_id = str(uuid.uuid4())
+
     current_plan: List[Step] = plan_manager.generate_plan(overall_goal, agent_list)
     while not plan_manager.plan_complete(current_plan):
-        execute_next_step(overall_goal, current_plan)
+        execute_next_step(run_id, overall_goal, current_plan)
         current_plan = plan_manager.re_plan(overall_goal, agent_list, current_plan)
     return task_result_manager.get_tasks_results(
-        [task.task_id for task in current_plan[-1].step_tasks]
+        run_id, [task.task_id for task in current_plan[-1].step_tasks]
     )
+
+
+if __name__ == "__main__":
+    # Example usage
+    overall_goal = "Build a house"
+    agent_list = [TaskAgent(), TaskAgent()]
+    results = plan_and_execute(overall_goal, agent_list)
+    print(results)

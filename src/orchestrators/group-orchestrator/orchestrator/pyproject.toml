@@ -10,11 +10,12 @@ dependencies = [
     "requests",
     "pydantic",
     "pydantic-yaml",
-    "black",
     "opentelemetry-api",
     "opentelemetry-sdk",
     "opentelemetry-exporter-otlp-proto-grpc",
-    "ska-utils"
+    "ska-utils",
+    "black>=25.1.0",
+    "dapr>=1.15.0",
 ]
 
 [tool.uv.sources]
