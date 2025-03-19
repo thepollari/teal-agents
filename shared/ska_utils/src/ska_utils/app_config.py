@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List
 
@@ -47,7 +48,18 @@ class AppConfig(metaclass=Singleton):
         load_dotenv()
         self._reload_from_environment()
 
+    def _parse_ta_env_store(self):
+        ta_env_store = os.getenv("TA_ENV_STORE")
+        if ta_env_store:
+            try:
+                env_dict = json.loads(ta_env_store)
+                for key, value in env_dict.items():
+                    os.environ[key] = value
+            except json.JSONDecodeError as e:
+                logging.warn(f"Error parsing TA_ENV_STORE environment variable - {e}")
+
     def _reload_from_environment(self):
+        self._parse_ta_env_store()
         self.props = {}
         for config in AppConfig.configs:
             self.props[config.env_name] = os.getenv(config.env_name, default=config.default_value if config.default_value is not None else None)

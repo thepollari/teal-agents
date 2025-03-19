@@ -255,7 +255,7 @@ wheels = [
 
 [[package]]
 name = "ska-utils"
-version = "0.1.3"
+version = "0.1.14"
 source = { editable = "." }
 dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
