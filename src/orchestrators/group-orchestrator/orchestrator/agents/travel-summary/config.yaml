@@ -1,0 +1,16 @@
+apiVersion: skagents/v1
+kind: Chat
+description: >
+  A helpful assistant that can summarize the travel plan.
+service_name: TravelSummaryAgent
+version: 0.1
+input_type: BaseMultiModalInput
+spec:
+  agent:
+    name: default
+    role: Default Agent
+    model: gpt-4o-mini
+    system_prompt: >
+      You are a helpful assistant that can take in all of the suggestions and
+      advice from the other agents and provide a detailed final travel plan. You
+      must ensure that the final plan is integrated and complete.

@@ -1,79 +1,81 @@
-import uuid
+import asyncio
 from typing import List
 
-from dapr.clients import DaprClient
-from pydantic import BaseModel
+from ska_utils import AppConfig, strtobool
 
+from group_orchestrator.agents import AgentGateway
+from group_orchestrator.agents import BaseAgent
+from group_orchestrator.agents import PlanningAgent
+from group_orchestrator.agents.task_agent import TaskAgent
+from group_orchestrator.configs import CONFIGS, TA_AGW_HOST, TA_AGW_SECURE, TA_AGW_KEY
 from group_orchestrator.plan_manager import PlanManager
-from group_orchestrator.task_result_manager import TaskResultManager
-from group_orchestrator.types import TaskResult, TaskAgent, Step, StepStatus
+from group_orchestrator.step_executor import StepExecutor
 
 
-class ExecutionTask(BaseModel):
-    overall_goal: str
-    agent_name: str
-    prerequisites: List[TaskResult]
-    task_goal: str
+def _get_planning_agent(agent_gateway: AgentGateway) -> PlanningAgent:
 
-
-class TaskExecutor:
-    def execute_task(self, execution_task: ExecutionTask) -> TaskResult:
-        pass
-
-    def execute_tasks(self, execution_tasks: List[ExecutionTask]) -> List[TaskResult]:
-        pass
-
-
-dapr_client = DaprClient()
-task_result_manager = TaskResultManager(dapr_client)
-
-task_executor = TaskExecutor()
-plan_manager = PlanManager()
-
-
-def execute_step(run_id: str, overall_goal: str, step: Step) -> None:
-    execution_tasks: List[ExecutionTask] = []
-    for task in step.step_tasks:
-        task_prereqs = task_result_manager.get_tasks_results(
-            run_id, task.prerequisite_tasks
-        )
-        execution_tasks.append(
-            ExecutionTask(
-                overall_goal=overall_goal,
-                agent_name=task.task_agent,
-                prerequisites=task_prereqs,
-                task_goal=task.task_goal,
-            )
-        )
-    tasks_results = task_executor.execute_tasks(execution_tasks)
-    task_result_manager.save_tasks_results(run_id, tasks_results)
-    step.step_status = StepStatus.COMPLETED
-
-
-def execute_next_step(run_id: str, overall_goal: str, step_list: List[Step]) -> None:
-    for step in step_list:
-        if step.step_status == StepStatus.NOT_STARTED:
-            execute_step(run_id, overall_goal, step)
-            return
-
-
-def plan_and_execute(
-    overall_goal: str, agent_list: List[TaskAgent]
-) -> List[TaskResult]:
-    run_id = str(uuid.uuid4())
-
-    current_plan: List[Step] = plan_manager.generate_plan(overall_goal, agent_list)
-    while not plan_manager.plan_complete(current_plan):
-        execute_next_step(run_id, overall_goal, current_plan)
-        current_plan = plan_manager.re_plan(overall_goal, agent_list, current_plan)
-    return task_result_manager.get_tasks_results(
-        run_id, [task.task_id for task in current_plan[-1].step_tasks]
+    base_planning_agent: BaseAgent = BaseAgent(
+        name="PlanningAgent", version="0.1", description="A planning agent"
     )
+    planning_agent = PlanningAgent(agent=base_planning_agent, gateway=agent_gateway)
+    return planning_agent
+
+
+async def run(overall_goal: str, base_task_agents: List[BaseAgent]):
+    AppConfig.add_configs(CONFIGS)
+    app_config = AppConfig()
+
+    agent_gateway = AgentGateway(
+        host=app_config.get(TA_AGW_HOST.env_name),
+        secure=strtobool(app_config.get(TA_AGW_SECURE.env_name)),
+        agw_key=app_config.get(TA_AGW_KEY.env_name),
+    )
+
+    planning_agent = _get_planning_agent(agent_gateway)
+    plan_manager = PlanManager(planning_agent)
+
+    task_agents: List[TaskAgent] = []
+    for base_agent in base_task_agents:
+        task_agent = TaskAgent(agent=base_agent, gateway=agent_gateway)
+        task_agents.append(task_agent)
+
+    plan = await plan_manager.generate_plan(
+        overall_goal=overall_goal, task_agents=base_task_agents
+    )
+    print(plan)
+
+    step_executor = StepExecutor(task_agents)
+    for step in plan.steps:
+        await step_executor.execute_step(step)
+    print(plan.steps[-1].step_tasks[0].result)
 
 
 if __name__ == "__main__":
-    # Example usage
-    overall_goal = "Build a house"
-    agent_list = [TaskAgent(), TaskAgent()]
-    results = plan_and_execute(overall_goal, agent_list)
-    print(results)
+    test_task_agents: List[BaseAgent] = [
+        BaseAgent(
+            name="TravelPlannerAgent",
+            version="0.1",
+            description="A helpful assistant that can plan trips.",
+        ),
+        BaseAgent(
+            name="LocalAgent",
+            version="0.1",
+            description="A local assistant that can suggest local activities or places to visit.",
+        ),
+        BaseAgent(
+            name="LanguageAgent",
+            version="0.1",
+            description="A helpful assistant that can provide language tips for a given destination.",
+        ),
+        BaseAgent(
+            name="TravelSummaryAgent",
+            version="0.1",
+            description="A helpful assistant that can summarize the travel plan.",
+        ),
+    ]
+    asyncio.run(
+        run(
+            "Plan a 3 day trip to Nepal.",
+            test_task_agents,
+        )
+    )

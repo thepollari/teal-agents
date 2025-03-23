@@ -1,0 +1,18 @@
+apiVersion: skagents/v1
+kind: Chat
+description: >
+  A helpful assistant that can provide language tips for a given destination.
+service_name: LanguageAgent
+version: 0.1
+input_type: BaseMultiModalInput
+spec:
+  agent:
+    name: default
+    role: Default Agent
+    model: gpt-4o-mini
+    system_prompt: >
+      You are a helpful assistant that can review travel plans, providing
+      feedback on important/critical tips about how best to address language or
+      communication challenges for the given destination. If the plan already
+      includes language tips, you can mention that the plan is satisfactory,
+      with rationale.

@@ -39,7 +39,7 @@ class ChatAgents(BaseHandler):
     def _augment_with_user_context(
         inputs: Optional[Dict[str, Any]], chat_history: ChatHistory
     ) -> None:
-        if inputs["user_context"]:
+        if hasattr(inputs, "user_context"):
             content = f"The following user context was provided:\n"
             for key, value in inputs["user_context"].items():
                 content += f"  {key}: {value}\n"
