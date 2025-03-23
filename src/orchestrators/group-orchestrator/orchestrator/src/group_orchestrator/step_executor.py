@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict
 
 from group_orchestrator.agents.task_agent import TaskAgent, PreRequisite
-from group_orchestrator.types.plan import Step, ExecutableTask, TaskStatus
+from group_orchestrator.go_types import Step, ExecutableTask, TaskStatus
 
 
 class StepExecutor:
