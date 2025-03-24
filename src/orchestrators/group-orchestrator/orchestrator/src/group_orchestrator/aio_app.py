@@ -1,15 +1,18 @@
 from typing import List, AsyncIterable
 
+import aiohttp
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, strtobool, initialize_telemetry
 
-from group_orchestrator.agents import AgentGateway
 from group_orchestrator.agents import BaseAgent
-from group_orchestrator.agents import PlanningAgent
-from group_orchestrator.agents.base_agent_builder import BaseAgentBuilder
-from group_orchestrator.agents.task_agent import TaskAgent
+from group_orchestrator.agents.aio_agent_gateway import AioAgentGateway
+from group_orchestrator.agents.aio_base_agent_builder import AioBaseAgentBuilder
+from group_orchestrator.agents.aio_planning_agent import AioPlanningAgent
+from group_orchestrator.agents.aio_task_agent import AioTaskAgent
+from group_orchestrator.aio_plan_manager import AioPlanManager
+from group_orchestrator.aio_step_executor import AioStepExecutor
 from group_orchestrator.configs import (
     CONFIGS,
     TA_AGW_HOST,
@@ -23,32 +26,30 @@ from group_orchestrator.go_types import (
     new_event_response,
     EventType,
 )
-from group_orchestrator.plan_manager import PlanManager
-from group_orchestrator.step_executor import StepExecutor
 
 
 async def run(overall_goal: str) -> AsyncIterable:
     initialize_telemetry(config.service_name, app_config)
 
-    agent_gateway = AgentGateway(
+    agent_gateway = AioAgentGateway(
         host=app_config.get(TA_AGW_HOST.env_name),
         secure=strtobool(app_config.get(TA_AGW_SECURE.env_name)),
         agw_key=app_config.get(TA_AGW_KEY.env_name),
     )
-    base_agent_builder = BaseAgentBuilder(gateway=agent_gateway)
+    base_agent_builder = AioBaseAgentBuilder(gateway=agent_gateway)
     planning_agent_base = await base_agent_builder.build_agent(
         config.spec.planning_agent
     )
-    planning_agent = PlanningAgent(agent=planning_agent_base, gateway=agent_gateway)
-    plan_manager = PlanManager(planning_agent)
+    planning_agent = AioPlanningAgent(agent=planning_agent_base, gateway=agent_gateway)
+    plan_manager = AioPlanManager(planning_agent)
 
     task_agents_bases: List[BaseAgent] = []
-    task_agents: List[TaskAgent] = []
+    task_agents: List[AioTaskAgent] = []
     for task_agent_name in config.spec.agents:
         task_agent_base = await base_agent_builder.build_agent(task_agent_name)
         task_agents_bases.append(task_agent_base)
 
-        task_agent = TaskAgent(agent=task_agent_base, gateway=agent_gateway)
+        task_agent = AioTaskAgent(agent=task_agent_base, gateway=agent_gateway)
         task_agents.append(task_agent)
 
     plan = await plan_manager.generate_plan(
@@ -56,9 +57,10 @@ async def run(overall_goal: str) -> AsyncIterable:
     )
     yield new_event_response(EventType.PLAN, plan)
 
-    step_executor = StepExecutor(task_agents)
+    step_executor = AioStepExecutor(task_agents)
     for step in plan.steps:
-        await step_executor.execute_step(step)
+        async for result in step_executor.execute_step(step):
+            yield result
     yield new_event_response(EventType.FINAL, plan.steps[-1].step_tasks[0])
 
 

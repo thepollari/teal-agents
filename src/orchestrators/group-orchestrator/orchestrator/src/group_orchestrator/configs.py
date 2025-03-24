@@ -7,9 +7,13 @@ TA_AGW_HOST = Config(
 TA_AGW_SECURE = Config(
     env_name="TA_AGW_SECURE", is_required=True, default_value="false"
 )
+TA_SERVICE_CONFIG = Config(
+    env_name="TA_SERVICE_CONFIG", is_required=True, default_value=None
+)
 
 CONFIGS = [
     TA_AGW_KEY,
     TA_AGW_HOST,
     TA_AGW_SECURE,
+    TA_SERVICE_CONFIG,
 ]
