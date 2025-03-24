@@ -74,7 +74,7 @@ config: Config = parse_yaml_file_as(Config, config_file)
 app = FastAPI()
 
 
-@app.post(f"/{config.service_name}/{config.version}")
+@app.post(f"/{config.service_name}/{config.version}/stream")
 async def invoke_stream(go_request: GroupOrchestratorRequest):
     return StreamingResponse(
         run(go_request.overall_goal), media_type="text/event-stream"
