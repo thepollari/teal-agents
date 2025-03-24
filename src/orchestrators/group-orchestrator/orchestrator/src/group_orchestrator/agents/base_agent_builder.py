@@ -2,7 +2,9 @@ from typing import Dict
 
 import requests
 from pydantic import BaseModel, ConfigDict
-from group_orchestrator.agents import AgentGateway, BaseAgent
+
+from group_orchestrator.agents import BaseAgent
+from group_orchestrator.agents.agent_gateway import AgentGateway
 
 
 class OpenApiPost(BaseModel):

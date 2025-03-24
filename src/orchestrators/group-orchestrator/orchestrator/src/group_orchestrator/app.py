@@ -5,11 +5,13 @@ from fastapi.responses import StreamingResponse
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, strtobool, initialize_telemetry
 
-from group_orchestrator.agents import AgentGateway
 from group_orchestrator.agents import BaseAgent
-from group_orchestrator.agents import PlanningAgent
+from group_orchestrator.agents.agent_gateway import AgentGateway
 from group_orchestrator.agents.base_agent_builder import BaseAgentBuilder
+from group_orchestrator.agents.planning_agent import PlanningAgent
 from group_orchestrator.agents.task_agent import TaskAgent
+from group_orchestrator.plan_manager import PlanManager
+from group_orchestrator.step_executor import StepExecutor
 from group_orchestrator.configs import (
     CONFIGS,
     TA_AGW_HOST,
@@ -23,8 +25,6 @@ from group_orchestrator.go_types import (
     new_event_response,
     EventType,
 )
-from group_orchestrator.plan_manager import PlanManager
-from group_orchestrator.step_executor import StepExecutor
 
 
 async def run(overall_goal: str) -> AsyncIterable:
@@ -58,7 +58,8 @@ async def run(overall_goal: str) -> AsyncIterable:
 
     step_executor = StepExecutor(task_agents)
     for step in plan.steps:
-        await step_executor.execute_step(step)
+        async for result in step_executor.execute_step(step):
+            yield result
     yield new_event_response(EventType.FINAL, plan.steps[-1].step_tasks[0])
 
 

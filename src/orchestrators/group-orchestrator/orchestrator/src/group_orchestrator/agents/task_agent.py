@@ -1,9 +1,10 @@
 from enum import Enum
 from typing import Literal, List, Optional
 
+import aiohttp
 from pydantic import BaseModel
 
-from group_orchestrator.agents import InvokableAgent
+from group_orchestrator.agents.invokable_agent import InvokableAgent
 
 
 class ContentType(Enum):
@@ -69,14 +70,11 @@ class TaskAgent(InvokableAgent):
         return BaseMultiModalInput(chat_history=chat_history_messages)
 
     async def perform_task(
-        self, goal: str, pre_requisites: List[PreRequisite] | None = None
+        self,
+        session: aiohttp.ClientSession,
+        goal: str,
+        pre_requisites: List[PreRequisite] | None = None,
     ) -> str:
         chat_history = TaskAgent._build_chat_history(goal, pre_requisites)
-        print("----------")
-        print(f"Invoking Agent: {self.agent.name}")
-        print(f"Request:        {goal}")
-        print(f"Pre-requisites: {pre_requisites}")
-        response = self.invoke(chat_history)
-        print(f"Response:       {response['output_raw']}")
-        print("----------")
+        response = await self.invoke(session, chat_history)
         return response["output_raw"]

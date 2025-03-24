@@ -1,5 +1,8 @@
 from typing import Any
+
+import aiohttp
 from pydantic import BaseModel
+
 from group_orchestrator.agents.agent_gateway import AgentGateway
 from group_orchestrator.agents.types import BaseAgent
 
@@ -9,17 +12,11 @@ class InvokableAgent:
         self.agent = agent
         self.gateway = gateway
 
-    def invoke(self, agent_input: BaseModel) -> Any:
-        """
-        Invokes the agent using the provided input.
-
-        Args:
-            agent_input (BaseModel): The input data for the agent.
-
-        Returns:
-            Any: The response from the agent.
-        """
-        return self.gateway.invoke_agent(
+    async def invoke(
+        self, session: aiohttp.ClientSession, agent_input: BaseModel
+    ) -> Any:
+        return await self.gateway.invoke_agent(
+            session=session,
             agent_name=self.agent.name,
             agent_version=self.agent.version,
             agent_input=agent_input,

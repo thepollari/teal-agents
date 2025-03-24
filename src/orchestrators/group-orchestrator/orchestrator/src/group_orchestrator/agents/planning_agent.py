@@ -1,5 +1,6 @@
 from typing import List
 
+import aiohttp
 from pydantic import BaseModel
 
 from group_orchestrator.agents.invokable_agent import InvokableAgent
@@ -36,7 +37,9 @@ class GeneratePlanResponse(BaseModel):
 
 class PlanningAgent(InvokableAgent):
     async def generate_plan(
-        self, overall_goal: str, task_agents: List[BaseAgent]
+        self,
+        overall_goal: str,
+        task_agents: List[BaseAgent],
     ) -> GeneratePlanResponse:
         planning_task_agents = [
             PlanningBaseAgent(
@@ -47,5 +50,6 @@ class PlanningAgent(InvokableAgent):
         request = GeneratePlanRequest(
             overall_goal=overall_goal, agent_list=planning_task_agents
         )
-        response = self.invoke(request)
+        async with aiohttp.ClientSession() as session:
+            response = await self.invoke(session, request)
         return GeneratePlanResponse(**response["output_pydantic"])
