@@ -1,7 +1,6 @@
 from typing import List
 
-from group_orchestrator.agents import BaseAgent
-from group_orchestrator.agents.planning_agent import PlanningAgent
+from group_orchestrator.agents import BaseAgent, PlanningAgent
 from group_orchestrator.go_types import Plan
 
 

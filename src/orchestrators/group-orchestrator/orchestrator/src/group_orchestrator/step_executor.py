@@ -4,7 +4,7 @@ from typing import AsyncIterable, List, Dict
 import aiohttp
 from pydantic import BaseModel
 
-from group_orchestrator.agents.task_agent import TaskAgent, PreRequisite
+from group_orchestrator.agents import TaskAgent, PreRequisite
 from group_orchestrator.go_types import (
     Step,
     ExecutableTask,
