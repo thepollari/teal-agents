@@ -1,7 +1,7 @@
 from contextlib import nullcontext
 from typing import List, AsyncIterable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, strtobool, initialize_telemetry, get_telemetry
@@ -28,6 +28,7 @@ from group_orchestrator.go_types import (
     PlanningFailedException,
     ErrorResponse,
 )
+from group_orchestrator.go_types.requests import ChatHistory
 from group_orchestrator.plan_manager import PlanManager
 from group_orchestrator.step_executor import StepExecutor
 
@@ -84,6 +85,11 @@ async def run(overall_goal: str) -> AsyncIterable:
                     EventType.ERROR, ErrorResponse(status_code=400, detail=str(e))
                 )
                 return
+            except Exception as e:
+                yield new_event_response(
+                    EventType.ERROR, ErrorResponse(status_code=500, detail=str(e))
+                )
+                return
             yield new_event_response(EventType.PLAN, plan)
 
         with (
@@ -108,7 +114,13 @@ app = FastAPI()
 
 
 @app.post(f"/{config.service_name}/{config.version}/sse")
-async def invoke_sse(go_request: GroupOrchestratorRequest):
+async def invoke_sse(chat_history: ChatHistory):
+    if not chat_history:
+        raise HTTPException(status_code=400, detail="Chat history is required")
+
+    if chat_history.chat_history[0].role != "user":
+        raise HTTPException(status_code=400, detail="First message must be from user")
+
     return StreamingResponse(
-        run(go_request.overall_goal), media_type="text/event-stream"
+        run(chat_history.chat_history[0].content), media_type="text/event-stream"
     )
