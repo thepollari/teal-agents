@@ -22,7 +22,6 @@ from group_orchestrator.configs import (
 )
 from group_orchestrator.go_types import (
     Config,
-    GroupOrchestratorRequest,
     new_event_response,
     EventType,
     PlanningFailedException,
