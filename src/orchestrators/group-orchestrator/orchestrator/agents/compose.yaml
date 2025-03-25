@@ -1,4 +1,9 @@
 services:
+  aspire:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    ports:
+      - "18888:18888"
+      - "4317:18889"
   kong:
     image: kong:3.8
     ports:

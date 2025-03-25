@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Type, TypeVar, Generic
+from typing import TypeVar, Generic
 
 from pydantic import BaseModel
 
@@ -11,11 +11,17 @@ class EventType(Enum):
     AGENT_REQUEST = "AGENT_REQUEST"
     AGENT_RESPONSE = "AGENT_RESPONSE"
     FINAL = "FINAL"
+    ERROR = "ERROR"
 
 
 class EventResponse(BaseModel, Generic[T]):
     event_type: EventType
     data: T
+
+
+class ErrorResponse(BaseModel):
+    status_code: int
+    detail: str
 
 
 def new_event_response(event_type: EventType, data: T) -> str:

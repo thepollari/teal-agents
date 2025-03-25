@@ -1,7 +1,7 @@
 from typing import List
 
 from group_orchestrator.agents import BaseAgent, PlanningAgent
-from group_orchestrator.go_types import Plan
+from group_orchestrator.go_types import Plan, PlanningFailedException
 
 
 class PlanManager:
@@ -17,5 +17,7 @@ class PlanManager:
             overall_goal, task_agents
         )
         if not gen_plan_response.can_succeed:
-            raise Exception(f"Planning failed: {gen_plan_response.reasoning}")
+            raise PlanningFailedException(
+                f"Planning failed: {gen_plan_response.reasoning}"
+            )
         return Plan.new_from_response(gen_plan_response)
