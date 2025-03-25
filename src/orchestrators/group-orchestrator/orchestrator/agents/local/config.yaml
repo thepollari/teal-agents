@@ -9,7 +9,7 @@ spec:
   agent:
     name: default
     role: Default Agent
-    model: gpt-4o-mini
+    model: gpt-4o
     system_prompt: >
       You are a helpful assistant that can suggest authentic and interesting
       local activities or places to visit for a user and can utilize any context

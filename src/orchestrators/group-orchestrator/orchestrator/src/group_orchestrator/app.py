@@ -94,7 +94,7 @@ async def run(overall_goal: str) -> AsyncIterable:
             step_executor = StepExecutor(task_agents)
             for step in plan.steps:
                 try:
-                    async for result in step_executor.execute_step(step):
+                    async for result in step_executor.execute_step_stream(step):
                         yield result
                 except Exception as e:
                     yield new_event_response(

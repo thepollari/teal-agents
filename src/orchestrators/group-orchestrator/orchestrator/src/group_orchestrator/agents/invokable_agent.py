@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, AsyncIterable
 
 import aiohttp
 from pydantic import BaseModel
@@ -21,3 +21,11 @@ class InvokableAgent:
             agent_version=self.agent.version,
             agent_input=agent_input,
         )
+
+    async def invoke_stream(self, agent_input: BaseModel) -> AsyncIterable[str]:
+        async for content in self.gateway.invoke_agent_stream(
+            agent_name=self.agent.name,
+            agent_version=self.agent.version,
+            agent_input=agent_input,
+        ):
+            yield content

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, List, Optional
+from typing import Literal, List, Optional, AsyncIterable
 
 import aiohttp
 from pydantic import BaseModel
@@ -78,3 +78,10 @@ class TaskAgent(InvokableAgent):
         chat_history = TaskAgent._build_chat_history(goal, pre_requisites)
         response = await self.invoke(session, chat_history)
         return response["output_raw"]
+
+    async def perform_task_stream(
+        self, goal: str, pre_requisites: List[PreRequisite] | None = None
+    ) -> AsyncIterable[str]:
+        chat_history = TaskAgent._build_chat_history(goal, pre_requisites)
+        async for content in self.invoke_stream(chat_history):
+            yield content

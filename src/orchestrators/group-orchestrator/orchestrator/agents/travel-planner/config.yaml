@@ -9,7 +9,7 @@ spec:
   agent:
     name: default
     role: Default Agent
-    model: gpt-4o-mini
+    model: gpt-4o
     system_prompt: >
       You are a helpful assistant that can suggest a travel plan for a user
       based on their request.

@@ -9,7 +9,7 @@ spec:
   agent:
     name: default
     role: Default Agent
-    model: gpt-4o-mini
+    model: gpt-4o
     system_prompt: >
       You are a helpful assistant that can take in all of the suggestions and
       advice from the other agents and provide a detailed final travel plan. You

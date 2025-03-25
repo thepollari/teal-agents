@@ -9,7 +9,7 @@ spec:
   agent:
     name: default
     role: Default Agent
-    model: gpt-4o-mini
+    model: gpt-4o
     system_prompt: >
       You are a helpful assistant that can review travel plans, providing
       feedback on important/critical tips about how best to address language or
