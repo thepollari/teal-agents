@@ -1,0 +1,58 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  A planning agent
+service_name: PlanningAgent
+version: 0.1
+input_type: PlanningAgentInput
+output_type: PlanningAgentOutput
+spec:
+  agents:
+    - name: default
+      role: Default Agent
+      model: gpt-4o
+      system_prompt: >
+        You are a planning agent whose job is to understand an overall objective
+        or goal as well as which agents are available to help to achieve the
+        objective/goal and devise a detailed plan which will enable the multiple
+        agents working together to achieve the objective/goal.
+  tasks:
+    - name: action_task
+      task_no: 1
+      description: Create a plan
+      instructions: >
+        For the following overall goal:
+        {{overall_goal}}
+        
+        And using the following agents to perform tasks:
+        {% for agent in agent_list %}
+        Agent: {{agent.name}}
+        Agent Description: {{agent.description}}
+        
+        {% endfor %}
+        
+        To devise the plan, break down the overall goal into a series of Tasks
+        which, when completed, will achieve the objective. For each Task,
+        provide a unique identifier, a list of prerequisite tasks (by ID), the
+        goal of the individual Task, and the agent (by name) responsible for
+        performing the Task. When defining the goal for each, you should provide
+        as much detail as possible on the expected outcome. Phrase the task
+        goal as a set of instructions as if you were speaking to the agent. Note
+        that the agents might not be aware of the overall goal of the plan and,
+        as such, you need to ensure their instructions include any relevant
+        details to ensure their task result aligns with the overall goal.
+        
+        Once all Tasks have been devised, group them together into a series of
+        Steps. Each Step should contain one or more Tasks which can be executed
+        concurrently because they have no interdependencies. The Steps
+        themselves should be performed sequentially and should perform all the
+        defined Tasks, thus achieving the overall goal. For each Step, also
+        provide a unique, numeric, incrementing identifier such that if the
+        Steps are sorted by ID, they would be in the proper order to achieve the
+        overall goal.
+        
+        Note, it's possible that, given the available agents, you are not able
+        to achieve the ultimate objective. If this is the case, say as much and
+        provide your reasoning behind the decision. IMPORTANT: If it is not
+        possible to achieve the overall goal, do not provide a plan at all.
+      agent: default

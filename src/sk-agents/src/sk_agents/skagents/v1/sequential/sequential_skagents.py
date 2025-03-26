@@ -1,8 +1,7 @@
 from copy import deepcopy
-from typing import Optional, Any, Dict, AsyncIterable, List
+from typing import Optional, Any, Dict, AsyncIterable
 
 from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents import TextContent, ImageContent, ChatMessageContent
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import (
@@ -10,13 +9,12 @@ from sk_agents.ska_types import (
     BaseHandler,
     Config as BaseConfig,
     TokenUsage,
-    MultiModalItem,
-    ContentType,
 )
 from sk_agents.skagents.kernel_builder import KernelBuilder
 from sk_agents.skagents.v1.sequential.config import Config
 from sk_agents.skagents.v1.sequential.output_transformer import OutputTransformer
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
+from sk_agents.skagents.v1.utils import parse_chat_history
 from sk_agents.type_loader import get_type_loader
 
 
@@ -69,45 +67,6 @@ class SequentialSkagents(BaseHandler):
         return response
 
     @staticmethod
-    def _item_to_content(item: MultiModalItem) -> TextContent | ImageContent | None:
-        match item.content_type:
-            case ContentType.TEXT:
-                return TextContent(text=item.content)
-            case ContentType.IMAGE:
-                return ImageContent(data_uri=item.content)
-            case _:
-                return None
-
-    @staticmethod
-    def _get_chat_history(inputs: Optional[Dict[str, Any]] = None) -> ChatHistory:
-        chat_history = ChatHistory()
-        if (
-            inputs is not None
-            and "chat_history" in inputs
-            and inputs["chat_history"] is not None
-        ):
-            for message in inputs["chat_history"]:
-                if hasattr(message, "content"):
-                    items = [
-                        MultiModalItem(
-                            content_type=ContentType.TEXT, content=message.content
-                        )
-                    ]
-                elif hasattr(message, "items"):
-                    items = message.items
-                else:
-                    return chat_history
-
-                chat_message_items: List[TextContent | ImageContent] = []
-                for item in items:
-                    chat_message_items.append(SequentialSkagents._item_to_content(item))
-                message_content = ChatMessageContent(
-                    role=message.role, items=chat_message_items
-                )
-                chat_history.add_message(message_content)
-        return chat_history
-
-    @staticmethod
     def _parse_task_inputs(
         inputs: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -125,7 +84,8 @@ class SequentialSkagents(BaseHandler):
         collector = ExtraDataCollector()
 
         task_no = 0
-        chat_history = SequentialSkagents._get_chat_history(inputs)
+        chat_history = ChatHistory()
+        parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
         for i in range(len(self.tasks) - 1):
             # TODO - Once usage stats are available, need to check if usage message and send consolidated stats
@@ -156,7 +116,8 @@ class SequentialSkagents(BaseHandler):
 
         collector = ExtraDataCollector()
 
-        chat_history = SequentialSkagents._get_chat_history(inputs)
+        chat_history = ChatHistory()
+        parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
         for task in self.tasks:
             i_response = await task.invoke(history=chat_history, inputs=task_inputs)

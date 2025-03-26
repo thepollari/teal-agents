@@ -12,6 +12,7 @@ alt.env
 test.pptx
 .DS_Store
 .vscode
+/customization
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

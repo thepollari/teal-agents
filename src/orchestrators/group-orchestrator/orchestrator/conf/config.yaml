@@ -1,0 +1,13 @@
+apiVersion: skagents/v1
+kind: GroupOrchestrator
+description: >
+  Group Orchestrator for demo
+service_name: AgentGroupOrchestrator
+version: 0.1
+spec:
+  planning_agent: PlanningAgent:0.1
+  agents:
+    - TravelPlannerAgent:0.1
+    - LocalAgent:0.1
+    - LanguageAgent:0.1
+    - TravelSummaryAgent:0.1

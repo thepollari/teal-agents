@@ -11,8 +11,9 @@ from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.kernel_pydantic import KernelBaseModel
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
-from sk_agents.ska_types import InvokeResponse, TokenUsage, ModelType, EmbeddedImage
-from sk_agents.skagents.v1.sequential.sk_agent import SKAgent
+from sk_agents.ska_types import InvokeResponse, TokenUsage, EmbeddedImage
+from sk_agents.skagents.v1.sk_agent import SKAgent
+from sk_agents.skagents.v1.utils import get_token_usage_for_response
 
 
 class StreamOptions(KernelBaseModel):
@@ -118,7 +119,7 @@ class Task:
         async for content in self.agent.invoke(history):
             response_content.append(content)
             history.add_message(content)
-            call_usage = self._get_token_usage_for_response(content)
+            call_usage = get_token_usage_for_response(self.agent.model_type, content)
             completion_tokens += call_usage.completion_tokens
             prompt_tokens += call_usage.prompt_tokens
             total_tokens += call_usage.total_tokens
@@ -130,36 +131,4 @@ class Task:
             ),
             extra_data=self.extra_data_collector.get_extra_data(),
             output_raw=response_content[-1].content,
-        )
-
-    def _get_token_usage_for_response(self, content: ChatMessageContent) -> TokenUsage:
-        if self.agent.get_model_type() == ModelType.OPENAI:
-            return self._get_token_usage_for_openai_response(content)
-        elif self.agent.get_model_type() == ModelType.ANTHROPIC:
-            return self._get_token_usage_for_anthropic_response(content)
-        else:
-            return TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
-
-    @staticmethod
-    def _get_token_usage_for_openai_response(content: ChatMessageContent) -> TokenUsage:
-        return TokenUsage(
-            completion_tokens=content.inner_content.usage.completion_tokens,
-            prompt_tokens=content.inner_content.usage.prompt_tokens,
-            total_tokens=(
-                content.inner_content.usage.completion_tokens
-                + content.inner_content.usage.prompt_tokens
-            ),
-        )
-
-    @staticmethod
-    def _get_token_usage_for_anthropic_response(
-        content: ChatMessageContent,
-    ) -> TokenUsage:
-        return TokenUsage(
-            completion_tokens=content.inner_content.usage.output_tokens,
-            prompt_tokens=content.inner_content.usage.input_tokens,
-            total_tokens=(
-                content.inner_content.usage.output_tokens
-                + content.inner_content.usage.input_tokens
-            ),
         )

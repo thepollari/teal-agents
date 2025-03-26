@@ -8,17 +8,17 @@ from sk_agents.extra_data_collector import ExtraDataCollector
 from sk_agents.ska_types import ModelType
 from sk_agents.skagents.kernel_builder import KernelBuilder
 from sk_agents.skagents.v1.sequential.config import AgentConfig
-from sk_agents.skagents.v1.sequential.sk_agent import SKAgent
+from sk_agents.skagents.v1.sk_agent import SKAgent
 
 
 class AgentBuilder:
-    def __init__(self, kernel_builder: KernelBuilder):
+    def __init__(self, kernel_builder: KernelBuilder, authorization: str | None = None):
         self.kernel_builder = kernel_builder
+        self.authorization = authorization
 
     def build_agent(
         self,
         agent_config: AgentConfig,
-        authorization: str | None = None,
         extra_data_collector: ExtraDataCollector | None = None,
     ) -> SKAgent:
         kernel = self.kernel_builder.build_kernel(
@@ -26,7 +26,7 @@ class AgentBuilder:
             agent_config.name,
             agent_config.plugins,
             agent_config.remote_plugins,
-            authorization,
+            self.authorization,
             extra_data_collector,
         )
         settings = kernel.get_prompt_execution_settings_from_service_id(

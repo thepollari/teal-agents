@@ -1,0 +1,17 @@
+{
+  "overall_goal": "Write a literature review on no code tools for building multi agent ai systems",
+  "agent_list": [
+    {
+      "name": "Google_Search_Agent",
+      "description": "An agent that can search Google for information, returns results with a snippet and body content"
+    },
+    {
+      "name": "Arxiv_Search_Agent",
+      "description": "An agent that can search Arxiv for papers related to a given topic, including abstracts"
+    },
+    {
+      "name": "Report_Agent",
+      "description": "Generate a report based on a given topic"
+    }
+  ]
+}

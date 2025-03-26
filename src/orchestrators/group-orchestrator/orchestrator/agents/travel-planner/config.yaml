@@ -1,0 +1,15 @@
+apiVersion: skagents/v1
+kind: Chat
+description: >
+  A helpful assistant that can plan trips.
+service_name: TravelPlannerAgent
+version: 0.1
+input_type: BaseMultiModalInput
+spec:
+  agent:
+    name: default
+    role: Default Agent
+    model: gpt-4o
+    system_prompt: >
+      You are a helpful assistant that can suggest a travel plan for a user
+      based on their request.
