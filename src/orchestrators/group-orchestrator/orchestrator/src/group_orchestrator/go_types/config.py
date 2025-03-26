@@ -12,6 +12,7 @@ class Config(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     apiVersion: str
+    kind: str
     description: Optional[str] = None
     service_name: str
     version: float
