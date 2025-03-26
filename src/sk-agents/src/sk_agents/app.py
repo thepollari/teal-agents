@@ -73,7 +73,11 @@ if config.description is not None:
 else:
     description = f"{config.service_name} API"
 
-app = FastAPI()
+app = FastAPI(
+    openapi_url=f"/{config.service_name}/{str(config.version)}/openapi.json",
+    docs_url=f"/{config.service_name}/{str(config.version)}/docs",
+    redoc_url=f"/{config.service_name}/{str(config.version)}/redoc",
+)
 # noinspection PyTypeChecker
 app.add_middleware(TelemetryMiddleware, st=get_telemetry())
 
