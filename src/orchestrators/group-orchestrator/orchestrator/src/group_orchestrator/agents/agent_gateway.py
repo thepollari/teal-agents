@@ -48,7 +48,6 @@ class AgentGateway(BaseModel):
 
         headers = {
             "taAgwKey": self.agw_key,
-            "Content-Type": "application/json",
         }
         inject(headers)
         async with websockets.connect(

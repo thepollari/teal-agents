@@ -119,7 +119,9 @@ class Task:
         async for content in self.agent.invoke(history):
             response_content.append(content)
             history.add_message(content)
-            call_usage = get_token_usage_for_response(self.agent.model_type, content)
+            call_usage = get_token_usage_for_response(
+                self.agent.get_model_type(), content
+            )
             completion_tokens += call_usage.completion_tokens
             prompt_tokens += call_usage.prompt_tokens
             total_tokens += call_usage.total_tokens
