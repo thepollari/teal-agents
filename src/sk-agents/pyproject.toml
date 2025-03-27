@@ -1,6 +1,6 @@
 [project]
 name = "sk-agents"
-version = "0.1.11-beta"
+version = "0.1.12-beta"
 description = "Teal Agents - Core Agent Framework"
 readme = "README.md"
 requires-python = ">=3.11"
