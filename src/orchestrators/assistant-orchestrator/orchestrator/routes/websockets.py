@@ -8,13 +8,11 @@ from .deps import (
 )
 from context_directive import parse_context_directives
 from contextlib import nullcontext
-from typing import Annotated
 from jose_types import ExtraData
 from ska_utils import get_telemetry
 from fastapi import (
     WebSocket,
     WebSocketDisconnect,
-    Header,
     APIRouter,
 )
 
@@ -27,12 +25,15 @@ fallback_agent = get_fallback_agent()
 
 router = APIRouter()
 
-@router.websocket(f"/{config.service_name}/{str(config.version)}/stream/{{ticket}}")
+
+@router.websocket(
+        f"/{config.service_name}/{str(config.version)}/stream/{{ticket}}"
+)
 async def invoke_stream(
     websocket: WebSocket,
     ticket: str,
     resume: bool = False,
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: str = None,
 ) -> None:
     jt = get_telemetry()
     with (
@@ -41,7 +42,11 @@ async def invoke_stream(
         else nullcontext()
     ):
         is_resumed = True if resume else False
-        user_id = await conn_manager.connect(config.service_name, websocket, ticket)
+        user_id = await conn_manager.connect(
+            config.service_name,
+            websocket,
+            ticket
+        )
         conv = conv_manager.new_conversation(user_id, is_resumed=is_resumed)
 
     try:
@@ -59,7 +64,10 @@ async def invoke_stream(
                     if jt.telemetry_enabled()
                     else nullcontext()
                 ):
-                    selected_agent = await rec_chooser.choose_recipient(message, conv)
+                    selected_agent = await rec_chooser.choose_recipient(
+                        message,
+                        conv
+                    )
                     if selected_agent.agent_name not in agent_catalog.agents:
                         agent = fallback_agent
                         sel_agent_name = fallback_agent.name
@@ -73,9 +81,14 @@ async def invoke_stream(
                     else nullcontext()
                 ):
                     # Add the current message to conversation history
-                    conv_manager.add_user_message(conv, message, sel_agent_name)
+                    conv_manager.add_user_message(
+                        conv,
+                        message,
+                        sel_agent_name
+                    )
 
-                # Notify the client of which agent will be handling this message
+                # Notify the client of which agent
+                # will be handling this message
                 await websocket.send_json(
                     {
                         "agent_name": sel_agent_name,
@@ -91,10 +104,17 @@ async def invoke_stream(
                 ):
                     # Stream agent response to client
                     response = ""
-                    async for content in agent.invoke_stream(conv):
+                    async for content in agent.invoke_stream(
+                        conv,
+                        authorization=authorization
+                    ):
                         try:
-                            extra_data: ExtraData = ExtraData.new_from_json(content)
-                            context_directives = parse_context_directives(extra_data)
+                            extra_data: ExtraData = ExtraData.new_from_json(
+                                content
+                            )
+                            context_directives = parse_context_directives(
+                                extra_data
+                            )
                             conv_manager.process_context_directives(
                                 conv, context_directives
                             )
@@ -108,6 +128,10 @@ async def invoke_stream(
                     else nullcontext()
                 ):
                     # Add response to conversation history
-                    conv_manager.add_agent_message(conv, response, sel_agent_name)
+                    conv_manager.add_agent_message(
+                        conv,
+                        response,
+                        sel_agent_name
+                    )
     except WebSocketDisconnect:
         conn_manager.disconnect(websocket)
