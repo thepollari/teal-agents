@@ -10,7 +10,7 @@ spec:
   agents:
     - name: default
       role: Default Agent
-      model: claude-3-7-sonnet-20250219-v1
+      model: gpt-4o-mini
       system_prompt: >
         You are a helpful assistant.
   tasks:
