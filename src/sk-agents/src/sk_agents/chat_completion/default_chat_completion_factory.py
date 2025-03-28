@@ -33,3 +33,9 @@ class DefaultChatCompletionFactory(ChatCompletionFactory):
             return ModelType.OPENAI
         else:
             raise ValueError(f"Unknown model name {model_name}")
+
+    def model_supports_structured_output(self, model_name: str) -> bool:
+        if model_name in self._OPENAI_MODELS:
+            return True
+        else:
+            raise ValueError(f"Unknown model name {model_name}")

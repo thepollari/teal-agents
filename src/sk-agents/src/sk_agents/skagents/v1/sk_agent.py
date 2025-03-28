@@ -1,4 +1,4 @@
-from typing import AsyncIterable
+from typing import AsyncIterable, Dict, Any
 
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.contents.chat_history import ChatHistory
@@ -12,14 +12,20 @@ from sk_agents.ska_types import ModelType
 
 class SKAgent:
     def __init__(
-        self, model_name: str, model_type: ModelType, agent: ChatCompletionAgent
+        self,
+        model_name: str,
+        model_attributes: Dict[str, Any],
+        agent: ChatCompletionAgent,
     ):
         self.model_name = model_name
-        self.model_type = model_type
         self.agent = agent
+        self.model_attributes = model_attributes
 
     def get_model_type(self) -> ModelType:
-        return self.model_type
+        return self.model_attributes["model_type"]
+
+    def so_supported(self) -> bool:
+        return self.model_attributes["so_supported"]
 
     async def invoke_stream(
         self, history: ChatHistory

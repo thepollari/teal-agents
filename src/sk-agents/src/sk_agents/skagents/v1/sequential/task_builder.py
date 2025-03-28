@@ -25,20 +25,26 @@ class TaskBuilder:
         task_config: TaskConfig,
         agent_configs: List[AgentConfig],
         extra_data_collector: ExtraDataCollector,
+        output_type: str | None = None,
     ) -> SKAgent:
         agent_config = TaskBuilder._get_agent_config_by_name(
             task_config.agent, agent_configs
         )
 
-        agent = self.agent_builder.build_agent(agent_config, extra_data_collector)
+        agent = self.agent_builder.build_agent(
+            agent_config, extra_data_collector, output_type
+        )
         return agent
 
     def build_task(
-        self, task_config: TaskConfig, agent_configs: List[AgentConfig]
+        self,
+        task_config: TaskConfig,
+        agent_configs: List[AgentConfig],
+        output_type: str | None = None,
     ) -> Task:
         extra_data_collector = ExtraDataCollector()
         agent = self._get_agent_for_task(
-            task_config, agent_configs, extra_data_collector
+            task_config, agent_configs, extra_data_collector, output_type
         )
         return Task(
             name=task_config.name,

@@ -33,7 +33,7 @@ services:
   enabled: true
   host: planning-agent
   name: PlanningAgentDocs
-  path: /openapi.json
+  path: /PlanningAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -87,7 +87,7 @@ services:
   enabled: true
   host: travel-planner-agent
   name: TravelPlannerAgentDocs
-  path: /openapi.json
+  path: /TravelPlannerAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -141,7 +141,7 @@ services:
   enabled: true
   host: local-agent
   name: LocalAgentDocs
-  path: /openapi.json
+  path: /LocalAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -195,7 +195,7 @@ services:
   enabled: true
   host: language-agent
   name: LanguageAgentDocs
-  path: /openapi.json
+  path: /LanguageAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -249,7 +249,7 @@ services:
   enabled: true
   host: travel-summary-agent
   name: TravelSummaryAgentDocs
-  path: /openapi.json
+  path: /TravelSummaryAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000

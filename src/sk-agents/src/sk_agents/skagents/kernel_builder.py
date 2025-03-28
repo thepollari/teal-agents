@@ -41,6 +41,9 @@ class KernelBuilder:
     def get_model_type_for_name(self, model_name: str) -> ModelType:
         return self.chat_completion_builder.get_model_type_for_name(model_name)
 
+    def model_supports_structured_output(self, model_name: str) -> bool:
+        return self.chat_completion_builder.model_supports_structured_output(model_name)
+
     def _create_base_kernel(self, model_name: str, service_id: str) -> Kernel:
         chat_completion = self.chat_completion_builder.get_chat_completion_for_model(
             service_id=service_id,

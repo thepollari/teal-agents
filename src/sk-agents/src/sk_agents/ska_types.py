@@ -98,7 +98,7 @@ class InvokeResponse(BaseModel, Generic[T]):
 
     token_usage: TokenUsage
     extra_data: Optional[ExtraData] = None
-    output_raw: str
+    output_raw: Optional[str] = None
     output_pydantic: Optional[T] = None
 
 
@@ -139,4 +139,8 @@ class ChatCompletionFactory(ABC):
 
     @abstractmethod
     def get_model_type_for_name(self, model_name: str) -> ModelType:
+        pass
+
+    @abstractmethod
+    def model_supports_structured_output(self, model_name: str) -> bool:
         pass

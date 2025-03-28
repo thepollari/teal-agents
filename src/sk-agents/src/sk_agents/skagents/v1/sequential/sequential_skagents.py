@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from typing import Optional, Any, Dict, AsyncIterable
 
@@ -35,9 +36,30 @@ class SequentialSkagents(BaseHandler):
         task_configs = self.config.get_tasks()
         sorted_configs = sorted(task_configs, key=lambda x: x.task_no)
         self.tasks = []
-        for task_config in sorted_configs:
+        for i in range(len(sorted_configs) - 1):
+            task_config = sorted_configs[i]
             self.tasks.append(
                 task_builder.build_task(task_config, self.config.get_agents())
+            )
+        self.tasks.append(
+            task_builder.build_task(
+                sorted_configs[-1],
+                self.config.get_agents(),
+                self.config.config.output_type,
+            )
+        )
+
+    async def _transform_output_if_required(
+        self, response: InvokeResponse
+    ) -> InvokeResponse:
+        if self.tasks[-1].agent.so_supported():
+            type_loader = get_type_loader()
+            output_type = type_loader.get_type(self.config.config.output_type)
+            response.output_pydantic = output_type(**json.loads(response.output_raw))
+            return response
+        else:
+            return await self._transform_output(
+                response, self.config.config.output_type
             )
 
     async def _transform_output(
@@ -140,6 +162,4 @@ class SequentialSkagents(BaseHandler):
         if self.config.config.output_type is None:
             return response
         else:
-            return await self._transform_output(
-                response, self.config.config.output_type
-            )
+            return await self._transform_output_if_required(response)

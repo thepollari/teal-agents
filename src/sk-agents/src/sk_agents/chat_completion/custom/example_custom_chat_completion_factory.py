@@ -86,3 +86,11 @@ class ExampleCustomChatCompletionFactory(ChatCompletionFactory):
             return ModelType.ANTHROPIC
         else:
             raise ValueError(f"Unknown model name {model_name}")
+
+    def model_supports_structured_output(self, model_name: str) -> bool:
+        if model_name in ExampleCustomChatCompletionFactory._OPENAI_MODELS:
+            return True
+        elif model_name in ExampleCustomChatCompletionFactory._ANTHROPIC_MODELS:
+            return False
+        else:
+            raise ValueError(f"Unknown model name {model_name}")

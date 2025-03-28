@@ -77,3 +77,13 @@ class ChatCompletionBuilder:
                     f"Could not find model {model_name} using custom factory"
                 )
         return self.self_default_cc_factory.get_model_type_for_name(model_name)
+
+    def model_supports_structured_output(self, model_name: str) -> bool:
+        if self.ccc_factory:
+            try:
+                return self.ccc_factory.model_supports_structured_output(model_name)
+            except ValueError:
+                self.logger.warning(
+                    f"Could not find model {model_name} using custom factory"
+                )
+        return self.self_default_cc_factory.model_supports_structured_output(model_name)
