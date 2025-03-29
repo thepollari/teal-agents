@@ -36,7 +36,7 @@ services:
   enabled: true
   host: recipient
   name: AgentSelectorAgent
-  path: /AgentSelector/0.1
+  path: /AgentSelectorAgent/0.1
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -481,7 +481,7 @@ services:
   enabled: true
   host: weather
   name: WeatherAgent
-  path: /WeatherBot/0.1
+  path: /WeatherAgent/0.1
   port: 8000
   protocol: http
   read_timeout: 60000
