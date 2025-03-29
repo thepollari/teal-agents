@@ -90,7 +90,7 @@ services:
   enabled: true
   host: recipient
   name: AgentSelectorAgentDocs
-  path: /openapi.json
+  path: /AgentSelectorAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -230,7 +230,7 @@ services:
   enabled: true
   host: general
   name: GeneralAgentDocs
-  path: /openapi.json
+  path: /GeneralAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -317,7 +317,7 @@ services:
   enabled: true
   host: math
   name: MathAgentDocs
-  path: /openapi.json
+  path: /MathAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -535,7 +535,7 @@ services:
   enabled: true
   host: weather
   name: WeatherAgentDocs
-  path: /openapi.json
+  path: /WeatherAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
@@ -622,7 +622,7 @@ services:
   enabled: true
   host: host.docker.internal
   name: TestAgentDocs
-  path: /openapi.json
+  path: /TestAgent/0.1/openapi.json
   port: 8106
   protocol: http
   read_timeout: 60000

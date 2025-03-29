@@ -2,7 +2,7 @@ apiVersion: skagents/v1
 kind: Sequential
 description: >
   An agent great for retrieving temperature for a given location
-service_name: WeatherBot
+service_name: WeatherAgent
 version: 0.1
 input_type: BaseInputWithUserContext
 spec:
