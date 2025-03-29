@@ -1,10 +1,9 @@
 from typing import Dict
 
-import requests
-from pydantic import BaseModel, ConfigDict
-
+import aiohttp
 from group_orchestrator.agents import BaseAgent
 from group_orchestrator.agents.agent_gateway import AgentGateway
+from pydantic import BaseModel, ConfigDict
 
 
 class OpenApiPost(BaseModel):
@@ -34,18 +33,18 @@ class BaseAgentBuilder:
         toks = agent_name.split(":")
         return f"{toks[0]}/{toks[1]}"
 
-    def _get_agent_description(self, agent_name: str) -> str:
-        response = requests.get(
-            f"{self._http_or_https()}://{self.gateway.host}/{BaseAgentBuilder._agent_to_path(agent_name)}/openapi.json"
-        )
-        if response:
-            response_payload = OpenApiResponse(**response.json())
-            return next(iter(response_payload.paths.values())).post.description
-        else:
-            raise Exception(f"Failed to get agent description for {agent_name}")
+    async def _get_agent_description(self, agent_name: str) -> str:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{self._http_or_https()}://{self.gateway.host}/{BaseAgentBuilder._agent_to_path(agent_name)}/openapi.json"
+            ) as response:
+                if response.status != 200:
+                    raise Exception(f"Failed to get agent description for {agent_name}")
+                response_payload = OpenApiResponse(**await response.json())
+                return next(iter(response_payload.paths.values())).post.description
 
     async def build_agent(self, agent_full_name: str) -> BaseAgent:
-        description = self._get_agent_description(agent_full_name)
+        description = await self._get_agent_description(agent_full_name)
 
         toks = agent_full_name.split(":")
         agent_name = toks[0]

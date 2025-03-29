@@ -37,15 +37,21 @@ app_config = AppConfig()
 config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
 config: Config = parse_yaml_file_as(Config, config_file)
 
+initialize_telemetry(config.service_name, app_config)
+t = get_telemetry()
 
-async def run(overall_goal: str) -> AsyncIterable:
-    initialize_telemetry(config.service_name, app_config)
-    t = get_telemetry()
+agent_gateway: AgentGateway
+base_agent_builder: BaseAgentBuilder
+plan_manager: PlanManager
+task_agents_bases: List[BaseAgent] = []
+task_agents: List[TaskAgent] = []
+
+
+async def initialize():
+    global agent_gateway, base_agent_builder, plan_manager, task_agents_bases, task_agents
 
     with (
-        t.tracer.start_as_current_span(
-            name="invoke-sse", attributes={"goal": overall_goal}
-        )
+        t.tracer.start_as_current_span("initialization")
         if t.telemetry_enabled()
         else nullcontext()
     ):
@@ -61,8 +67,6 @@ async def run(overall_goal: str) -> AsyncIterable:
         planning_agent = PlanningAgent(agent=planning_agent_base, gateway=agent_gateway)
         plan_manager = PlanManager(planning_agent)
 
-        task_agents_bases: List[BaseAgent] = []
-        task_agents: List[TaskAgent] = []
         for task_agent_name in config.spec.agents:
             task_agent_base = await base_agent_builder.build_agent(task_agent_name)
             task_agents_bases.append(task_agent_base)
@@ -70,6 +74,15 @@ async def run(overall_goal: str) -> AsyncIterable:
             task_agent = TaskAgent(agent=task_agent_base, gateway=agent_gateway)
             task_agents.append(task_agent)
 
+
+async def run(overall_goal: str) -> AsyncIterable:
+    with (
+        t.tracer.start_as_current_span(
+            name="invoke-sse", attributes={"goal": overall_goal}
+        )
+        if t.telemetry_enabled()
+        else nullcontext()
+    ):
         with (
             t.tracer.start_as_current_span(name="build-plan")
             if t.telemetry_enabled()
@@ -110,6 +123,7 @@ async def run(overall_goal: str) -> AsyncIterable:
 
 
 app = FastAPI()
+app.add_event_handler("startup", initialize)
 
 
 @app.post(f"/{config.service_name}/{config.version}/sse")
