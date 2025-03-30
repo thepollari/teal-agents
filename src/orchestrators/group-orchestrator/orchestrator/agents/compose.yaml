@@ -44,6 +44,8 @@ services:
     ports:
       - "8102:8000"
     env_file: "task-agent.env"
+    profiles:
+      - "travel"
     volumes:
       - ./travel-planner:/app/src/sk-agents/agents
   local-agent:
@@ -51,6 +53,8 @@ services:
     ports:
       - "8103:8000"
     env_file: "task-agent.env"
+    profiles:
+      - "travel"
     volumes:
       - ./local:/app/src/sk-agents/agents
   language-agent:
@@ -58,6 +62,8 @@ services:
     ports:
       - "8104:8000"
     env_file: "task-agent.env"
+    profiles:
+      - "travel"
     volumes:
       - ./language:/app/src/sk-agents/agents
   travel-summary-agent:
@@ -65,19 +71,28 @@ services:
     ports:
       - "8105:8000"
     env_file: "task-agent.env"
+    profiles:
+      - "travel"
     volumes:
       - ./travel-summary:/app/src/sk-agents/agents
   arxiv-search-agent:
     image: teal-agents:latest
     ports:
       - "8106:8000"
-    env_file: "task-agent.env"
+    env_file: "search-agent.env"
     volumes:
       - ./arxiv-search-agent:/app/src/sk-agents/agents
   google-search-agent:
     image: teal-agents:latest
     ports:
       - "8107:8000"
-    env_file: "google-search-agent.env"
+    env_file: "search-agent.env"
     volumes:
       - ./google-search-agent:/app/src/sk-agents/agents
+  assistant-agent:
+    image: teal-agents:latest
+    ports:
+      - "8108:8000"
+    env_file: "task-agent.env"
+    volumes:
+      - ./assistant-agent:/app/src/sk-agents/agents

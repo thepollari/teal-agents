@@ -6,7 +6,7 @@ class ArxivSearchPlugin(BasePlugin):
     @kernel_function(
         description="Search Arxiv for papers related to a given topic, including abstracts"
     )
-    def arxiv_search(query: str, max_results: int = 2) -> list:  # type: ignore[type-arg]
+    def arxiv_search(self, query: str, max_results: int = 2) -> list:  # type: ignore[type-arg]
         """
         Search Arxiv for papers and return the results including abstracts.
         """

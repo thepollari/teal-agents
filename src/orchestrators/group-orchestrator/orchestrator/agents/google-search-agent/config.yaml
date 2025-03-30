@@ -12,3 +12,5 @@ spec:
     model: gpt-4o
     system_prompt: >
       You are a helpful AI assistant. Solve tasks using your tools.
+    plugins:
+      - GoogleSearchPlugin

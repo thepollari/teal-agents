@@ -6,7 +6,7 @@ class GoogleSearchPlugin(BasePlugin):
     @kernel_function(
         description="Search Google for information, returns results with a snippet and body content"
     )
-    def google_search(query: str, num_results: int = 2, max_chars: int = 500) -> list:  # type: ignore[type-arg]
+    def google_search(self, query: str, num_results: int = 2, max_chars: int = 500) -> list:  # type: ignore[type-arg]
         import os
         import time
 

@@ -272,3 +272,165 @@ services:
   tags:
     - docs
   write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: google-search-agent
+  name: GoogleSearchAgent
+  path: /GoogleSearchAgent/0.1
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: GoogleSearchAgent
+      path_handling: v0
+      paths:
+        - /GoogleSearchAgent/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - task-agent
+  tags:
+    - task-agent
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: google-search-agent
+  name: GoogleSearchAgentDocs
+  path: /GoogleSearchAgent/0.1/openapi.json
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: GoogleSearchAgentDocs
+      path_handling: v0
+      paths:
+        - /GoogleSearchAgent/0.1/openapi.json
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - docs
+  tags:
+    - docs
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: arxiv-search-agent
+  name: ArxivSearchAgent
+  path: /ArxivSearchAgent/0.1
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: ArxivSearchAgent
+      path_handling: v0
+      paths:
+        - /ArxivSearchAgent/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - task-agent
+  tags:
+    - task-agent
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: arxiv-search-agent
+  name: ArxivSearchAgentDocs
+  path: /ArxivSearchAgent/0.1/openapi.json
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: ArxivSearchAgentDocs
+      path_handling: v0
+      paths:
+        - /ArxivSearchAgent/0.1/openapi.json
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - docs
+  tags:
+    - docs
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: assistant-agent
+  name: AssistantAgent
+  path: /AssistantAgent/0.1
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: AssistantAgent
+      path_handling: v0
+      paths:
+        - /AssistantAgent/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - task-agent
+  tags:
+    - task-agent
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: assistant-agent
+  name: AssistantAgentDocs
+  path: /AssistantAgent/0.1/openapi.json
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: AssistantAgentDocs
+      path_handling: v0
+      paths:
+        - /AssistantAgent/0.1/openapi.json
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - docs
+  tags:
+    - docs
+  write_timeout: 60000
