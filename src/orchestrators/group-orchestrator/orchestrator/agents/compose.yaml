@@ -67,3 +67,17 @@ services:
     env_file: "task-agent.env"
     volumes:
       - ./travel-summary:/app/src/sk-agents/agents
+  arxiv-search-agent:
+    image: teal-agents:latest
+    ports:
+      - "8106:8000"
+    env_file: "task-agent.env"
+    volumes:
+      - ./arxiv-search-agent:/app/src/sk-agents/agents
+  google-search-agent:
+    image: teal-agents:latest
+    ports:
+      - "8107:8000"
+    env_file: "google-search-agent.env"
+    volumes:
+      - ./google-search-agent:/app/src/sk-agents/agents
