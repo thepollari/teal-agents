@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict
 
 from context_directive import ContextDirective, ContextDirectiveOp
-from model import Conversation, ContextType
+from model import Conversation, ContextType, ContextItem
 from services import new_client, MessageType
 
 
@@ -9,11 +9,11 @@ class ConversationManager:
     def __init__(self, service_name: str):
         self.services_client = new_client(service_name)
 
-    def new_conversation(self, user_id: str, is_resumed: bool, transient_user_context: Optional[Dict]=None) -> Conversation:
-        return self.services_client.new_conversation(user_id, is_resumed, transient_user_context)
+    def new_conversation(self, user_id: str, is_resumed: bool) -> Conversation:
+        return self.services_client.new_conversation(user_id, is_resumed)
     
-    def get_conversation(self, user_id: str, session_id: str, transient_user_context: Optional[Dict]=None) -> Conversation:
-        return self.services_client.get_conversation(user_id, session_id, transient_user_context)
+    def get_conversation(self, user_id: str, session_id: str) -> Conversation:
+        return self.services_client.get_conversation(user_id, session_id)
 
     def get_last_response(self, conversation: Conversation):
         return Conversation(
@@ -102,3 +102,15 @@ class ConversationManager:
             self.update_context_item(conversation, key, value)
         except ValueError:
             self.add_context_item(conversation, key, value, ContextType.TRANSIENT)
+
+    def add_transient_context(
+            self, conversation: Conversation, transient_user_context: Optional[Dict]
+    ) -> None:
+        if transient_user_context:
+            transient_context = {}
+            for key, value in transient_user_context.items():
+                transient_context[key] = ContextItem(
+                    value=str(value), 
+                    context_type=ContextType.TRANSIENT
+                )
+            conversation.user_context.update(transient_context)

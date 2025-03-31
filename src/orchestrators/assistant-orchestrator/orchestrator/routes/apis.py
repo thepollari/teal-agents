@@ -41,11 +41,11 @@ async def add_conversation_message_by_id(
     authorization: str = Depends(header_scheme)
 ):
     jt = get_telemetry()
+    conv = conv_manager.get_conversation(user_id, session_id)
     in_memory_user_context = None
     if cache_user_context:
-        in_memory_user_context = cache_user_context.get_user_context_from_cache(user_id=user_id).model_dump()['user_context'] 
-    conv = conv_manager.get_conversation(user_id, session_id, transient_user_context=in_memory_user_context)
-
+        in_memory_user_context = cache_user_context.get_user_context_from_cache(user_id=user_id).model_dump()['user_context']
+        conv_manager.add_transient_context(conv, in_memory_user_context)
     with (
         jt.tracer.start_as_current_span("conversation-turn")
         if jt.telemetry_enabled()
