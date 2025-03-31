@@ -116,7 +116,7 @@ services:
     depends_on:
       - math
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://math:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://math:8000/MathAgent/0.1/openapi.json"]
       interval: 10s
       timeout: 2s
       retries: 10
@@ -133,7 +133,7 @@ services:
     depends_on:
       - weather
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://weather:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://weather:8000/WeatherAgent/0.1/openapi.json"]
       interval: 10s
       timeout: 2s
       retries: 10
@@ -150,7 +150,7 @@ services:
     depends_on:
       - general
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://general:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://general:8000/GeneralAgent/0.1/openapi.json"]
       interval: 10s
       timeout: 2s
       retries: 10
@@ -167,7 +167,7 @@ services:
     depends_on:
       - recipient
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://recipient:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://recipient:8000/AgentSelectorAgent/0.1/openapi.json"]
       interval: 10s
       timeout: 2s
       retries: 10
@@ -186,7 +186,7 @@ services:
     depends_on:
       - test-agent
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://test-agent:8000/openapi.json"]
+      test: ["CMD", "curl", "-f", "http://test-agent:8000/TestAgent/0.1/openapi.json"]
       interval: 10s
       timeout: 2s
       retries: 10
