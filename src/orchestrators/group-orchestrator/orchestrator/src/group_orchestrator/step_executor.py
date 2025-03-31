@@ -142,16 +142,15 @@ class StepExecutor:
             if self.t
             else nullcontext()
         ):
-            async with aiohttp.ClientSession() as session:
-                aio_tasks = []
-                for task in step.step_tasks:
-                    yield new_event_response(
-                        EventType.AGENT_REQUEST,
-                        AgentRequestEvent(
-                            agent_name=task.task_agent, task_goal=task.task_goal
-                        ),
-                    )
-                    aio_tasks.append(self._execute_task_stream(task))
+            aio_tasks = []
+            for task in step.step_tasks:
+                yield new_event_response(
+                    EventType.AGENT_REQUEST,
+                    AgentRequestEvent(
+                        agent_name=task.task_agent, task_goal=task.task_goal
+                    ),
+                )
+                aio_tasks.append(self._execute_task_stream(task))
 
             async def _iterate(
                 async_iterable: AsyncIterable[str], queue: asyncio.Queue[str]

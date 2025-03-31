@@ -1,5 +1,5 @@
 apiVersion: skagents/v1
-kind: GroupOrchestrator
+kind: PlanningOrchestrator
 description: >
   Group Orchestrator for demo
 service_name: AgentGroupOrchestrator
