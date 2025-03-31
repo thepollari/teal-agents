@@ -112,6 +112,6 @@ async def new_conversation(user_id: str, is_resumed: bool):
     return {"conversation": conv}
 
 @router.get("/healthcheck", tags=["Health"],
-         description="Check the health status of the application.")
+         description="Check the health status of Assistant Orchestrator.")
 async def healthcheck():
     return {"status": "healthy"}

@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from routes import apis, websockets, deps
-config = get_config()
-from .deps import get_config
 
+# Get configurations
+config = deps.get_config()
 
 # Instance of FastAPI app
-app = FastAPI()
+app = FastAPI(
+    openapi_url=f"/{config.service_name}/{str(config.version)}/openapi.json",
+    docs_url=f"/{config.service_name}/{str(config.version)}/docs",
+    redoc_url=f"/{config.service_name}/{str(config.version)}/redoc"
+)
 
 # Initialize the app components
 deps.initialize()
