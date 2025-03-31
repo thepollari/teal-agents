@@ -34,8 +34,8 @@ initialize_telemetry("Agent-Services", app_config)
 # Instance of FastAPI app
 app = FastAPI(
     openapi_url=f"/services/v1/openapi.json",
-    docs_url="/services/v1/docs",
-    redoc_url="/services/v1/redoc"
+    docs_url=f"/services/v1/docs",
+    redoc_url=f"/services/v1/redoc"
 )
 
 # noinspection PyTypeChecker
