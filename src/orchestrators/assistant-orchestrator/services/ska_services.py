@@ -75,7 +75,7 @@ async def create_ticket(
         ip_address = request.headers.get("X-Forwarded-For")
     else:
         ip_address = request.client.host
-    auth_response = authenticator.authenticate(payload)
+    auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
         return CreateTicketResponse(
             ticket=ticket_manager.create_ticket(
