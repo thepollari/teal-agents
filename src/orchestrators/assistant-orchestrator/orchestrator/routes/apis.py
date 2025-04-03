@@ -5,6 +5,7 @@ from .deps import (
     get_config,
     get_agent_catalog,
     get_fallback_agent,
+    get_user_context_cache
 )
 from contextlib import nullcontext
 from fastapi import Depends, APIRouter
@@ -20,6 +21,7 @@ rec_chooser = get_rec_chooser()
 config = get_config()
 agent_catalog = get_agent_catalog()
 fallback_agent = get_fallback_agent()
+cache_user_context = get_user_context_cache()
 
 router = APIRouter()
 header_scheme = APIKeyHeader(name="authorization", auto_error=False)
@@ -40,7 +42,10 @@ async def add_conversation_message_by_id(
 ):
     jt = get_telemetry()
     conv = conv_manager.get_conversation(user_id, session_id)
-
+    in_memory_user_context = None
+    if cache_user_context:
+        in_memory_user_context = cache_user_context.get_user_context_from_cache(user_id=user_id).model_dump()['user_context']
+        conv_manager.add_transient_context(conv, in_memory_user_context)
     with (
         jt.tracer.start_as_current_span("conversation-turn")
         if jt.telemetry_enabled()
