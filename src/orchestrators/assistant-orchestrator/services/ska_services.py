@@ -53,13 +53,13 @@ authenticator: Authenticator[auth_helper.get_request_type()] = (
 )
 
 
-@app.post("/services/v1/authenticate")
+@app.post("/services/v1/{orchestrator_name}/authenticate")
 async def authenticate_user(
-    payload: auth_helper.get_request_type(),
+    orchestrator_name: str, payload: auth_helper.get_request_type()
 ) -> AuthenticationResponse:
-    auth_response = authenticator.authenticate(payload)
+    auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
-        return AuthenticationResponse(user_id=auth_response.user_id)
+        return AuthenticationResponse(orchestrator_name=auth_response.orch_name, user_id=auth_response.user_id)
     else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Failed"

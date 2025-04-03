@@ -7,8 +7,8 @@ class ExampleUserIdOnlyAuthRequest(BaseModel):
 
 
 class ExampleUserIdOnlyAuthenticator(Authenticator[ExampleUserIdOnlyAuthRequest]):
-    def authenticate(self, request: ExampleUserIdOnlyAuthRequest) -> AuthResponse:
+    def authenticate(self, orchestrator_name: str, request: ExampleUserIdOnlyAuthRequest) -> AuthResponse:
         if request.user_id == "good_id":
-            return AuthResponse(success=True, user_id=request.user_id)
+            return AuthResponse(success=True, orch_name=orchestrator_name, user_id=request.user_id)
         else:
-            return AuthResponse(success=False, user_id=request.user_id)
+            return AuthResponse(success=False, orch_name=orchestrator_name, user_id=request.user_id)

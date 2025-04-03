@@ -24,6 +24,7 @@ class GeneralResponse(BaseModel):
 
 
 class AuthenticationResponse(BaseModel):
+    orchestrator_name: str
     user_id: str
 
 

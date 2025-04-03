@@ -7,5 +7,5 @@ class UserIdOnlyAuthRequest(BaseModel):
 
 
 class UserIdOnlyAuthenticator(Authenticator[UserIdOnlyAuthRequest]):
-    def authenticate(self, request: UserIdOnlyAuthRequest) -> AuthResponse:
-        return AuthResponse(success=True, user_id=request.user_id)
+    def authenticate(self, orchestrator_name: str, request: UserIdOnlyAuthRequest) -> AuthResponse:
+        return AuthResponse(success=True, orch_name=orchestrator_name, user_id=request.user_id)

@@ -7,10 +7,11 @@ T = TypeVar("T")
 
 class AuthResponse(BaseModel):
     success: bool
+    orch_name: str
     user_id: str
 
 
 class Authenticator(ABC, Generic[T]):
     @abstractmethod
-    def authenticate(self, request: T) -> AuthResponse:
+    def authenticate(self, orchestrator_name: str, request: T) -> AuthResponse:
         pass
