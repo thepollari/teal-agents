@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List
 
 from dapr.ext.workflow import DaprWorkflowContext
-from durabletask.client import OrchestrationStatus
 
 from workflow_orchestrator import (
     DataClass,

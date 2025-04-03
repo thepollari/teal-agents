@@ -15,9 +15,11 @@ class NewConversationRequest(BaseModel):
     user_id: str
     is_resumed: bool | None = None
 
+
 class GetConversationRequest(BaseModel):
     user_id: str
     session_id: str
+
 
 class AddConversationMessageRequest(BaseModel):
     message_type: MessageType

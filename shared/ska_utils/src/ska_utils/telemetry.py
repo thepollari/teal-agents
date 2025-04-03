@@ -25,21 +25,27 @@ from opentelemetry.semconv.resource import ResourceAttributes
 
 from ska_utils import AppConfig, strtobool, Config
 
-TA_TELEMETRY_ENABLED = Config(env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="true")
-TA_OTEL_ENDPOINT = Config(env_name="TA_OTEL_ENDPOINT", is_required=False, default_value=None)
+TA_TELEMETRY_ENABLED = Config(
+    env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="true"
+)
+TA_OTEL_ENDPOINT = Config(
+    env_name="TA_OTEL_ENDPOINT", is_required=False, default_value=None
+)
 
-TELEMETRY_CONFIGS: List[Config] = [
-    TA_TELEMETRY_ENABLED,
-    TA_OTEL_ENDPOINT
-]
+TELEMETRY_CONFIGS: List[Config] = [TA_TELEMETRY_ENABLED, TA_OTEL_ENDPOINT]
 
 AppConfig.add_configs(TELEMETRY_CONFIGS)
+
 
 class Telemetry:
     def __init__(self, service_name: str, app_config: AppConfig):
         self.service_name = service_name
-        self.resource = Resource.create({ResourceAttributes.SERVICE_NAME: self.service_name})
-        self._telemetry_enabled = strtobool(str(app_config.get(TA_TELEMETRY_ENABLED.env_name)))
+        self.resource = Resource.create(
+            {ResourceAttributes.SERVICE_NAME: self.service_name}
+        )
+        self._telemetry_enabled = strtobool(
+            str(app_config.get(TA_TELEMETRY_ENABLED.env_name))
+        )
         self.endpoint = app_config.get(TA_OTEL_ENDPOINT.env_name)
         self._check_enable_telemetry()
         self.tracer: trace.Tracer | None = self._get_tracer()
@@ -98,7 +104,9 @@ class Telemetry:
             exporter = ConsoleMetricExporter()
 
         meter_provider = MeterProvider(
-            metric_readers=[PeriodicExportingMetricReader(exporter, export_interval_millis=5000)],
+            metric_readers=[
+                PeriodicExportingMetricReader(exporter, export_interval_millis=5000)
+            ],
             resource=self.resource,
             views=[
                 # Dropping all instrument names except for those starting with "semantic_kernel"
@@ -107,6 +115,7 @@ class Telemetry:
             ],
         )
         set_meter_provider(meter_provider)
+
 
 _services_telemetry: Telemetry | None = None
 

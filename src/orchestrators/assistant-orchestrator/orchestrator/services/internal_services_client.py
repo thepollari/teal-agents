@@ -1,7 +1,7 @@
 import uuid
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from model import Conversation, UserMessage, AgentMessage, ContextItem, ContextType
+from model import Conversation, UserMessage, AgentMessage, ContextItem
 from services.services_client import (
     ServicesClient,
     MessageType,
@@ -40,7 +40,7 @@ class InternalServicesClient(ServicesClient):
         self.last_conversation[user_id] = conversation.conversation_id
         print("New conversation id created: {}".format(conversation.conversation_id))
         return conversation
-    
+
     def get_conversation(self, user_id: str, session_id: str) -> Conversation:
         message_list: List[UserMessage | AgentMessage] = []
         user_context: Dict[str, ContextItem] = {}
@@ -64,9 +64,13 @@ class InternalServicesClient(ServicesClient):
         message: str,
     ) -> GeneralResponse:
         if message_type == MessageType.AGENT:
-            return GeneralResponse(status=200, message="Agent message added successfully")
+            return GeneralResponse(
+                status=200, message="Agent message added successfully"
+            )
         elif message_type == MessageType.USER:
-            return GeneralResponse(status=200, message="User message added successfully")
+            return GeneralResponse(
+                status=200, message="User message added successfully"
+            )
         else:
             raise Exception("Failed to add conversation message")
 

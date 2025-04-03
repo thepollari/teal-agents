@@ -7,10 +7,12 @@ from pydantic import BaseModel
 
 from ska_utils import Singleton
 
+
 class Config(BaseModel):
     env_name: str
     is_required: bool
     default_value: str | None
+
 
 class AppConfig(metaclass=Singleton):
     configs: List[Config] | None = None
@@ -62,7 +64,12 @@ class AppConfig(metaclass=Singleton):
         self._parse_ta_env_store()
         self.props = {}
         for config in AppConfig.configs:
-            self.props[config.env_name] = os.getenv(config.env_name, default=config.default_value if config.default_value is not None else None)
+            self.props[config.env_name] = os.getenv(
+                config.env_name,
+                default=(
+                    config.default_value if config.default_value is not None else None
+                ),
+            )
         self.__validate_required_keys()
 
     def get(self, key):
@@ -71,4 +78,6 @@ class AppConfig(metaclass=Singleton):
     def __validate_required_keys(self):
         for config in AppConfig.configs:
             if config.is_required and self.props[config.env_name] is None:
-                raise ValueError(f"Missing required configuration key: {config.env_name}")
+                raise ValueError(
+                    f"Missing required configuration key: {config.env_name}"
+                )

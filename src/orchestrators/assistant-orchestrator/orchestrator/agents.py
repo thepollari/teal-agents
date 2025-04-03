@@ -70,14 +70,17 @@ class BaseAgent(ABC, BaseModel):
         headers = {
             "taAgwKey": self.api_key,
             "Authorization": authorization,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         response = requests.post(self.endpoint_api, data=input_message, headers=headers)
-        
+
         if response.status_code != 200:
-            raise Exception(f"Failed to invoke agent API: {response.status_code} - {response.text}")
+            raise Exception(
+                f"Failed to invoke agent API: {response.status_code} - {response.text}"
+            )
 
         return response.json()
+
 
 class AgentCatalog(BaseModel):
     agents: Dict[str, BaseAgent]

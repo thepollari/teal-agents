@@ -1,5 +1,4 @@
-from contextlib import nullcontext
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, initialize_telemetry
 from agents import Agent, AgentBuilder, AgentCatalog
@@ -31,7 +30,7 @@ _user_context_helper: CustomUserContextHelper = CustomUserContextHelper(app_conf
 
 def initialize() -> None:
     global _conv_manager, _conn_manager, _rec_chooser, _config, _agent_catalog, _fallback_agent, _user_context
-    
+
     config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
     _config = parse_yaml_file_as(Config, config_file)
 
@@ -46,7 +45,7 @@ def initialize() -> None:
     for agent_name in _config.spec.agents:
         agents[agent_name] = agent_builder.build_agent(agent_name, api_key)
     _agent_catalog = AgentCatalog(agents=agents)
-    
+
     _fallback_agent = agent_builder.build_fallback_agent(
         _config.spec.fallback_agent, api_key, _agent_catalog
     )
@@ -57,40 +56,46 @@ def initialize() -> None:
     _conn_manager = ConnectionManager()
     _conv_manager = ConversationManager(_config.service_name)
     _rec_chooser = RecipientChooser(recipient_chooser_agent)
-    _user_context = (
-        _user_context_helper.get_user_context()
-    )
+    _user_context = _user_context_helper.get_user_context()
+
+
 def get_conv_manager() -> ConversationManager:
     if _conv_manager is None:
         initialize()
     return _conv_manager
+
 
 def get_conn_manager() -> ConnectionManager:
     if _conn_manager is None:
         initialize()
     return _conn_manager
 
+
 def get_rec_chooser() -> RecipientChooser:
     if _rec_chooser is None:
         initialize()
     return _rec_chooser
+
 
 def get_config() -> Config:
     if _config is None:
         initialize()
     return _config
 
+
 def get_agent_catalog() -> AgentCatalog:
     if _agent_catalog is None:
         initialize()
     return _agent_catalog
+
 
 def get_fallback_agent() -> Agent:
     if _fallback_agent is None:
         initialize()
     return _fallback_agent
 
-def get_user_context_cache() -> UserContextCache|None:
+
+def get_user_context_cache() -> UserContextCache | None:
     if _user_context is None:
         initialize()
     return _user_context

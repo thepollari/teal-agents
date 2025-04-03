@@ -1,5 +1,4 @@
-import json
-from typing import Dict, Optional
+from typing import Dict
 
 import requests
 from opentelemetry.propagate import inject
@@ -13,13 +12,16 @@ from services.services_client import (
     VerifyTicketResponse,
 )
 
+
 class NewConversationRequest(BaseModel):
     user_id: str
     is_resumed: bool | None = None
 
+
 class GetConversationRequest(BaseModel):
     user_id: str
     session_id: str
+
 
 class AddConversationMessageRequest(BaseModel):
     message_type: MessageType
@@ -68,7 +70,7 @@ class ExternalServicesClient(ServicesClient):
             user_context[key] = ContextItem(
                 value=value, context_type=ContextType.PERSISTENT
             )
-        
+
         return Conversation(
             **history_response, user_id=user_id, user_context=user_context
         )

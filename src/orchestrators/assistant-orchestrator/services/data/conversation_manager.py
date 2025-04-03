@@ -73,11 +73,9 @@ class ConversationManager:
             if st.telemetry_enabled()
             else nullcontext()
         ):
-            messages = self._load_messages(
-                orchestrator_name, user_id, session_id
-            )
+            messages = self._load_messages(orchestrator_name, user_id, session_id)
         return ConversationResponse(conversation_id=session_id, history=messages)
-    
+
     def _new_conversation(
         self, orchestrator_name: str, user_id: str, is_resumed: bool
     ) -> ConversationResponse:

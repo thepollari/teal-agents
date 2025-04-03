@@ -1,12 +1,13 @@
-from typing import List, Dict, Annotated
+from typing import List
 from fastapi import (
     WebSocket,
     WebSocketException,
     status,
 )
-from ska_utils import AppConfig, strtobool, initialize_telemetry, get_telemetry
+from ska_utils import AppConfig, strtobool
 from configs import TA_AUTH_ENABLED
 from services import new_client, ServicesClient
+
 
 class ConnectionManager:
     def __init__(self):
