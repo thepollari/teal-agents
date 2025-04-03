@@ -1,6 +1,6 @@
 [project]
 name = "services"
-version = "0.1.7-beta"
+version = "0.1.8-beta"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
