@@ -10,8 +10,10 @@ from configs import (
     TA_REDIS_PORT,
     TA_REDIS_DB,
     TA_REDIS_TTL,
-    TA_USER_INFORMATION_SOURCE_KEY
+    TA_USER_INFORMATION_SOURCE_KEY,
 )
+
+
 class ExampleCustomUserContext(UserContextCache):
     def __init__(self):
         self.app_config = AppConfig()
@@ -22,9 +24,11 @@ class ExampleCustomUserContext(UserContextCache):
             db=int(self.app_config.get(TA_REDIS_DB.env_name)),
         )
         self.ttl = int(self.app_config.get(TA_REDIS_TTL.env_name))
-        self.user_information_api_key = self.app_config.get(TA_USER_INFORMATION_SOURCE_KEY.env_name)
+        self.user_information_api_key = self.app_config.get(
+            TA_USER_INFORMATION_SOURCE_KEY.env_name
+        )
 
-    def get_user_context_from_cache(self, user_id:str)-> ContextCacheResponse:
+    def get_user_context_from_cache(self, user_id: str) -> ContextCacheResponse:
         try:
             if self.redis_client.exists(user_id):
                 context_cache = self.redis_client.get(user_id)
@@ -33,17 +37,15 @@ class ExampleCustomUserContext(UserContextCache):
                 if not user_context:
                     return ContextCacheResponse(user_context=None)
                 self.redis_client.set(
-                    name= user_id,
-                    value= json.dumps(user_context),
-                    ex = self.ttl
+                    name=user_id, value=json.dumps(user_context), ex=self.ttl
                 )
-                context_cache= self.redis_client.get(user_id)
-    
-            return ContextCacheResponse(user_context=json.loads(context_cache)) 
+                context_cache = self.redis_client.get(user_id)
+
+            return ContextCacheResponse(user_context=json.loads(context_cache))
         except Exception as e:
             print(f"User context not available. Error message: {e}")
             return ContextCacheResponse(user_context=None)
-    
-    def fetch_user_information(self, user_id:str) -> Dict | None:
+
+    def fetch_user_information(self, user_id: str) -> Dict | None:
         api_key_for_user_information_source = self.user_information_api_key
-        return {"user_id":user_id}
+        return {"user_id": user_id}

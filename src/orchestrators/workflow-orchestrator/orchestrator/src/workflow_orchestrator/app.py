@@ -9,7 +9,9 @@ from ska_utils import get_telemetry, initialize_telemetry
 
 from workflow_orchestrator import WorkflowClient, WorkflowNotFoundException
 from workflow_orchestrator.configs import (
-    configs, TA_SERVICE_CONFIG, TA_WORKFLOW_MODULE,
+    configs,
+    TA_SERVICE_CONFIG,
+    TA_WORKFLOW_MODULE,
 )
 from workflow_orchestrator.middleware import TelemetryMiddleware
 from workflow_orchestrator.wf_types import (

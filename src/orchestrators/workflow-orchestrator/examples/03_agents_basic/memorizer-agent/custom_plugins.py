@@ -30,7 +30,11 @@ RECALL_LIMIT = 5
 
 
 class MemoryPlugin(BasePlugin):
-    def __init__(self, authorization: str | None = None, extra_data_collector: ExtraDataCollector | None = None):
+    def __init__(
+        self,
+        authorization: str | None = None,
+        extra_data_collector: ExtraDataCollector | None = None,
+    ):
         super().__init__(authorization, extra_data_collector)
         self.client = AzureOpenAI(
             api_key=API_KEY,

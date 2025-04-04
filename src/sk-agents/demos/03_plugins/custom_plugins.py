@@ -83,7 +83,7 @@ class WeatherPlugin(BasePlugin):
                 high=response_int.daily.temperature_2m_max[0],
             )
         else:
-            raise ValueError(f"Error retrieving temperature")
+            raise ValueError("Error retrieving temperature")
 
     @kernel_function(
         description="Retrieve the latitude, longitude, and timezone for a given location search string"
@@ -100,4 +100,4 @@ class WeatherPlugin(BasePlugin):
                 timezone=response_int.geonames[0].timezone.timeZoneId,
             )
         else:
-            raise ValueError(f"Error retrieving location coordinates")
+            raise ValueError("Error retrieving location coordinates")

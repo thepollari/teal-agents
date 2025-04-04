@@ -11,7 +11,7 @@ class ConversationManager:
 
     def new_conversation(self, user_id: str, is_resumed: bool) -> Conversation:
         return self.services_client.new_conversation(user_id, is_resumed)
-    
+
     def get_conversation(self, user_id: str, session_id: str) -> Conversation:
         return self.services_client.get_conversation(user_id, session_id)
 
@@ -19,10 +19,14 @@ class ConversationManager:
         return Conversation(
             conversation_id=conversation.conversation_id,
             user_id=conversation.user_id,
-            history=conversation.history[-2:] if len(conversation.history) >= 2 else conversation.history,
-            user_context=conversation.user_context
+            history=(
+                conversation.history[-2:]
+                if len(conversation.history) >= 2
+                else conversation.history
+            ),
+            user_context=conversation.user_context,
         )
-    
+
     def add_user_message(
         self, conversation: Conversation, content: str, recipient: str
     ) -> None:
@@ -104,13 +108,12 @@ class ConversationManager:
             self.add_context_item(conversation, key, value, ContextType.TRANSIENT)
 
     def add_transient_context(
-            self, conversation: Conversation, transient_user_context: Optional[Dict]
+        self, conversation: Conversation, transient_user_context: Optional[Dict]
     ) -> None:
         if transient_user_context:
             transient_context = {}
             for key, value in transient_user_context.items():
                 transient_context[key] = ContextItem(
-                    value=str(value), 
-                    context_type=ContextType.TRANSIENT
+                    value=str(value), context_type=ContextType.TRANSIENT
                 )
             conversation.user_context.update(transient_context)

@@ -33,9 +33,9 @@ initialize_telemetry("Agent-Services", app_config)
 
 # Instance of FastAPI app
 app = FastAPI(
-    openapi_url=f"/services/v1/openapi.json",
-    docs_url=f"/services/v1/docs",
-    redoc_url=f"/services/v1/redoc"
+    openapi_url="/services/v1/openapi.json",
+    docs_url="/services/v1/docs",
+    redoc_url="/services/v1/redoc",
 )
 
 # noinspection PyTypeChecker
@@ -97,7 +97,10 @@ async def verify_ticket(
     )
 
 
-@app.post("/services/v1/{orchestrator_name}/conversation-history", tags=["Conversation History"])
+@app.post(
+    "/services/v1/{orchestrator_name}/conversation-history",
+    tags=["Conversation History"],
+)
 async def new_conversation(
     orchestrator_name: str, payload: NewConversationRequest, request: Request
 ) -> ConversationResponse:
@@ -105,7 +108,11 @@ async def new_conversation(
         orchestrator_name, payload.user_id, payload.is_resumed
     )
 
-@app.get("/services/v1/{orchestrator_name}/conversation-history/{conversation_id}", tags=["Conversation History"])
+
+@app.get(
+    "/services/v1/{orchestrator_name}/conversation-history/{conversation_id}",
+    tags=["Conversation History"],
+)
 async def get_conversation_message(
     orchestrator_name: str, payload: GetConversationRequest, request: Request
 ) -> ConversationResponse:
@@ -113,7 +120,11 @@ async def get_conversation_message(
         orchestrator_name, payload.user_id, payload.session_id
     )
 
-@app.post("/services/v1/{orchestrator_name}/conversation-history/{conversation_id}/messages", tags=["Conversation History"])
+
+@app.post(
+    "/services/v1/{orchestrator_name}/conversation-history/{conversation_id}/messages",
+    tags=["Conversation History"],
+)
 async def add_conversation_message(
     orchestrator_name: str,
     conversation_id: str,
@@ -138,7 +149,10 @@ async def create_context_item(
     return GeneralResponse(status=200, message="Context item added successfully")
 
 
-@app.put("/services/v1/{orchestrator_name}/users/{user_id}/context/{item_key}", tags=["Users"])
+@app.put(
+    "/services/v1/{orchestrator_name}/users/{user_id}/context/{item_key}",
+    tags=["Users"],
+)
 async def update_context_item(
     orchestrator_name: str,
     user_id: str,
@@ -151,7 +165,10 @@ async def update_context_item(
     return GeneralResponse(status=200, message="Context item updated successfully")
 
 
-@app.delete("/services/v1/{orchestrator_name}/users/{user_id}/context/{item_key}", tags=["Users"])
+@app.delete(
+    "/services/v1/{orchestrator_name}/users/{user_id}/context/{item_key}",
+    tags=["Users"],
+)
 async def delete_context_item(
     orchestrator_name: str, user_id: str, item_key: str
 ) -> GeneralResponse:
@@ -167,7 +184,10 @@ async def get_context_items(orchestrator_name: str, user_id: str) -> dict[str, s
     return context_manager.get_context(orchestrator_name, user_id)
 
 
-@app.get("/services/v1/{orchestrator_name}/healthcheck", tags=["Health"], 
-         description="Check the health status of ska services.")
+@app.get(
+    "/services/v1/{orchestrator_name}/healthcheck",
+    tags=["Health"],
+    description="Check the health status of ska services.",
+)
 async def healthcheck():
     return {"status": "healthy"}
