@@ -2,7 +2,8 @@
 ## Authentication
 
 By default, authentication for the assistant orchestrator is not secure and all
-that is required is a request with a payload containing a user ID of the format:
+that is required is the orchestrator name the authentication is performed and a 
+request with a payload containing a user ID of the format:
 
 ```json
 {
@@ -27,6 +28,8 @@ The Authenticator class must implement the following methods:
 * `authenticate` - This method accepts a payload of the defined request payload
   type and returns an instance of `AuthResponse` which contains two fields:
   * `success` (bool) - Whether or not the authentication attempt was successful
+  * `orchestrator_name` (str) - A string identifying the orchestrator the
+  authentication is being performed for
   * `user_id` (str) - A string identifying the authenticated user
 
 This class should always return a response of the specified type and not raise
