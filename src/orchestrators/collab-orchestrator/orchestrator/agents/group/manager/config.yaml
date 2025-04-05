@@ -1,0 +1,56 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  A team manager agent
+service_name: TeamManagerAgent
+version: 0.1
+input_type: ManagerInput
+output_type: ManagerOutput
+spec:
+  agents:
+    - name: default
+      role: Default Agent
+      model: gpt-4o
+      system_prompt: >
+        You are a team manager, responsible for facilitating collaboration
+        amongst your team members as they work to complete a task or answer a
+        question.
+  tasks:
+    - name: action_task
+      task_no: 1
+      description: Create a plan
+      instructions: >
+        The task the team is currently working on or question they're trying to
+        answer is:
+        {{overall_goal}}
+        
+        Your team consists of the following team members:
+        {% for agent in agent_list %}
+        Team Member Name: {{agent.name}}
+        Role/Responsibility Description: {{agent.description}}
+        
+        {% endfor %}
+
+        So far, the team's progress is as follows: 
+        {% for message in conversation %}
+        Task: {{message.task_id}}
+        Performed by: {{message.agent_name}}
+        Instruction: {{message.instructions}}
+        Result: {{message.result}}
+        
+        {% endfor %}
+        
+        Based on the team's progress, identify the next step to be taken.
+        
+        If the team has successfully accomplished the ultimate goal, respond as
+        such and identify the task containing the final result.
+        
+        If, based on the current progress, the team will not be able to achieve
+        the ultimate goal, respond as such and provide a comprehensive
+        explanation as to why this is the case.
+        
+        Otherwise, identify the next step to be taken and which team member
+        should take it. Provide a detailed set of instructions for the
+        selected team member so that they can successfully complete the task.
+        Additionally, assign a unique task ID to the task.
+      agent: default

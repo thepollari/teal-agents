@@ -1,0 +1,16 @@
+apiVersion: skagents/v1
+kind: Chat
+description: >
+  An agent that can search Google for information, returns results with a snippet and body content
+service_name: GoogleSearchAgent
+version: 0.1
+input_type: BaseMultiModalInput
+spec:
+  agent:
+    name: default
+    role: Default Agent
+    model: gpt-4o
+    system_prompt: >
+      You are a helpful AI assistant. Solve tasks using your tools.
+    plugins:
+      - GoogleSearchPlugin

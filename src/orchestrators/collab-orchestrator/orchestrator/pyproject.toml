@@ -1,0 +1,26 @@
+[project]
+name = "collab-orchestrator"
+version = "0.1.0"
+description = "Collaboration orchestrator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi [standard]",
+    "python-dotenv",
+    "requests",
+    "pydantic",
+    "pydantic-yaml",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp-proto-grpc",
+    "ska-utils",
+    "black>=25.1.0",
+    "dapr>=1.15.0",
+]
+
+[tool.uv.sources]
+ska-utils = { path = "../../../../shared/ska_utils" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

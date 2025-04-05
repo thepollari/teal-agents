@@ -1,0 +1,62 @@
+services:
+  aspire:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    ports:
+      - "18888:18888"
+      - "4317:18889"
+  kong:
+    image: kong:3.8
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
+      - "8002:8002"
+      - "8445:8445"
+      - "8003:8003"
+      - "8004:8004"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/kong/declarative/kong.yaml"
+      KONG_PROXY_ACCESS_LOG: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_STATUS_LISTEN: "0.0.0.0:8100"
+      KONG_ADMIN_GUI_URL: "http://localhost:8002"
+    volumes:
+      - ./kong/kong.yaml:/kong/declarative/kong.yaml
+    healthcheck:
+      test: [ "CMD", "kong", "health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+  planning-agent:
+    image: teal-agents:latest
+    ports:
+      - "8101:8000"
+    env_file: "planning-agent.env"
+    volumes:
+      - ./planning-agent:/app/src/sk-agents/agents
+  arxiv-search-agent:
+    image: teal-agents:latest
+    ports:
+      - "8102:8000"
+    env_file: "search-agent.env"
+    volumes:
+      - ./arxiv-search-agent:/app/src/sk-agents/agents
+  assistant-agent:
+    image: teal-agents:latest
+    ports:
+      - "8103:8000"
+    env_file: "task-agent.env"
+    volumes:
+      - ./assistant-agent:/app/src/sk-agents/agents
+  wikipedia-agent:
+    image: teal-agents:latest
+    ports:
+      - "8104:8000"
+    env_file: "search-agent.env"
+    volumes:
+      - ./wikipedia-agent:/app/src/sk-agents/agents

@@ -1,0 +1,18 @@
+apiVersion: skagents/v1
+kind: Chat
+description: >
+  An agent that can search Arxiv for papers related to a given topic, including abstracts
+service_name: ArxivSearchAgent
+version: 0.1
+input_type: BaseMultiModalInput
+spec:
+  agent:
+    name: default
+    role: Default Agent
+    model: gpt-4o
+    system_prompt: >
+      You are a helpful AI assistant. Solve tasks using your tools.
+      Specifically, you can take into consideration the user's request and craft
+      a search query that is most likely to return relevant academic papers.
+    plugins:
+      - ArxivSearchPlugin
