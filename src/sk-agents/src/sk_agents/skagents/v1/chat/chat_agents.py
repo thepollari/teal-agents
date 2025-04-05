@@ -60,7 +60,7 @@ class ChatAgents(BaseHandler):
         chat_history = ChatHistory()
         ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
-        async for content in agent.invoke(chat_history):
+        async for content in agent.invoke_stream(chat_history):
             yield content.content
         if not extra_data_collector.is_empty():
             yield ExtraDataPartial(
