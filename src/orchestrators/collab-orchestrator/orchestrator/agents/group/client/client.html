@@ -4,40 +4,167 @@
     <meta charset="UTF-8">
     <title>Simple Chat SSE</title>
     <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            height: calc(100vh - 40px);
+        }
+        .main-container, .working-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .main-container {
+            width: 66%;
+            margin-right: 20px;
+        }
+        .working-container {
+            width: 33%;
+        }
+        .chat-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
         #mainChat, #workingChat {
+            flex: 1;
             border: 2px solid #444;
             background-color: #f5f5f5;
-            height: 300px;
-            width: 500px;
-            margin-bottom: 10px;
-            padding: 10px;
+            padding: 15px;
             font-family: monospace;
-            border-radius: 4px;
-            /* Add these properties */
+            border-radius: 8px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        #mainChat {
+            margin-bottom: 20px;
+        }
+        .input-container {
+            display: flex;
+            align-items: flex-start;
+            height: 100px;
+        }
+        #userMessage {
+            width: calc(100% - 100px);
+            height: 80px;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        strong {
+            color: #1a73e8;
+        }
+        .user-message {
+            font-weight: bold;
+            color: #333;
+        }
+        .agent-header {
+            cursor: pointer;
+            padding: 10px 10px 10px 30px;
+            background-color: #e3e8f0;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            position: relative;
+        }
+        .agent-header:hover {
+            background-color: #d0d7e6;
+        }
+        .agent-header::before {
+            content: "+";
+            position: absolute;
+            left: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        .agent-header.active::before {
+            content: "-";
+        }
+        .agent-content {
+            display: none;
+            padding: 10px;
+            border-left: 3px solid #4285f4;
+            margin-left: 10px;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .agent-header.active {
+            background-color: #d0d7e6;
         }
     </style>
 </head>
 <body>
-<div id="mainChat"></div>
-<div id="workingChat"></div>
-<input type="text" id="userMessage" placeholder="Type message...">
-<button onclick="sendMessage()">Send</button>
+<div class="main-container">
+    <div class="chat-header">Chat</div>
+    <div id="mainChat"></div>
+    <div class="input-container">
+        <textarea id="userMessage" placeholder="Type message..."></textarea>
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+<div class="working-container">
+    <div class="chat-header">Agent Discussion</div>
+    <div id="workingChat"></div>
+</div>
 
 <script>
     let eventSource;
     let partialBuffer = '';
+    let currentAgentHeader = null;
+    let currentAgentContent = null;
+
+    // Add event listener for textarea submit on Enter
+    document.getElementById('userMessage').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function disableUserInput() {
+        document.getElementById('userMessage').disabled = true;
+        document.getElementById('sendButton').disabled = true;
+    }
+
+    function enableUserInput() {
+        document.getElementById('userMessage').disabled = false;
+        document.getElementById('sendButton').disabled = false;
+    }
 
     function flushPartialBuffer() {
-        if (partialBuffer) {
-            appendToWorkingChat(partialBuffer);
+        if (partialBuffer && currentAgentContent) {
+            currentAgentContent.innerHTML += partialBuffer;
             partialBuffer = '';
             const partialSpan = document.getElementById('partialSpan');
             if (partialSpan) {
                 partialSpan.parentNode.removeChild(partialSpan);
             }
+            currentAgentContent.scrollTop = currentAgentContent.scrollHeight;
         }
     }
 
@@ -47,23 +174,53 @@
         mainChat.scrollTop = mainChat.scrollHeight;
     }
 
-    function appendToWorkingChat(message) {
+    function createAgentSection(agentName, taskGoal) {
+        flushPartialBuffer();
+
         const workingChat = document.getElementById('workingChat');
-        workingChat.innerHTML += message + '<br/>';
+
+        // Create header element
+        const header = document.createElement('div');
+        header.className = 'agent-header';
+        header.innerHTML = `<strong>${agentName}</strong> is performing: ${taskGoal}`;
+
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'agent-content';
+
+        // Add click event to toggle
+        header.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+        });
+
+        workingChat.appendChild(header);
+        workingChat.appendChild(content);
         workingChat.scrollTop = workingChat.scrollHeight;
+
+        currentAgentHeader = header;
+        currentAgentContent = content;
     }
 
     function appendPartialContent(content) {
         partialBuffer += content;
-        const workingChat = document.getElementById('workingChat');
+
+        if (!currentAgentContent) return;
+
         let partialSpan = document.getElementById('partialSpan');
         if (!partialSpan) {
             partialSpan = document.createElement('span');
             partialSpan.id = 'partialSpan';
-            workingChat.appendChild(partialSpan);
+            currentAgentContent.appendChild(partialSpan);
         }
         partialSpan.textContent = partialBuffer;
-        workingChat.scrollTop = workingChat.scrollHeight;
+
+        // Auto-scroll the content container
+        currentAgentContent.scrollTop = currentAgentContent.scrollHeight;
     }
 
     function sendMessage() {
@@ -71,6 +228,12 @@
         const userMessage = messageInput.value.trim();
         if (!userMessage) return;
         messageInput.value = '';
+
+        // Add user message to mainChat with bold indication and extra line breaks
+        appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/><br/>');
+
+        // Disable input until response is complete
+        disableUserInput();
 
         if (eventSource) {
             eventSource.close();
@@ -91,7 +254,10 @@
                 eventSource = new EventSource('http://localhost:8000/GroupChatOrchestrator/0.1/sse/' + sessionId);
                 setupEventHandlers(eventSource);
             })
-            .catch(error => console.log(error));
+            .catch(error => {
+                console.log(error);
+                enableUserInput(); // Re-enable on error
+            });
     }
 
     function setupEventHandlers(source) {
@@ -99,16 +265,17 @@
             flushPartialBuffer();
             const data = JSON.parse(event.data);
             if (data.next_action === 'abort') {
-                appendToMainChat('\\[ABORT\\] ' + data.action_detail.abort_reason);
+                appendToMainChat('[ABORT] ' + data.action_detail.abort_reason);
             } else if (data.next_action === 'provide_result') {
-                appendToMainChat('\\[RESULT\\] ' + data.action_detail.result);
+                appendToMainChat('[RESULT] ' + data.action_detail.result);
             }
         });
 
         source.addEventListener('AGENT_REQUEST', (event) => {
             flushPartialBuffer();
             const data = JSON.parse(event.data);
-            appendToWorkingChat(data.agent_name + ' is performing: ' + data.task_goal);
+            // Create collapsible section for this agent
+            createAgentSection(data.agent_name, data.task_goal);
         });
 
         source.addEventListener('PARTIAL_AGENT_RESPONSE', (event) => {
@@ -123,14 +290,16 @@
         source.addEventListener('FINAL', (event) => {
             flushPartialBuffer();
             const data = JSON.parse(event.data);
-            appendToMainChat('\\[FINAL\\] ' + data.result);
+            appendToMainChat('[FINAL] ' + data.result);
             source.close();
+            enableUserInput(); // Re-enable input after final response
         });
 
         source.onerror = () => {
             flushPartialBuffer();
-            appendToMainChat('\\[Error\\] Connection lost.');
+            appendToMainChat('[Error] Connection lost.');
             source.close();
+            enableUserInput(); // Re-enable input on error
         };
     }
 </script>
