@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat SSE</title>
+    <style>
+        #mainChat, #workingChat {
+            border: 2px solid #444;
+            background-color: #f5f5f5;
+            height: 300px;
+            width: 500px;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 4px;
+            /* Add these properties */
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+<div id="mainChat"></div>
+<div id="workingChat"></div>
+<input type="text" id="userMessage" placeholder="Type message...">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+    let eventSource;
+    let partialBuffer = '';
+
+    function flushPartialBuffer() {
+        if (partialBuffer) {
+            appendToWorkingChat(partialBuffer);
+            partialBuffer = '';
+            const partialSpan = document.getElementById('partialSpan');
+            if (partialSpan) {
+                partialSpan.parentNode.removeChild(partialSpan);
+            }
+        }
+    }
+
+    function appendToMainChat(message) {
+        const mainChat = document.getElementById('mainChat');
+        mainChat.innerHTML += message + '<br/>';
+        mainChat.scrollTop = mainChat.scrollHeight;
+    }
+
+    function appendToWorkingChat(message) {
+        const workingChat = document.getElementById('workingChat');
+        workingChat.innerHTML += message + '<br/>';
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    function appendPartialContent(content) {
+        partialBuffer += content;
+        const workingChat = document.getElementById('workingChat');
+        let partialSpan = document.getElementById('partialSpan');
+        if (!partialSpan) {
+            partialSpan = document.createElement('span');
+            partialSpan.id = 'partialSpan';
+            workingChat.appendChild(partialSpan);
+        }
+        partialSpan.textContent = partialBuffer;
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById('userMessage');
+        const userMessage = messageInput.value.trim();
+        if (!userMessage) return;
+        messageInput.value = '';
+
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        fetch('http://localhost:8000/GroupChatOrchestrator/0.1/sse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_history: [
+                    { role: 'user', content: userMessage }
+                ]
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                const sessionId = data.session_id;
+                eventSource = new EventSource('http://localhost:8000/GroupChatOrchestrator/0.1/sse/' + sessionId);
+                setupEventHandlers(eventSource);
+            })
+            .catch(error => console.log(error));
+    }
+
+    function setupEventHandlers(source) {
+        source.addEventListener('MANAGER_RESPONSE', (event) => {
+            flushPartialBuffer();
+            const data = JSON.parse(event.data);
+            if (data.next_action === 'abort') {
+                appendToMainChat('\\[ABORT\\] ' + data.action_detail.abort_reason);
+            } else if (data.next_action === 'provide_result') {
+                appendToMainChat('\\[RESULT\\] ' + data.action_detail.result);
+            }
+        });
+
+        source.addEventListener('AGENT_REQUEST', (event) => {
+            flushPartialBuffer();
+            const data = JSON.parse(event.data);
+            appendToWorkingChat(data.agent_name + ' is performing: ' + data.task_goal);
+        });
+
+        source.addEventListener('PARTIAL_AGENT_RESPONSE', (event) => {
+            const data = JSON.parse(event.data);
+            appendPartialContent(data.partial_result);
+        });
+
+        source.addEventListener('AGENT_RESPONSE', () => {
+            // No additional actions needed for now
+        });
+
+        source.addEventListener('FINAL', (event) => {
+            flushPartialBuffer();
+            const data = JSON.parse(event.data);
+            appendToMainChat('\\[FINAL\\] ' + data.result);
+            source.close();
+        });
+
+        source.onerror = () => {
+            flushPartialBuffer();
+            appendToMainChat('\\[Error\\] Connection lost.');
+            source.close();
+        };
+    }
+</script>
+</body>
+</html>

@@ -218,3 +218,57 @@ services:
   tags:
     - docs
   write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: host.docker.internal
+  name: GroupChatOrchestrator
+  path: /GroupChatOrchestrator/0.1
+  port: 8100
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: GroupChatOrchestrator
+      path_handling: v0
+      paths:
+        - /GroupChatOrchestrator/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - team-chat-orchestrator
+  tags:
+    - team-chat-orchestrator
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: client
+  name: DemoClient
+  path: /
+  port: 80
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: DemoClient
+      path_handling: v0
+      paths:
+        - /client
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - demo-client
+  tags:
+    - demo-client
+  write_timeout: 60000

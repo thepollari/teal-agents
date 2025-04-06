@@ -60,3 +60,10 @@ services:
     env_file: "search-agent.env"
     volumes:
       - ./wikipedia-agent:/app/src/sk-agents/agents
+  client:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./client/client.html:/usr/share/nginx/html/index.html
+    command: ["nginx", "-g", "daemon off;"]
