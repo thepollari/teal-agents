@@ -137,8 +137,8 @@ class StepExecutor:
             if self.t
             else nullcontext()
         ):
-            aio_tasks = []
-            for task in step.step_tasks:
+
+            async def process_task(task) -> AsyncIterable[str]:
                 yield new_event_response(
                     EventType.AGENT_REQUEST,
                     AgentRequestEvent(
@@ -147,32 +147,31 @@ class StepExecutor:
                         task_goal=task.task_goal,
                     ),
                 )
-                aio_tasks.append(self._execute_task_stream(task))
+                async for result in self._execute_task_stream(task):
+                    yield result
 
-            async def _iterate(
-                async_iterable: AsyncIterable[str], queue: asyncio.Queue[str]
-            ):
-                async for item in async_iterable:
-                    await queue.put(item)
+            streams = [process_task(task) for task in step.step_tasks]
+            async for result in self._merge_async_iterables(streams):
+                yield result
 
-            queue: asyncio.Queue[str] = asyncio.Queue()
-            tasks = [
-                asyncio.create_task(_iterate(iterable, queue)) for iterable in aio_tasks
-            ]
+    async def _merge_async_iterables(
+        self, async_iterables: List[AsyncIterable[str]]
+    ) -> AsyncIterable[str]:
+        async def consume(iterable, queue):
+            async for item in iterable:
+                await queue.put(item)
+            await queue.put(None)  # Signal the end of the iterable
 
-            try:
-                while tasks:
-                    done, pending = await asyncio.wait(
-                        tasks, return_when=asyncio.FIRST_COMPLETED
-                    )
-                    for task in done:
-                        tasks.remove(task)
-                    while not queue.empty():
-                        yield queue.get_nowait()
-            finally:
-                for task in tasks:
-                    task.cancel()  # ensure all tasks are cancelled, in case of early termination.
-                await asyncio.gather(
-                    *[task for task in tasks if not task.cancelled()],
-                    return_exceptions=True,
-                )  # gather cancellations to avoid errors.
+        queue = asyncio.Queue()
+        consumers = [
+            asyncio.create_task(consume(iterable, queue))
+            for iterable in async_iterables
+        ]
+        num_finished = 0
+        while num_finished < len(async_iterables):
+            result = await queue.get()
+            if result is None:
+                num_finished += 1
+            else:
+                yield result
+        await asyncio.gather(*consumers)

@@ -2,7 +2,7 @@ apiVersion: skagents/v1
 kind: PlanningOrchestrator
 description: >
   Group Orchestrator for demo
-service_name: AgentGroupOrchestrator
+service_name: CollaborationOrchestrator
 version: 0.1
 spec:
   planning_agent: PlanningAgent:0.1

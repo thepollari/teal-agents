@@ -2,19 +2,19 @@ _format_version: "3.0"
 services:
 - connect_timeout: 60000
   enabled: true
-  host: planning-agent
-  name: PlanningAgent
-  path: /PlanningAgent/0.1
+  host: manager-agent
+  name: TeamManagerAgent
+  path: /TeamManagerAgent/0.1
   port: 8000
   protocol: http
   read_timeout: 60000
   retries: 5
   routes:
   - https_redirect_status_code: 426
-    name: PlanningAgent
+    name: TeamManagerAgent
     path_handling: v0
     paths:
-    - /PlanningAgent/0.1
+    - /TeamManagerAgent/0.1
     preserve_host: false
     protocols:
     - http
@@ -31,19 +31,19 @@ services:
   write_timeout: 60000
 - connect_timeout: 60000
   enabled: true
-  host: planning-agent
-  name: PlanningAgentDocs
-  path: /PlanningAgent/0.1/openapi.json
+  host: manager-agent
+  name: TeamManagerAgentDocs
+  path: /TeamManagerAgent/0.1/openapi.json
   port: 8000
   protocol: http
   read_timeout: 60000
   retries: 5
   routes:
     - https_redirect_status_code: 426
-      name: PlanningAgentDocs
+      name: TeamManagerAgentDocs
       path_handling: v0
       paths:
-        - /PlanningAgent/0.1/openapi.json
+        - /TeamManagerAgent/0.1/openapi.json
       preserve_host: false
       protocols:
         - http
@@ -206,6 +206,170 @@ services:
       path_handling: v0
       paths:
         - /WikipediaAgent/0.1/openapi.json
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - docs
+  tags:
+    - docs
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: weather-agent
+  name: WeatherAgent
+  path: /WeatherAgent/0.1
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: WeatherAgent
+      path_handling: v0
+      paths:
+        - /WeatherAgent/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - task-agent
+  tags:
+    - task-agent
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: weather-agent
+  name: WeatherAgentDocs
+  path: /WeatherAgent/0.1/openapi.json
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: WeatherAgentDocs
+      path_handling: v0
+      paths:
+        - /WeatherAgent/0.1/openapi.json
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - docs
+  tags:
+    - docs
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: host.docker.internal
+  name: CollaborationOrchestrator
+  path: /CollaborationOrchestrator/0.1
+  port: 8100
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: CollaborationOrchestrator
+      path_handling: v0
+      paths:
+        - /CollaborationOrchestrator/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - team-chat-orchestrator
+  tags:
+    - team-chat-orchestrator
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: client
+  name: DemoClient
+  path: /
+  port: 80
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: DemoClient
+      path_handling: v0
+      paths:
+        - /client
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - demo-client
+  tags:
+    - demo-client
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: planning-agent
+  name: PlanningAgent
+  path: /PlanningAgent/0.1
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: PlanningAgent
+      path_handling: v0
+      paths:
+        - /PlanningAgent/0.1
+      preserve_host: false
+      protocols:
+        - http
+      regex_priority: 0
+      request_buffering: true
+      response_buffering: true
+      strip_path: true
+      tags:
+        - planning-agent
+        - structured
+  tags:
+    - planning-agent
+    - structured
+  write_timeout: 60000
+- connect_timeout: 60000
+  enabled: true
+  host: planning-agent
+  name: PlanningAgentDocs
+  path: /PlanningAgent/0.1/openapi.json
+  port: 8000
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+    - https_redirect_status_code: 426
+      name: PlanningAgentDocs
+      path_handling: v0
+      paths:
+        - /PlanningAgent/0.1/openapi.json
       preserve_host: false
       protocols:
         - http

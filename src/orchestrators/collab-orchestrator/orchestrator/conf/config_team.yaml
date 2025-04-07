@@ -2,7 +2,7 @@ apiVersion: skagents/v1
 kind: TeamOrchestrator
 description: >
   Group Chat Orchestrator for demo
-service_name: GroupChatOrchestrator
+service_name: CollaborationOrchestrator
 version: 0.1
 spec:
   max_rounds: 10
