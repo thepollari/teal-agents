@@ -7,7 +7,7 @@ from collab_orchestrator.agents import (
     BaseAgent,
     TaskAgent,
 )
-from collab_orchestrator.co_types import BaseConfig
+from collab_orchestrator.co_types import BaseConfig, ChatHistory
 from ska_utils import Telemetry
 
 
@@ -33,5 +33,5 @@ class KindHandler(ABC):
         pass
 
     @abstractmethod
-    async def invoke(self, request: str) -> AsyncIterable:
+    async def invoke(self, chat_history: ChatHistory, request: str) -> AsyncIterable:
         pass

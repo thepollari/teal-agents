@@ -12,6 +12,7 @@ from collab_orchestrator.co_types import (
     new_event_response,
     EventType,
     ErrorResponse,
+    ChatHistory,
 )
 from collab_orchestrator.co_types import KindHandler
 from collab_orchestrator.team_handler.conversation import Conversation
@@ -80,7 +81,7 @@ class TeamHandler(KindHandler):
         self.max_rounds = spec.max_rounds
         self.task_executor = TaskExecutor(self.task_agents)
 
-    async def invoke(self, request: str) -> AsyncIterable:
+    async def invoke(self, chat_history: ChatHistory, request: str) -> AsyncIterable:
         with (
             self.t.tracer.start_as_current_span(
                 name="invoke-sse", attributes={"goal": request}
@@ -98,7 +99,10 @@ class TeamHandler(KindHandler):
                 ):
                     try:
                         manager_output = await self.manager_agent.determine_next_action(
-                            request, self.task_agents_bases, conversation.messages
+                            chat_history,
+                            request,
+                            self.task_agents_bases,
+                            conversation.messages,
                         )
                     except Exception as e:
                         yield new_event_response(
