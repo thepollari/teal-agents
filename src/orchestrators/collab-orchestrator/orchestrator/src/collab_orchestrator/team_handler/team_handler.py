@@ -13,6 +13,8 @@ from collab_orchestrator.co_types import (
     EventType,
     ErrorResponse,
     ChatHistory,
+    FinalResult,
+    AbortResult,
 )
 from collab_orchestrator.co_types import KindHandler
 from collab_orchestrator.team_handler.conversation import Conversation
@@ -22,22 +24,7 @@ from collab_orchestrator.team_handler.manager_agent import (
 )
 from collab_orchestrator.team_handler.task_executor import TaskExecutor
 from collab_orchestrator.team_handler.types import TeamSpec
-from pydantic import BaseModel
 from ska_utils import Telemetry
-
-
-class FinalResult(BaseModel):
-    result: str
-
-
-class AbortResult(BaseModel):
-    abort_reason: str
-
-
-class TaskResult(BaseModel):
-    task_id: str
-    instructions: str
-    result: str
 
 
 class TeamHandler(KindHandler):

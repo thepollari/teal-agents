@@ -5,25 +5,15 @@ from typing import AsyncIterable, List, Dict
 import aiohttp
 from collab_orchestrator.agents import TaskAgent
 from collab_orchestrator.agents.task_agent import PreRequisite
-from collab_orchestrator.co_types import new_event_response, EventType
+from collab_orchestrator.co_types import (
+    new_event_response,
+    EventType,
+    AgentResponseEvent,
+    PartialAgentResponseEvent,
+    AgentRequestEvent,
+)
 from collab_orchestrator.planning_handler.plan import ExecutableTask, TaskStatus, Step
-from pydantic import BaseModel
 from ska_utils import get_telemetry
-
-
-class AgentRequestEvent(BaseModel):
-    agent_name: str
-    task_goal: str
-
-
-class AgentResponseEvent(BaseModel):
-    agent_name: str
-    task_result: str
-
-
-class PartialAgentResponseEvent(BaseModel):
-    agent_name: str
-    partial_result: str
 
 
 class StepExecutor:
@@ -67,7 +57,9 @@ class StepExecutor:
             task.status = TaskStatus.DONE
             self.task_accumulator[task.task_id] = task
             return AgentResponseEvent(
-                agent_name=task.task_agent, task_result=task_result
+                task_id=task.task_id,
+                agent_name=task.task_agent,
+                task_result=task_result,
             )
 
     async def _execute_task_stream(self, task: ExecutableTask) -> AsyncIterable[str]:
@@ -95,7 +87,9 @@ class StepExecutor:
                 yield new_event_response(
                     EventType.PARTIAL_AGENT_RESPONSE,
                     PartialAgentResponseEvent(
-                        agent_name=task.task_agent, partial_result=content
+                        task_id=task.task_id,
+                        agent_name=task.task_agent,
+                        partial_result=content,
                     ),
                 )
                 task_result = f"{task_result}{content}"
@@ -104,7 +98,11 @@ class StepExecutor:
             self.task_accumulator[task.task_id] = task
             yield new_event_response(
                 EventType.AGENT_RESPONSE,
-                AgentResponseEvent(agent_name=task.task_agent, task_result=task_result),
+                AgentResponseEvent(
+                    task_id=task.task_id,
+                    agent_name=task.task_agent,
+                    task_result=task_result,
+                ),
             )
 
     async def execute_step(self, step: Step) -> AsyncIterable[str]:
@@ -121,7 +119,9 @@ class StepExecutor:
                     yield new_event_response(
                         EventType.AGENT_REQUEST,
                         AgentRequestEvent(
-                            agent_name=task.task_agent, task_goal=task.task_goal
+                            task_id=task.task_id,
+                            agent_name=task.task_agent,
+                            task_goal=task.task_goal,
                         ),
                     )
                     aio_tasks.append(self._execute_task(session, task))
@@ -137,40 +137,41 @@ class StepExecutor:
             if self.t
             else nullcontext()
         ):
-            aio_tasks = []
-            for task in step.step_tasks:
+
+            async def process_task(task) -> AsyncIterable[str]:
                 yield new_event_response(
                     EventType.AGENT_REQUEST,
                     AgentRequestEvent(
-                        agent_name=task.task_agent, task_goal=task.task_goal
+                        task_id=task.task_id,
+                        agent_name=task.task_agent,
+                        task_goal=task.task_goal,
                     ),
                 )
-                aio_tasks.append(self._execute_task_stream(task))
+                async for result in self._execute_task_stream(task):
+                    yield result
 
-            async def _iterate(
-                async_iterable: AsyncIterable[str], queue: asyncio.Queue[str]
-            ):
-                async for item in async_iterable:
-                    await queue.put(item)
+            streams = [process_task(task) for task in step.step_tasks]
+            async for result in self._merge_async_iterables(streams):
+                yield result
 
-            queue: asyncio.Queue[str] = asyncio.Queue()
-            tasks = [
-                asyncio.create_task(_iterate(iterable, queue)) for iterable in aio_tasks
-            ]
+    async def _merge_async_iterables(
+        self, async_iterables: List[AsyncIterable[str]]
+    ) -> AsyncIterable[str]:
+        async def consume(iterable, queue):
+            async for item in iterable:
+                await queue.put(item)
+            await queue.put(None)  # Signal the end of the iterable
 
-            try:
-                while tasks:
-                    done, pending = await asyncio.wait(
-                        tasks, return_when=asyncio.FIRST_COMPLETED
-                    )
-                    for task in done:
-                        tasks.remove(task)
-                    while not queue.empty():
-                        yield queue.get_nowait()
-            finally:
-                for task in tasks:
-                    task.cancel()  # ensure all tasks are cancelled, in case of early termination.
-                await asyncio.gather(
-                    *[task for task in tasks if not task.cancelled()],
-                    return_exceptions=True,
-                )  # gather cancellations to avoid errors.
+        queue = asyncio.Queue()
+        consumers = [
+            asyncio.create_task(consume(iterable, queue))
+            for iterable in async_iterables
+        ]
+        num_finished = 0
+        while num_finished < len(async_iterables):
+            result = await queue.get()
+            if result is None:
+                num_finished += 1
+            else:
+                yield result
+        await asyncio.gather(*consumers)

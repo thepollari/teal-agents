@@ -43,6 +43,7 @@
         #mainChat {
             margin-bottom: 20px;
             white-space: normal;
+            position: relative;
         }
         #workingChat {
             white-space: pre-wrap;
@@ -155,12 +156,76 @@
         .agent-header.active {
             background-color: #d0d7e6;
         }
+        /* Nested plan styles */
+        .plan-container {
+            margin-left: 20px;
+        }
+        .step-header {
+            cursor: pointer;
+            padding: 8px 8px 8px 25px;
+            background-color: #e8f0e3;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            position: relative;
+        }
+        .step-header::before {
+            content: "+";
+            position: absolute;
+            left: 10px;
+            font-weight: bold;
+            color: #34a853;
+        }
+        .step-header.active::before {
+            content: "-";
+        }
+        .step-content {
+            display: none;
+            padding: 10px;
+            border-left: 2px solid #34a853;
+            margin-left: 10px;
+            margin-bottom: 10px;
+        }
+        .task-item {
+            padding: 5px;
+            border-left: 2px solid #fbbc05;
+            margin-bottom: 5px;
+        }
+        /* Loading indicator styles */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 8px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(66, 133, 244, 0.2);
+            border-radius: 50%;
+            border-top-color: #4285f4;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
 <div class="main-container">
     <div class="chat-header">Chat</div>
-    <div id="mainChat"></div>
+    <div id="mainChat">
+        <div class="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+    </div>
     <div class="input-container">
         <textarea id="userMessage" placeholder="Type message..."></textarea>
         <button id="sendButton" onclick="sendMessage()">Send</button>
@@ -173,9 +238,8 @@
 
 <script>
     let eventSource;
-    let partialBuffer = '';
-    let currentAgentHeader = null;
-    let currentAgentContent = null;
+    // Task tracking - map task_id to agent info and DOM elements
+    let tasks = {};
 
     // Initialize marked for Markdown rendering
     marked.setOptions({
@@ -192,6 +256,16 @@
         }
     });
 
+    function showLoadingIndicator() {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        loadingOverlay.style.display = 'flex';
+    }
+
+    function hideLoadingIndicator() {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        loadingOverlay.style.display = 'none';
+    }
+
     function disableUserInput() {
         document.getElementById('userMessage').disabled = true;
         document.getElementById('sendButton').disabled = true;
@@ -202,15 +276,24 @@
         document.getElementById('sendButton').disabled = false;
     }
 
-    function flushPartialBuffer() {
-        if (partialBuffer && currentAgentContent) {
-            currentAgentContent.innerHTML += partialBuffer;
-            partialBuffer = '';
-            const partialSpan = document.getElementById('partialSpan');
-            if (partialSpan) {
-                partialSpan.parentNode.removeChild(partialSpan);
-            }
-            currentAgentContent.scrollTop = currentAgentContent.scrollHeight;
+    function flushPartialBuffer(taskId) {
+        const task = tasks[taskId];
+        if (!task || !task.partialBuffer) return;
+
+        task.content.innerHTML += task.partialBuffer;
+        task.partialBuffer = '';
+
+        const partialSpan = task.content.querySelector('.partialSpan');
+        if (partialSpan) {
+            partialSpan.parentNode.removeChild(partialSpan);
+        }
+
+        task.content.scrollTop = task.content.scrollHeight;
+    }
+
+    function flushAllPartialBuffers() {
+        for (const taskId in tasks) {
+            flushPartialBuffer(taskId);
         }
     }
 
@@ -241,8 +324,11 @@
         mainChat.scrollTop = mainChat.scrollHeight;
     }
 
-    function createAgentSection(agentName, taskGoal) {
-        flushPartialBuffer();
+    function createAgentSection(taskId, agentName, taskGoal) {
+        // Flush any existing buffers for this task if it exists
+        if (tasks[taskId]) {
+            flushPartialBuffer(taskId);
+        }
 
         const workingChat = document.getElementById('workingChat');
 
@@ -269,19 +355,24 @@
         workingChat.appendChild(content);
         workingChat.scrollTop = workingChat.scrollHeight;
 
-        currentAgentHeader = header;
-        currentAgentContent = content;
+        // Store task information
+        tasks[taskId] = {
+            header: header,
+            content: content,
+            partialBuffer: '',
+            agentName: agentName
+        };
     }
 
     function createManagerResultSection(result) {
-        flushPartialBuffer();
+        flushAllPartialBuffers();
 
         const workingChat = document.getElementById('workingChat');
 
         // Create header element
         const header = document.createElement('div');
         header.className = 'agent-header active';
-        header.innerHTML = `<strong>TeamManagerAgent:0.1</strong> is providing result`;
+        header.innerHTML = `<strong>Orchestrator</strong> is providing result`;
 
         // Create content container
         const content = document.createElement('div');
@@ -304,21 +395,97 @@
         workingChat.scrollTop = workingChat.scrollHeight;
     }
 
-    function appendPartialContent(content) {
-        partialBuffer += content;
+    function displayPlan(planData) {
+        flushAllPartialBuffers();
 
-        if (!currentAgentContent) return;
+        const workingChat = document.getElementById('workingChat');
 
-        let partialSpan = document.getElementById('partialSpan');
+        // Create header element for the plan
+        const planHeader = document.createElement('div');
+        planHeader.className = 'agent-header active';
+        planHeader.innerHTML = `<strong>Orchestrator</strong> developed the following plan`;
+
+        // Create content container for the plan
+        const planContent = document.createElement('div');
+        planContent.className = 'agent-content';
+        planContent.style.display = 'block';
+
+        // Create plan container
+        const planContainer = document.createElement('div');
+        planContainer.className = 'plan-container';
+
+        // Add steps to the plan
+        planData.steps.forEach(step => {
+            // Create step header
+            const stepHeader = document.createElement('div');
+            stepHeader.className = 'step-header';
+            stepHeader.innerHTML = `Step ${step.step_number}`;
+
+            // Create step content
+            const stepContent = document.createElement('div');
+            stepContent.className = 'step-content';
+
+            // Add tasks to the step
+            step.step_tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <div><strong>Task ID:</strong> ${task.task_id}</div>
+                    <div><strong>Goal:</strong> ${task.task_goal}</div>
+                    <div><strong>Agent:</strong> ${task.task_agent}</div>
+                    ${task.prerequisite_tasks.length > 0 ?
+                    `<div><strong>Prerequisites:</strong> ${task.prerequisite_tasks.join(', ')}</div>` : ''}
+                `;
+                stepContent.appendChild(taskItem);
+            });
+
+            // Add toggle functionality to step header
+            stepHeader.addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (stepContent.style.display === 'block') {
+                    stepContent.style.display = 'none';
+                } else {
+                    stepContent.style.display = 'block';
+                }
+            });
+
+            planContainer.appendChild(stepHeader);
+            planContainer.appendChild(stepContent);
+        });
+
+        planContent.appendChild(planContainer);
+
+        // Add toggle functionality to plan header
+        planHeader.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (planContent.style.display === 'block') {
+                planContent.style.display = 'none';
+            } else {
+                planContent.style.display = 'block';
+            }
+        });
+
+        workingChat.appendChild(planHeader);
+        workingChat.appendChild(planContent);
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    function appendPartialContent(taskId, content) {
+        if (!tasks[taskId]) return;
+
+        tasks[taskId].partialBuffer += content;
+
+        let partialSpan = tasks[taskId].content.querySelector('.partialSpan');
         if (!partialSpan) {
             partialSpan = document.createElement('span');
-            partialSpan.id = 'partialSpan';
-            currentAgentContent.appendChild(partialSpan);
+            partialSpan.className = 'partialSpan';
+            tasks[taskId].content.appendChild(partialSpan);
         }
-        partialSpan.textContent = partialBuffer;
+
+        partialSpan.textContent = tasks[taskId].partialBuffer;
 
         // Auto-scroll the content container
-        currentAgentContent.scrollTop = currentAgentContent.scrollHeight;
+        tasks[taskId].content.scrollTop = tasks[taskId].content.scrollHeight;
     }
 
     function sendMessage() {
@@ -332,12 +499,18 @@
 
         // Disable input until response is complete
         disableUserInput();
+        showLoadingIndicator();
 
         if (eventSource) {
             eventSource.close();
         }
 
-        fetch('http://localhost:8000/GroupChatOrchestrator/0.1/sse', {
+        // Clear tasks for a new conversation
+        tasks = {};
+        const workingChat = document.getElementById('workingChat');
+        workingChat.innerHTML = '';
+
+        fetch('http://localhost:8000/CollaborationOrchestrator/0.1/sse', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -349,21 +522,28 @@
             .then(response => response.json())
             .then(data => {
                 const sessionId = data.session_id;
-                eventSource = new EventSource('http://localhost:8000/GroupChatOrchestrator/0.1/sse/' + sessionId);
+                eventSource = new EventSource('http://localhost:8000/CollaborationOrchestrator/0.1/sse/' + sessionId);
                 setupEventHandlers(eventSource);
             })
             .catch(error => {
                 console.log(error);
-                enableUserInput(); // Re-enable on error
+                enableUserInput();
+                hideLoadingIndicator();
             });
     }
 
     function setupEventHandlers(source) {
+        source.addEventListener('PLAN', (event) => {
+            const data = JSON.parse(event.data);
+            displayPlan(data);
+        });
+
         source.addEventListener('MANAGER_RESPONSE', (event) => {
-            flushPartialBuffer();
+            flushAllPartialBuffers();
             const data = JSON.parse(event.data);
             if (data.next_action === 'abort') {
                 appendToMainChat('[ABORT] ' + data.action_detail.abort_reason);
+                hideLoadingIndicator();
             } else if (data.next_action === 'provide_result') {
                 // Move the result to the workingChat instead of mainChat
                 createManagerResultSection(data.action_detail.result);
@@ -371,34 +551,38 @@
         });
 
         source.addEventListener('AGENT_REQUEST', (event) => {
-            flushPartialBuffer();
             const data = JSON.parse(event.data);
-            // Create collapsible section for this agent
-            createAgentSection(data.agent_name, data.task_goal);
+            // Create collapsible section for this agent using task_id
+            createAgentSection(data.task_id, data.agent_name, data.task_goal);
         });
 
         source.addEventListener('PARTIAL_AGENT_RESPONSE', (event) => {
             const data = JSON.parse(event.data);
-            appendPartialContent(data.partial_result);
+            // Append to the correct task's content by task_id
+            appendPartialContent(data.task_id, data.partial_result);
         });
 
-        source.addEventListener('AGENT_RESPONSE', () => {
-            // No additional actions needed for now
+        source.addEventListener('AGENT_RESPONSE', (event) => {
+            const data = JSON.parse(event.data);
+            // Flush the buffer for this specific task
+            flushPartialBuffer(data.task_id);
         });
 
         source.addEventListener('FINAL', (event) => {
-            flushPartialBuffer();
+            flushAllPartialBuffers();
             const data = JSON.parse(event.data);
-            appendToMainChat('<span class="user-message">Assistant:</span> ' + data.result);
+            appendToMainChat('<span class="user-message">Assistant:</span><br/> ' + data.result);
             source.close();
-            enableUserInput(); // Re-enable input after final response
+            enableUserInput();
+            hideLoadingIndicator();
         });
 
         source.onerror = () => {
-            flushPartialBuffer();
+            flushAllPartialBuffers();
             appendToMainChat('[Error] Connection lost.');
             source.close();
-            enableUserInput(); // Re-enable input on error
+            enableUserInput();
+            hideLoadingIndicator();
         };
     }
 </script>

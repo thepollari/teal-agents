@@ -1,6 +1,7 @@
 from typing import List
 
 from collab_orchestrator.agents import BaseAgent
+from collab_orchestrator.co_types import ChatHistory
 from collab_orchestrator.planning_handler.plan import Plan
 from collab_orchestrator.planning_handler.planning_agent import PlanningAgent
 
@@ -15,11 +16,12 @@ class PlanManager:
 
     async def generate_plan(
         self,
+        chat_history: ChatHistory,
         overall_goal: str,
         task_agents: List[BaseAgent],
     ) -> Plan:
         gen_plan_response = await self.planning_agent.generate_plan(
-            overall_goal, task_agents
+            chat_history, overall_goal, task_agents
         )
         if not gen_plan_response.can_succeed:
             raise PlanningFailedException(

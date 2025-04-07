@@ -1,5 +1,6 @@
 from typing import List
 
+from sk_agents.ska_types import HistoryMessage
 from pydantic import BaseModel
 from semantic_kernel.kernel_pydantic import KernelBaseModel
 
@@ -10,6 +11,7 @@ class Agent(BaseModel):
 
 
 class PlanningAgentInput(KernelBaseModel):
+    chat_history: List[HistoryMessage] | None = None
     overall_goal: str
     agent_list: List[Agent]
 

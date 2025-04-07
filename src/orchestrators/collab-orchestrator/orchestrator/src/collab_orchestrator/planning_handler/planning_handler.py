@@ -12,6 +12,9 @@ from collab_orchestrator.co_types import (
     new_event_response,
     EventType,
     ErrorResponse,
+    ChatHistory,
+    AbortResult,
+    FinalResult,
 )
 from collab_orchestrator.co_types import KindHandler
 from collab_orchestrator.planning_handler.plan_manager import (
@@ -53,7 +56,7 @@ class PlanningHandler(KindHandler):
         )
         self.plan_manager = PlanManager(self.planning_agent)
 
-    async def invoke(self, request: str) -> AsyncIterable:
+    async def invoke(self, chat_history: ChatHistory, request: str) -> AsyncIterable:
         with (
             self.t.tracer.start_as_current_span(
                 name="invoke-sse", attributes={"goal": request}
@@ -68,11 +71,13 @@ class PlanningHandler(KindHandler):
             ):
                 try:
                     plan = await self.plan_manager.generate_plan(
-                        overall_goal=request, task_agents=self.task_agents_bases
+                        chat_history=chat_history,
+                        overall_goal=request,
+                        task_agents=self.task_agents_bases,
                     )
                 except PlanningFailedException as e:
                     yield new_event_response(
-                        EventType.ERROR, ErrorResponse(status_code=400, detail=str(e))
+                        EventType.ERROR, AbortResult(abort_reason=e.args[0])
                     )
                     return
                 except Exception as e:
@@ -90,7 +95,7 @@ class PlanningHandler(KindHandler):
                 step_executor = StepExecutor(self.task_agents)
                 for step in plan.steps:
                     try:
-                        async for result in step_executor.execute_step(step):
+                        async for result in step_executor.execute_step_stream(step):
                             yield result
                     except Exception as e:
                         yield new_event_response(
@@ -98,4 +103,6 @@ class PlanningHandler(KindHandler):
                             ErrorResponse(status_code=500, detail=str(e)),
                         )
 
-            yield new_event_response(EventType.FINAL, plan.steps[-1].step_tasks[0])
+            yield new_event_response(
+                EventType.FINAL, FinalResult(result=plan.steps[-1].step_tasks[0].result)
+            )
