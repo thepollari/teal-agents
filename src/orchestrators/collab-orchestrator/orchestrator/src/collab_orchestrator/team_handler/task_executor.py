@@ -2,25 +2,15 @@ from contextlib import nullcontext
 from typing import List, AsyncIterable
 
 from collab_orchestrator.agents import TaskAgent
+from collab_orchestrator.co_types import (
+    new_event_response,
+    EventType,
+    AgentRequestEvent,
+    PartialAgentResponseEvent,
+    AgentResponseEvent,
+)
 from collab_orchestrator.team_handler.conversation import Conversation
 from ska_utils import get_telemetry
-from collab_orchestrator.co_types import new_event_response, EventType
-from pydantic import BaseModel
-
-
-class AgentRequestEvent(BaseModel):
-    agent_name: str
-    task_goal: str
-
-
-class AgentResponseEvent(BaseModel):
-    agent_name: str
-    task_result: str
-
-
-class PartialAgentResponseEvent(BaseModel):
-    agent_name: str
-    partial_result: str
 
 
 class TaskExecutor:
@@ -51,7 +41,9 @@ class TaskExecutor:
 
             yield new_event_response(
                 EventType.AGENT_REQUEST,
-                AgentRequestEvent(agent_name=agent_name, task_goal=instructions),
+                AgentRequestEvent(
+                    task_id=task_id, agent_name=agent_name, task_goal=instructions
+                ),
             )
 
             task_result = ""
@@ -61,12 +53,14 @@ class TaskExecutor:
                 yield new_event_response(
                     EventType.PARTIAL_AGENT_RESPONSE,
                     PartialAgentResponseEvent(
-                        agent_name=agent_name, partial_result=content
+                        task_id=task_id, agent_name=agent_name, partial_result=content
                     ),
                 )
                 task_result = f"{task_result}{content}"
             conversation.add_item(task_id, agent_name, instructions, task_result)
             yield new_event_response(
                 EventType.AGENT_RESPONSE,
-                AgentResponseEvent(agent_name=agent_name, task_result=task_result),
+                AgentResponseEvent(
+                    task_id=task_id, agent_name=agent_name, task_result=task_result
+                ),
             )

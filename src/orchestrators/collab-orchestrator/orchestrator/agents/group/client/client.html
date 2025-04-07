@@ -389,7 +389,7 @@
         source.addEventListener('FINAL', (event) => {
             flushPartialBuffer();
             const data = JSON.parse(event.data);
-            appendToMainChat('<span class="user-message">Assistant:</span> ' + data.result);
+            appendToMainChat('<span class="user-message">Assistant:</span><br/> ' + data.result);
             source.close();
             enableUserInput(); // Re-enable input after final response
         });
