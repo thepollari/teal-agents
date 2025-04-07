@@ -1,5 +1,6 @@
 import uuid
 from contextlib import nullcontext
+from copy import deepcopy
 from typing import List, Dict
 
 from collab_orchestrator.agents import (
@@ -95,7 +96,7 @@ async def initialize():
 app = FastAPI()
 app.add_event_handler("startup", initialize)
 
-session_cache: Dict[str, str] = {}
+session_cache: Dict[str, ChatHistory] = {}
 
 
 @app.post(f"/{config.service_name}/{config.version}/sse")
@@ -109,11 +110,11 @@ async def invoke_sse(chat_history: ChatHistory):
 
     if not chat_history:
         raise HTTPException(status_code=400, detail="Chat history is required")
-    if chat_history.chat_history[0].role != "user":
+    if chat_history.chat_history[-1].role != "user":
         raise HTTPException(status_code=400, detail="First message must be from user")
 
     session_id = str(uuid.uuid4())
-    session_cache[session_id] = chat_history.chat_history[0].content
+    session_cache[session_id] = chat_history
 
     return {"session_id": session_id}
 
@@ -129,7 +130,10 @@ async def get_sse_response(session_id: str):
     if session_id not in session_cache:
         raise HTTPException(status_code=400, detail="Session ID not found")
 
+    chat_history = deepcopy(session_cache[session_id])
+    request = chat_history.chat_history.pop()
+
     return StreamingResponse(
-        handler.invoke(session_cache[session_id]),
+        handler.invoke(chat_history, request.content),
         media_type="text/event-stream",
     )

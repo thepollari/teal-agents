@@ -4,6 +4,7 @@ from typing import List
 import aiohttp
 from collab_orchestrator.agents import BaseAgent
 from collab_orchestrator.agents.invokable_agent import InvokableAgent
+from collab_orchestrator.co_types import ChatHistory, ChatHistoryItem
 from pydantic import BaseModel
 
 
@@ -20,6 +21,7 @@ class ConversationMessage(BaseModel):
 
 
 class ManagerInput(BaseModel):
+    chat_history: List[ChatHistoryItem] | None = None
     overall_goal: str
     agent_list: List[TeamBaseAgent]
     conversation: List[ConversationMessage] | None = None
@@ -54,6 +56,7 @@ class ManagerOutput(BaseModel):
 class ManagerAgent(InvokableAgent):
     async def determine_next_action(
         self,
+        chat_history: ChatHistory,
         overall_goal: str,
         task_agents: List[BaseAgent],
         conversation: List[ConversationMessage],
@@ -65,6 +68,7 @@ class ManagerAgent(InvokableAgent):
             for agent in task_agents
         ]
         request = ManagerInput(
+            chat_history=chat_history.chat_history,
             overall_goal=overall_goal,
             agent_list=team_task_agents,
             conversation=conversation,

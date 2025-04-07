@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Simple Chat SSE</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -36,12 +37,48 @@
             font-family: monospace;
             border-radius: 8px;
             overflow-y: auto;
-            white-space: pre-wrap;
             word-wrap: break-word;
             box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
         #mainChat {
             margin-bottom: 20px;
+            white-space: normal;
+        }
+        #workingChat {
+            white-space: pre-wrap;
+        }
+        /* Markdown styles */
+        #mainChat code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        #mainChat pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        #mainChat pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        #mainChat blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 10px;
+            color: #555;
+            margin-left: 0;
+        }
+        #mainChat h1, #mainChat h2, #mainChat h3, #mainChat h4 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+        #mainChat p {
+            margin-bottom: 1em;
+        }
+        #mainChat ul, #mainChat ol {
+            padding-left: 20px;
         }
         .input-container {
             display: flex;
@@ -80,6 +117,8 @@
         .user-message {
             font-weight: bold;
             color: #333;
+            margin-bottom: 10px;
+            display: block;
         }
         .agent-header {
             cursor: pointer;
@@ -138,6 +177,13 @@
     let currentAgentHeader = null;
     let currentAgentContent = null;
 
+    // Initialize marked for Markdown rendering
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: false
+    });
+
     // Add event listener for textarea submit on Enter
     document.getElementById('userMessage').addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -170,7 +216,28 @@
 
     function appendToMainChat(message) {
         const mainChat = document.getElementById('mainChat');
-        mainChat.innerHTML += message + '<br/>';
+
+        // Check if the message is a user message
+        if (message.includes('<span class="user-message">User:</span>')) {
+            // Don't parse user messages as markdown
+            mainChat.innerHTML += message + '<br/>';
+        } else {
+            // For system messages, parse markdown content
+            // Extract the message type prefix (like [ABORT], [FINAL], etc.)
+            const prefixMatch = message.match(/^\[([A-Z]+)\]\s/);
+            let prefix = '';
+            let content = message;
+
+            if (prefixMatch) {
+                prefix = prefixMatch[0];
+                content = message.substring(prefix.length);
+            }
+
+            // Parse markdown for the content
+            const parsedContent = marked.parse(content);
+            mainChat.innerHTML += prefix + parsedContent + '<br/>';
+        }
+
         mainChat.scrollTop = mainChat.scrollHeight;
     }
 
@@ -182,7 +249,7 @@
         // Create header element
         const header = document.createElement('div');
         header.className = 'agent-header';
-        header.innerHTML = `<strong>${agentName}</strong> is performing: ${taskGoal}`;
+        header.innerHTML = `Request to <strong>${agentName}</strong>: ${taskGoal}`;
 
         // Create content container
         const content = document.createElement('div');
@@ -204,6 +271,37 @@
 
         currentAgentHeader = header;
         currentAgentContent = content;
+    }
+
+    function createManagerResultSection(result) {
+        flushPartialBuffer();
+
+        const workingChat = document.getElementById('workingChat');
+
+        // Create header element
+        const header = document.createElement('div');
+        header.className = 'agent-header active';
+        header.innerHTML = `<strong>TeamManagerAgent:0.1</strong> is providing result`;
+
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'agent-content';
+        content.style.display = 'block';
+        content.textContent = result;
+
+        // Add click event to toggle
+        header.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+        });
+
+        workingChat.appendChild(header);
+        workingChat.appendChild(content);
+        workingChat.scrollTop = workingChat.scrollHeight;
     }
 
     function appendPartialContent(content) {
@@ -230,7 +328,7 @@
         messageInput.value = '';
 
         // Add user message to mainChat with bold indication and extra line breaks
-        appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/><br/>');
+        appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/>');
 
         // Disable input until response is complete
         disableUserInput();
@@ -267,7 +365,8 @@
             if (data.next_action === 'abort') {
                 appendToMainChat('[ABORT] ' + data.action_detail.abort_reason);
             } else if (data.next_action === 'provide_result') {
-                appendToMainChat('[RESULT] ' + data.action_detail.result);
+                // Move the result to the workingChat instead of mainChat
+                createManagerResultSection(data.action_detail.result);
             }
         });
 
@@ -290,7 +389,7 @@
         source.addEventListener('FINAL', (event) => {
             flushPartialBuffer();
             const data = JSON.parse(event.data);
-            appendToMainChat('[FINAL] ' + data.result);
+            appendToMainChat('<span class="user-message">Assistant:</span> ' + data.result);
             source.close();
             enableUserInput(); // Re-enable input after final response
         });
