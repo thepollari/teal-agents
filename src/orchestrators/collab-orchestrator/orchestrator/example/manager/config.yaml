@@ -40,7 +40,10 @@ spec:
         
         {% endfor %}
         
-        Based on the team's progress, identify the next step to be taken.
+        Based on the team's progress, identify the next step to be taken. As
+        you're deciding on the course of action, reflect on the overall goal and
+        decide if you've adequately addressed it, or if additional steps are
+        needed.
         
         If the team has successfully accomplished the ultimate goal, respond as
         such and identify the task containing the final result.

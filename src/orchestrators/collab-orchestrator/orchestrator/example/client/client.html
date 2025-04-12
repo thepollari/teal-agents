@@ -568,6 +568,15 @@
             flushPartialBuffer(data.task_id);
         });
 
+        source.addEventListener('ERROR', (event) => {
+            flushAllPartialBuffers();
+            const data = JSON.parse(event.data);
+            appendToMainChat('<span class="user-message">Assistant:</span><br/> ' + data.abort_reason);
+            source.close();
+            enableUserInput();
+            hideLoadingIndicator();
+        });
+
         source.addEventListener('FINAL', (event) => {
             flushAllPartialBuffers();
             const data = JSON.parse(event.data);
