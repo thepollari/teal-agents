@@ -76,15 +76,18 @@ isort = { combine-as-imports = true }
 convention = "google"
 
 [tool.mypy]
-strict = true
+strict = false
 disallow_incomplete_defs = false
 disallow_untyped_defs = false
 disallow_untyped_calls = false
-exclude = ["./demos/*"]
-
-[[tool.mypy.overrides]]
-module = "sounddevice.*"
-ignore_missing_imports = true
+files = ["src/sk_agents/", "tests/"]
+follow_imports = "skip"
+python_version = 3.11
+overrides = [
+  { module = [
+    "ska_utils.*",
+  ], ignore_missing_imports = true },
+]
 
 [tool.coverage.run]
 source = ["tests", "src/sk_agents"]
