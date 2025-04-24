@@ -18,7 +18,8 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install dependencies 
+      - name: Install dependencies
+        working-directory: ./src/sk-agents
         run: make sync
       
       - name: Extract version with hatch
