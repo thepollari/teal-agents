@@ -24,7 +24,7 @@ jobs:
       - name: Extract version with hatch
         id: extract_version
         run: |
-          cd src/sk_agents
+          cd src/sk-agents
           uv run hatch version >> $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           cd ...
