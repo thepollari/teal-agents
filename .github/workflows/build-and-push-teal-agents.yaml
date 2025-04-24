@@ -18,14 +18,16 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install dependencies 
-        run: make sync
+      - name: Install hatch 
+        run: uv tool install hatch
       
       - name: Extract version with hatch
         id: extract_version
         run: |
+          cd src/sk_agents
           uv run hatch version >> $VERSION
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          cd ...
 
       - name: Build Docker image
         run: |
