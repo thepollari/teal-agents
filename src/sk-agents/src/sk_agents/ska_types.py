@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable
 from enum import Enum
@@ -101,6 +102,31 @@ class InvokeResponse(BaseModel, Generic[T]):
     extra_data: ExtraData | None = None
     output_raw: str | None = None
     output_pydantic: T | None = None
+
+class SSEMessage:
+    @staticmethod
+    def sse_partial_response(content):
+        """Builds a partial response SSE message."""
+        sse_message = {
+            "event": "partial_response",
+            "data": {
+                "partial_result": content,
+                "status": "in_progress"
+            }
+        }
+        return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
+
+    @staticmethod
+    def sse_final_response(final_result):
+        """Builds a final response SSE message."""
+        sse_message = {
+            "event": "final_response",
+            "data": {
+                "result": final_result,
+                "status": "completed"
+            }
+        }
+        return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
 
 
 class BaseHandler:

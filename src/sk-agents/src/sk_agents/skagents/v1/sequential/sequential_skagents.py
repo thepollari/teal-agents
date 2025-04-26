@@ -11,6 +11,7 @@ from sk_agents.ska_types import (
     Config as BaseConfig,
     InvokeResponse,
     TokenUsage,
+    SSEMessage,
 )
 from sk_agents.skagents.kernel_builder import KernelBuilder
 from sk_agents.skagents.v1.sequential.config import Config
@@ -116,6 +117,50 @@ class SequentialSkagents(BaseHandler):
                 yield collector.get_extra_data().model_dump_json()
             except Exception:
                 yield content
+
+    async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+        collector = ExtraDataCollector()
+
+        # Initialize token metrics, tasks, and final response content
+        task_no = 0
+        completion_tokens: int = 0
+        prompt_tokens: int = 0
+        total_tokens: int = 0
+        final_content = []
+
+        chat_history = ChatHistory()
+        parse_chat_history(chat_history, inputs)
+        task_inputs = SequentialSkagents._parse_task_inputs(inputs)
+
+        for i in range(len(self.tasks) - 1):
+            # Invoke each task and collect outputs
+            i_response = await self.tasks[i].invoke(history=chat_history, inputs=task_inputs)
+            task_inputs[f"_{self.tasks[i].name}"] = i_response.output_raw
+            collector.add_extra_data_items(i_response.extra_data)
+            task_no += 1
+
+        async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
+            try:
+                #extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                #collector.add_extra_data_items(extra_data_partial.extra_data)
+                #sse_message = {
+                #    "data": collector.get_extra_data().model_dump_json()
+                #}
+                # Create and send a partial response message
+                yield SSEMessage.sse_partial_response(content)
+                final_content.append(content)
+            except Exception as e:
+                # Handle exceptions and yield the raw content as an error message
+                error_message = {
+                    "error": str(e),
+                    "content": content
+                }
+                yield f"{json.dumps(error_message)}\n\n"  # SSE format
+        # Send the final response message
+        if final_content:
+                final_result = ''.join(final_content)
+                yield SSEMessage.sse_final_response(final_result)
+
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         task_no = 0

@@ -3,7 +3,8 @@ import os
 from contextlib import nullcontext
 from typing import Any
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Query
+from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, get_telemetry, initialize_telemetry
@@ -83,6 +84,15 @@ app = FastAPI(
 app.add_middleware(TelemetryMiddleware, st=get_telemetry())
 
 
+@app.get(
+    f"/{config.service_name}/{str(config.version)}/healthcheck",
+    tags=["Health"],
+    description="Check the health status of the agent.",
+)
+async def healthcheck():
+    return {"status": "healthy"}
+
+
 @app.post(f"/{config.service_name}/{str(config.version)}")
 @docstring_parameter(description)
 async def invoke(inputs: input_class, request: Request) -> InvokeResponse[output_class]:  # type: ignore
@@ -140,3 +150,40 @@ async def invoke_stream(websocket: WebSocket) -> None:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
     except WebSocketDisconnect:
         print("websocket disconnected")
+
+
+@app.post(f"/{config.service_name}/{str(config.version)}/sse")
+async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
+    """
+    Stream data to the client using Server-Sent Events (SSE).
+    Accepts a user-defined message as part of the inputs.
+    """
+    st = get_telemetry()
+    context = extract(request.headers)
+    authorization = request.headers.get("authorization", None)
+    inv_inputs = inputs.__dict__
+
+    async def event_generator():
+        with (
+            st.tracer.start_as_current_span(
+                f"{config.service_name}-{str(config.version)}-invoke_sse", context=context
+            )
+            if st.telemetry_enabled()
+            else nullcontext()
+        ):
+            match root_handler:
+                case "skagents":
+                    handler: BaseHandler = skagents_handle(config, app_config, authorization)
+                    # import asyncio
+                    # Simulate streaming user-defined messages
+                    #for i in range(10):  # Send 10 messages
+                    #    await asyncio.sleep(1)  # Simulate a delay between messages
+                    #    print(f"data: {inv_inputs} {i + 1}\n\n" )
+                    #    yield f"data: {inv_inputs} {i + 1}\n\n"  # Format for SSE
+                    async for content in handler.invoke_sse(inputs=inv_inputs):
+                        yield f"{content}"
+                        
+                case _:
+                    raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
