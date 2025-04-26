@@ -117,18 +117,19 @@ class SSEMessage:
         return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
 
     @staticmethod
-    def sse_final_response(final_result):
+    def sse_final_response(final_result, token_usage: TokenUsage | None = None, extra_data: ExtraData | None = None):
         """Builds a final response SSE message."""
         sse_message = {
             "event": "final_response",
             "data": {
                 "result": final_result,
-                "status": "completed"
+                "status": "completed",
+                "token_usage": token_usage.model_dump() if token_usage else None,
+                "extra_data": extra_data.model_dump() if extra_data else {"items": []},
             }
         }
         return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
-
-
+    
 class BaseHandler:
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         pass

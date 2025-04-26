@@ -1,4 +1,7 @@
 import json
+from json.decoder import JSONDecodeError
+from pydantic import ValidationError
+
 from collections.abc import AsyncIterable
 from copy import deepcopy
 from typing import Any
@@ -120,45 +123,52 @@ class SequentialSkagents(BaseHandler):
 
     async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
         collector = ExtraDataCollector()
-
-        # Initialize token metrics, tasks, and final response content
         task_no = 0
-        completion_tokens: int = 0
-        prompt_tokens: int = 0
-        total_tokens: int = 0
-        final_content = []
 
+        # Initialize by parsing chat history and tasks
         chat_history = ChatHistory()
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
-        for i in range(len(self.tasks) - 1):
-            i_response = await self.tasks[i].invoke(history=chat_history, inputs=task_inputs)
-            task_inputs[f"_{self.tasks[i].name}"] = i_response.output_raw
-            collector.add_extra_data_items(i_response.extra_data)
-            task_no += 1
 
-        async for content in self.tasks[-1].invoke_sse(history=chat_history, inputs=task_inputs):
-            try:
-                # Create and send a partial response message
-                yield SSEMessage.sse_partial_response(content)
-                final_content.append(content)
-            except Exception as e:
-                # Handle exceptions and yield the raw content as an error message
-                error_message = {
-                    "error": str(e),
-                    "content": content
-                }
-                yield f"{json.dumps(error_message)}\n\n"  # SSE format
-        # Send the final response message
-        if final_content:
+        # Iterate through each task in sequential agent
+        for task in self.tasks:
+            # Initialize token metrics and final response content
+            final_content = []
+            completion_tokens: int = 0
+            prompt_tokens: int = 0
+            total_tokens: int = 0
+            async for content in task.invoke_sse(history=chat_history, inputs=task_inputs):
+                try:
+                    # Attempt to parse as JSON and setup ExtraDataPartial
+                    extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                    self.collector.add_extra_data_items(extra_data_partial.extra_data)
+                    yield self.collector.get_extra_data().model_dump_json()
+                except JSONDecodeError:
+                    # If not valid JSON, send regular SSE message
+                    yield SSEMessage.sse_partial_response(content)
+                    final_content.append(content)
+                except ValidationError:
+                    # If valid JSON but not an ExtraDataPartial, send regular SSE message
+                    yield SSEMessage.sse_partial_response(content)
+                    final_content.append(content)
+                except Exception as e:
+                    # Handle other unexpected errors
+                    error_message = {"error": str(e), "content": content}
+                    yield f"{json.dumps(error_message)}\n\n"
+
+            # Send the final response message with usage metrics
+            if final_content:
                 final_result = ''.join(final_content)
-                yield SSEMessage.sse_final_response(final_result)
-
-        #print(f"task_no = {task_no}")
-        #print(f"completion_tokens: int = {completion_tokens}")
-        #print(f"prompt_tokens: int = {prompt_tokens}")
-        #print(f"total_tokens: int = {total_tokens}")
-        #print(f"final_content = {final_content}")
+                yield SSEMessage.sse_final_response(
+                    final_result,
+                    token_usage=TokenUsage(
+                        completion_tokens=completion_tokens,
+                        prompt_tokens=prompt_tokens,
+                        total_tokens=total_tokens,
+                    ),
+                    extra_data=collector.get_extra_data(),
+                )
+            task_no += 1
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         task_no = 0
