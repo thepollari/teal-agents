@@ -128,3 +128,24 @@ class Task:
             extra_data=self.extra_data_collector.get_extra_data(),
             output_raw=response_content[-1].content,
         )
+
+    async def invoke_sse(
+        self,
+        history: ChatHistory,
+        inputs: dict[str, Any] | None = None,
+    ) -> AsyncIterable[str]:
+        message = self._get_message(inputs)
+        history.add_message(message)
+        contents: list[StreamingChatMessageContent] = []
+        
+        async for chunk in self.agent.invoke_stream(history):
+            if chunk.content is not None:
+                contents.append(chunk)
+                yield chunk.content
+
+        if not self.extra_data_collector.is_empty():
+            yield ExtraDataPartial(
+                extra_data=self.extra_data_collector.get_extra_data()
+            ).model_dump_json()
+        message_content = "".join([content.content for content in contents])
+        history.add_assistant_message(message_content)

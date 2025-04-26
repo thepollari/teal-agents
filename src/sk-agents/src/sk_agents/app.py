@@ -174,15 +174,8 @@ async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse
             match root_handler:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
-                    # import asyncio
-                    # Simulate streaming user-defined messages
-                    #for i in range(10):  # Send 10 messages
-                    #    await asyncio.sleep(1)  # Simulate a delay between messages
-                    #    print(f"data: {inv_inputs} {i + 1}\n\n" )
-                    #    yield f"data: {inv_inputs} {i + 1}\n\n"  # Format for SSE
                     async for content in handler.invoke_sse(inputs=inv_inputs):
                         yield f"{content}"
-                        
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 

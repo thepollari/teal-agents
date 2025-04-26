@@ -131,21 +131,14 @@ class SequentialSkagents(BaseHandler):
         chat_history = ChatHistory()
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
-
         for i in range(len(self.tasks) - 1):
-            # Invoke each task and collect outputs
             i_response = await self.tasks[i].invoke(history=chat_history, inputs=task_inputs)
             task_inputs[f"_{self.tasks[i].name}"] = i_response.output_raw
             collector.add_extra_data_items(i_response.extra_data)
             task_no += 1
 
-        async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
+        async for content in self.tasks[-1].invoke_sse(history=chat_history, inputs=task_inputs):
             try:
-                #extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                #collector.add_extra_data_items(extra_data_partial.extra_data)
-                #sse_message = {
-                #    "data": collector.get_extra_data().model_dump_json()
-                #}
                 # Create and send a partial response message
                 yield SSEMessage.sse_partial_response(content)
                 final_content.append(content)
@@ -161,6 +154,11 @@ class SequentialSkagents(BaseHandler):
                 final_result = ''.join(final_content)
                 yield SSEMessage.sse_final_response(final_result)
 
+        #print(f"task_no = {task_no}")
+        #print(f"completion_tokens: int = {completion_tokens}")
+        #print(f"prompt_tokens: int = {prompt_tokens}")
+        #print(f"total_tokens: int = {total_tokens}")
+        #print(f"final_content = {final_content}")
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         task_no = 0
