@@ -141,20 +141,12 @@ class SequentialSkagents(BaseHandler):
                 try:
                     # Attempt to parse as JSON and setup ExtraDataPartial
                     extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                    self.collector.add_extra_data_items(extra_data_partial.extra_data)
-                    yield self.collector.get_extra_data().model_dump_json()
-                except JSONDecodeError:
-                    # If not valid JSON, send regular SSE message
+                    collector.add_extra_data_items(extra_data_partial.extra_data)
+                    yield collector.get_extra_data().model_dump_json()
+                except Exception:
+                    # If any error occurs during ExtraDataPartial processing, send regular SSE message
                     yield SSEMessage.sse_partial_response(content)
-                    final_content.append(content)
-                except ValidationError:
-                    # If valid JSON but not an ExtraDataPartial, send regular SSE message
-                    yield SSEMessage.sse_partial_response(content)
-                    final_content.append(content)
-                except Exception as e:
-                    # Handle other unexpected errors
-                    error_message = {"error": str(e), "content": content}
-                    yield f"{json.dumps(error_message)}\n\n"
+                final_content.append(content)
 
             # Send the final response message with usage metrics
             if final_content:
