@@ -151,15 +151,23 @@ class SequentialSkagents(BaseHandler):
             # Send the final response message with usage metrics
             if final_content:
                 final_result = ''.join(final_content)
-                yield SSEMessage.sse_final_response(
-                    final_result,
+                # Build final response with Invoke Response
+                response = InvokeResponse(
                     token_usage=TokenUsage(
                         completion_tokens=completion_tokens,
                         prompt_tokens=prompt_tokens,
                         total_tokens=total_tokens,
                     ),
                     extra_data=collector.get_extra_data(),
+                    output_raw=final_result,
                 )
+                # Format and transform for pydantic output
+                if self.config.config.output_type is None:
+                    yield SSEMessage.sse_final_response(response)
+                else:
+                    transformed_response = await self._transform_output_if_required(response)
+                    yield SSEMessage.sse_final_response(transformed_response)
+
             task_no += 1
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:

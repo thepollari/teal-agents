@@ -117,15 +117,16 @@ class SSEMessage:
         return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
 
     @staticmethod
-    def sse_final_response(final_result, token_usage: TokenUsage | None = None, extra_data: ExtraData | None = None):
+    def sse_final_response(response: InvokeResponse) -> str:
         """Builds a final response SSE message."""
         sse_message = {
             "event": "final_response",
             "data": {
-                "result": final_result,
+                "result": response.output_raw,
                 "status": "completed",
-                "token_usage": token_usage.model_dump() if token_usage else None,
-                "extra_data": extra_data.model_dump() if extra_data else {"items": []},
+                "token_usage": response.token_usage.model_dump() if response.token_usage else None,
+                "extra_data": response.extra_data.model_dump() if response.extra_data else None,
+                "output_pydantic": response.output_pydantic.model_dump() if response.output_pydantic else None,
             }
         }
         return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
