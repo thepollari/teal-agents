@@ -156,7 +156,6 @@ async def invoke_stream(websocket: WebSocket) -> None:
 async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
     """
     Stream data to the client using Server-Sent Events (SSE).
-    Accepts a user-defined message as part of the inputs.
     """
     st = get_telemetry()
     context = extract(request.headers)
