@@ -119,7 +119,7 @@ class Task:
         
         message = self._get_message(inputs)
         history.add_message(message)
-        contents: list[StreamingChatMessageContent] = []
+        contents = []
 
         # Initialize token usage metrics
         completion_tokens: int = 0
@@ -128,9 +128,17 @@ class Task:
 
         # Call agent stream with current chat history.
         async for chunk in self.agent.invoke_stream(history):
+            print(chunk.metadata)
             if chunk.content is not None:
                 contents.append(chunk)
                 yield chunk.content
+            elif chunk.metadata and "usage" in chunk.metadata:
+                usage = chunk.metadata["usage"]
+                completion_tokens += usage.get("completion_tokens", 0)
+                prompt_tokens += usage.get("prompt_tokens", 0)
+                total_tokens += usage.get("total_tokens", 0)
+                print(f"Intermediate Usage: {usage}") # Log intermediate usage
+
 
         # Return any extra data collected from agent execution
         if not self.extra_data_collector.is_empty():

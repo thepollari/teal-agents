@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, Optional
 
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.connectors.ai.function_choice_behavior import (
@@ -40,6 +40,11 @@ class AgentBuilder:
 
         settings = kernel.get_prompt_execution_settings_from_service_id(agent_config.name)
         settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+        
+        # FORCING STREAM FOR NOW
+        settings.stream = True
+        settings.stream_options = {"include_usage": True}
+
         if so_supported and output_type:
             type_loader = get_type_loader()
             settings.response_format = type_loader.get_type(output_type)
