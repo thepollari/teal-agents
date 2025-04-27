@@ -136,21 +136,21 @@ class SequentialSkagents(BaseHandler):
 
         # Iterate through each task in sequential agent
         for task in self.tasks:
-            async for content in task.invoke_sse(history=chat_history, inputs=task_inputs):
+            async for chunk in task.invoke_sse(history=chat_history, inputs=task_inputs):
                 # Calculate usage metrics if content is a token dictionary
-                if isinstance(content, dict) and "prompt_tokens" in content and "completion_tokens" in content:
-                    prompt_tokens += content["prompt_tokens"]
-                    completion_tokens += content["completion_tokens"]
-                    total_tokens += content["prompt_tokens"] + content["completion_tokens"]
+                if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
+                    prompt_tokens += chunk["prompt_tokens"]
+                    completion_tokens += chunk["completion_tokens"]
+                    total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
                 else:
                     try:
                         # Attempt to parse as JSON and setup ExtraDataPartial
-                        extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                        extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(chunk)
                         collector.add_extra_data_items(extra_data_partial.extra_data)
                         yield collector.get_extra_data().model_dump_json()
                     except Exception:
                         # If any error occurs during ExtraDataPartial processing, send regular SSE message
-                        yield SSEMessage.sse_partial_response(content)
+                        yield SSEMessage.sse_partial_response(chunk)
             task_no += 1
 
         # Send the last task's full response message with usage metrics

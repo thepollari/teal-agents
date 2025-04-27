@@ -34,6 +34,19 @@ class SKAgent:
         async for result in self.agent.invoke_stream(history):
             yield result
 
+    async def invoke_sse(
+        self, history: ChatHistory
+    ) -> AsyncIterable[StreamingChatMessageContent]:
+        async for result in self.agent.invoke_stream(history):
+            if result is not None:
+                yield result
+            if result.metadata["usage"] is not None:
+                usage: dict = result.metadata["usage"]
+                yield {
+                    "prompt_tokens": usage.prompt_tokens,
+                    "completion_tokens": usage.completion_tokens,
+                }
+
     async def invoke(self, history: ChatHistory) -> AsyncIterable[ChatMessageContent]:
         async for result in self.agent.invoke(history):
             yield result

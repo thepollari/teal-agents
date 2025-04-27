@@ -77,7 +77,7 @@ class ChatAgents(BaseHandler):
         ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
 
-        async for chunk in agent.invoke_stream(chat_history):
+        async for chunk in agent.invoke_sse(chat_history):
             # Calculate usage metrics if content is a token dictionary
             if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
                 prompt_tokens += chunk["prompt_tokens"]
