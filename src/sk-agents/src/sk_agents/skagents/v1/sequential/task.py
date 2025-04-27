@@ -101,6 +101,46 @@ class Task:
         message_content = "".join([content.content for content in contents])
         history.add_assistant_message(message_content)
 
+    async def invoke_sse(
+        self,
+        history: ChatHistory,
+        inputs: dict[str, Any] | None = None,
+    ) -> AsyncIterable[str]:
+        # TODO - Need to add capability to retrieve usage stats from the call.
+        #  Currently not supported by SK, but there
+        #  is an open issue to add this feature: https://github.com/microsoft/semantic-kernel/issues/8996
+        #  Details from the OpenAI side can be found at:
+        #  https://community.openai.com/t/usage-stats-now-available-when-using-streaming-with-the-chat-completions-api-or-completions-api/738156
+        # settings = self.agent.kernel.get_prompt_execution_settings_from_service_id(
+        #     self.agent.service_id
+        # )
+        # settings.stream_options = StreamOptions(include_usage=True).__dict__
+        # self.agent.execution_settings = settings
+        
+        message = self._get_message(inputs)
+        history.add_message(message)
+        contents: list[StreamingChatMessageContent] = []
+
+        # Initialize token usage metrics
+        completion_tokens: int = 0
+        prompt_tokens: int = 0
+        total_tokens: int = 0
+
+        # Call agent stream with current chat history.
+        async for chunk in self.agent.invoke_stream(history):
+            if chunk.content is not None:
+                contents.append(chunk)
+                yield chunk.content
+
+        # Return any extra data collected from agent execution
+        if not self.extra_data_collector.is_empty():
+            yield ExtraDataPartial(
+                extra_data=self.extra_data_collector.get_extra_data()
+            ).model_dump_json()
+        # Combine all streamed chunks and add output to chat history
+        message_content = "".join([content.content for content in contents])
+        history.add_assistant_message(message_content)
+
     async def invoke(
         self,
         history: ChatHistory,
@@ -128,24 +168,3 @@ class Task:
             extra_data=self.extra_data_collector.get_extra_data(),
             output_raw=response_content[-1].content,
         )
-
-    async def invoke_sse(
-        self,
-        history: ChatHistory,
-        inputs: dict[str, Any] | None = None,
-    ) -> AsyncIterable[str]:
-        message = self._get_message(inputs)
-        history.add_message(message)
-        contents: list[StreamingChatMessageContent] = []
-        
-        async for chunk in self.agent.invoke_stream(history):
-            if chunk.content is not None:
-                contents.append(chunk)
-                yield chunk.content
-
-        if not self.extra_data_collector.is_empty():
-            yield ExtraDataPartial(
-                extra_data=self.extra_data_collector.get_extra_data()
-            ).model_dump_json()
-        message_content = "".join([content.content for content in contents])
-        history.add_assistant_message(message_content)
