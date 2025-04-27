@@ -112,6 +112,7 @@ class Task:
         contents = []
 
         # Call agent stream with current chat history.
+        ## TODO: fix and test using agent's invoke_sse instead of invoke_stream
         async for chunk in self.agent.invoke_stream(history):
             if chunk.content is not None:
                 contents.append(chunk)
@@ -122,7 +123,7 @@ class Task:
                     "prompt_tokens": usage.prompt_tokens,
                     "completion_tokens": usage.completion_tokens,
                 }
-                
+
         # Return any extra data collected from agent execution
         if not self.extra_data_collector.is_empty():
             yield ExtraDataPartial(
