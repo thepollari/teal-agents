@@ -1,3 +1,4 @@
+import json
 from collections.abc import AsyncIterable
 from typing import Any
 
@@ -106,24 +107,17 @@ class Task:
         history: ChatHistory,
         inputs: dict[str, Any] | None = None,
     ) -> AsyncIterable[str]:
-        
         message = self._get_message(inputs)
         history.add_message(message)
         contents = []
-
         # Call agent stream with current chat history.
-        ## TODO: fix and test using agent's invoke_sse instead of invoke_stream
-        async for chunk in self.agent.invoke_stream(history):
-            if chunk.content is not None:
+        async for chunk in self.agent.invoke_sse(history):
+            # Check if chunks are partial messages or usage metrics
+            if not isinstance(chunk, dict):
                 contents.append(chunk)
                 yield chunk.content
-            if chunk.metadata["usage"] is not None:
-                usage: dict = chunk.metadata["usage"]
-                yield {
-                    "prompt_tokens": usage.prompt_tokens,
-                    "completion_tokens": usage.completion_tokens,
-                }
-
+            elif "prompt_tokens" in chunk and "completion_tokens" in chunk:
+                yield chunk
         # Return any extra data collected from agent execution
         if not self.extra_data_collector.is_empty():
             yield ExtraDataPartial(
