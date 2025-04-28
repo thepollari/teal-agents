@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -15,7 +13,7 @@ class AgentMessage(BaseModel):
 
 class ConversationResponse(BaseModel):
     conversation_id: str
-    history: List[UserMessage | AgentMessage]
+    history: list[UserMessage | AgentMessage]
 
 
 class GeneralResponse(BaseModel):
