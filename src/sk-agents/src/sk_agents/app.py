@@ -17,7 +17,13 @@ from sk_agents.configs import (
 )
 from sk_agents.middleware import TelemetryMiddleware
 from sk_agents.plugin_loader import get_plugin_loader
-from sk_agents.ska_types import BaseHandler, Config, InvokeResponse
+from sk_agents.ska_types import (
+    BaseHandler,
+    Config,
+    InvokeResponse,
+    IntermediateTask,
+    PartialResponse,
+)
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.type_loader import get_type_loader
 
@@ -144,13 +150,13 @@ async def invoke_stream(websocket: WebSocket) -> None:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
+                        # if partial response, send back text. otherwise ignore
                         await websocket.send_text(content)
                     await websocket.close()
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
     except WebSocketDisconnect:
         print("websocket disconnected")
-
 
 @app.post(f"/{config.service_name}/{str(config.version)}/sse")
 async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
@@ -173,8 +179,15 @@ async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse
             match root_handler:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
-                    async for content in handler.invoke_sse(inputs=inv_inputs):
-                        yield f"{content}"
+                    async for content in handler.invoke_stream(inputs=inv_inputs):
+                        if isinstance(content, IntermediateTask):
+                            yield f"event: intermediate-task\ndata: {content.json()}\n\n"
+                        elif isinstance(content, PartialResponse):
+                            yield f"event: partial-response\ndata: {content.json()}\n\n"
+                        elif isinstance(content, InvokeResponse):
+                            yield f"event: final-response\ndata: {content.json()}\n\n"
+                        else:
+                            yield f"event: unknown\ndata: {str(content)}\n\n"
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 

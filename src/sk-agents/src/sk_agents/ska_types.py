@@ -103,34 +103,17 @@ class InvokeResponse(BaseModel, Generic[T]):
     output_raw: str | None = None
     output_pydantic: T | None = None
 
-class SSEMessage:
-    @staticmethod
-    def sse_partial_response(content):
-        """Builds a partial response SSE message."""
-        sse_message = {
-            "event": "partial_response",
-            "data": {
-                "partial_result": content,
-                "status": "in_progress"
-            }
-        }
-        return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
+class IntermediateTask(BaseModel):
+    """Represents an intermediate task response."""
+    task_no: int
+    task_name: str
+    response: InvokeResponse
 
-    @staticmethod
-    def sse_final_response(response: InvokeResponse) -> str:
-        """Builds a final response SSE message."""
-        sse_message = {
-            "event": "final_response",
-            "data": {
-                "result": response.output_raw,
-                "status": "completed",
-                "token_usage": response.token_usage.model_dump() if response.token_usage else None,
-                "extra_data": response.extra_data.model_dump() if response.extra_data else None,
-                "output_pydantic": response.output_pydantic.model_dump() if response.output_pydantic else None,
-            }
-        }
-        return f"event: {sse_message['event']}\ndata: {json.dumps(sse_message['data'])}\n\n"
-    
+class PartialResponse(BaseModel):
+    """Represents a partial response during streaming."""
+    content: str
+    extra_data: ExtraData | None = None
+
 class BaseHandler:
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         pass

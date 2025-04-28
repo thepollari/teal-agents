@@ -11,7 +11,6 @@ from sk_agents.ska_types import (
     Config as BaseConfig,
     InvokeResponse,
     TokenUsage,
-    SSEMessage,
 )
 from sk_agents.skagents.v1 import AgentBuilder
 from sk_agents.skagents.v1.chat.config import Config
@@ -63,51 +62,51 @@ class ChatAgents(BaseHandler):
                 extra_data=extra_data_collector.get_extra_data()
             ).model_dump_json()
     
-    async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
-        extra_data_collector = ExtraDataCollector()
-        agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
+    # async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+    #     extra_data_collector = ExtraDataCollector()
+    #     agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
 
-        # Initialize token metrics
-        completion_tokens: int = 0
-        prompt_tokens: int = 0
-        total_tokens: int = 0
+    #     # Initialize token metrics
+    #     completion_tokens: int = 0
+    #     prompt_tokens: int = 0
+    #     total_tokens: int = 0
 
-        # Initialize by parsing chat history
-        chat_history = ChatHistory()
-        ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
-        parse_chat_history(chat_history, inputs)
+    #     # Initialize by parsing chat history
+    #     chat_history = ChatHistory()
+    #     ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
+    #     parse_chat_history(chat_history, inputs)
 
-        async for chunk in agent.invoke_sse(chat_history):
-            # Calculate usage metrics if content is a token dictionary
-            if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
-                prompt_tokens += chunk["prompt_tokens"]
-                completion_tokens += chunk["completion_tokens"]
-                total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
-            else:
-                yield SSEMessage.sse_partial_response(chunk.content) 
+    #     async for chunk in agent.invoke_sse(chat_history):
+    #         # Calculate usage metrics if content is a token dictionary
+    #         if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
+    #             prompt_tokens += chunk["prompt_tokens"]
+    #             completion_tokens += chunk["completion_tokens"]
+    #             total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
+    #         else:
+    #             yield SSEMessage.sse_partial_response(chunk.content) 
 
-        if not extra_data_collector.is_empty():
-            yield ExtraDataPartial(
-                extra_data=extra_data_collector.get_extra_data()
-            ).model_dump_json()
+    #     if not extra_data_collector.is_empty():
+    #         yield ExtraDataPartial(
+    #             extra_data=extra_data_collector.get_extra_data()
+    #         ).model_dump_json()
 
-        last_message = chat_history.messages[-1].content
-        # Build final response with Invoke Response
-        response = InvokeResponse(
-            token_usage=TokenUsage(
-                completion_tokens=completion_tokens,
-                prompt_tokens=prompt_tokens,
-                total_tokens=total_tokens,
-            ),
-            extra_data=extra_data_collector.get_extra_data(),
-            output_raw=last_message,
-        )
-        # Format and transform for pydantic output
-        if self.config.config.output_type is None:
-            yield SSEMessage.sse_final_response(response)
-        else:
-            transformed_response = await self._transform_output_if_required(response)
-            yield SSEMessage.sse_final_response(transformed_response)
+    #     last_message = chat_history.messages[-1].content
+    #     # Build final response with Invoke Response
+    #     response = InvokeResponse(
+    #         token_usage=TokenUsage(
+    #             completion_tokens=completion_tokens,
+    #             prompt_tokens=prompt_tokens,
+    #             total_tokens=total_tokens,
+    #         ),
+    #         extra_data=extra_data_collector.get_extra_data(),
+    #         output_raw=last_message,
+    #     )
+    #     # Format and transform for pydantic output
+    #     if self.config.config.output_type is None:
+    #         yield SSEMessage.sse_final_response(response)
+    #     else:
+    #         transformed_response = await self._transform_output_if_required(response)
+    #         yield SSEMessage.sse_final_response(transformed_response)
 
     async def invoke(
         self,

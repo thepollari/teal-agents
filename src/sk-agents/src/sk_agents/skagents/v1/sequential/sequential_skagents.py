@@ -13,14 +13,15 @@ from sk_agents.ska_types import (
     BaseHandler,
     Config as BaseConfig,
     InvokeResponse,
+    PartialResponse,
+    IntermediateTask,
     TokenUsage,
-    SSEMessage,
 )
 from sk_agents.skagents.kernel_builder import KernelBuilder
 from sk_agents.skagents.v1.sequential.config import Config
 from sk_agents.skagents.v1.sequential.output_transformer import OutputTransformer
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
-from sk_agents.skagents.v1.utils import parse_chat_history
+from sk_agents.skagents.v1.utils import parse_chat_history, get_token_usage_for_response
 from sk_agents.type_loader import get_type_loader
 
 
@@ -99,63 +100,54 @@ class SequentialSkagents(BaseHandler):
             task_inputs = None
         return task_inputs
 
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
-        collector = ExtraDataCollector()
-
-        task_no = 0
-        chat_history = ChatHistory()
-        parse_chat_history(chat_history, inputs)
-        task_inputs = SequentialSkagents._parse_task_inputs(inputs)
-        for i in range(len(self.tasks) - 1):
-            # TODO - Once usage stats are available:
-            # Need to check if usage message and send consolidated stats
-            i_response = await self.tasks[i].invoke(history=chat_history, inputs=task_inputs)
-            task_inputs[f"_{self.tasks[i].name}"] = i_response.output_raw
-            collector.add_extra_data_items(i_response.extra_data)
-            task_no += 1
-        async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
-            try:
-                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                collector.add_extra_data_items(extra_data_partial.extra_data)
-                yield collector.get_extra_data().model_dump_json()
-            except Exception:
-                yield content
-
-    async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[Any]:
         collector = ExtraDataCollector()
         # Initialize tasks count and token metrics
         task_no = 0
         completion_tokens: int = 0
         prompt_tokens: int = 0
         total_tokens: int = 0
-
-        # Initialize by parsing chat history and tasks
+        final_response_parts = []  # Use a list to collect parts of the response
+        # Initialize and parse the chat history and task inputs from the provided inputs
         chat_history = ChatHistory()
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
 
-        # Iterate through each task in sequential agent
-        for task in self.tasks:
-            async for chunk in task.invoke_sse(history=chat_history, inputs=task_inputs):
-                # Calculate usage metrics if content is a token dictionary
-                if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
-                    prompt_tokens += chunk["prompt_tokens"]
-                    completion_tokens += chunk["completion_tokens"]
-                    total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
-                else:
-                    try:
-                        # Attempt to parse as JSON and setup ExtraDataPartial
-                        extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(chunk)
-                        collector.add_extra_data_items(extra_data_partial.extra_data)
-                        yield collector.get_extra_data().model_dump_json()
-                    except Exception:
-                        # If any error occurs during ExtraDataPartial processing, send regular SSE message
-                        yield SSEMessage.sse_partial_response(chunk)
+        # Process intermediate tasks 
+        for task in self.tasks[:-1]:
+            i_response = await task.invoke(history=chat_history, inputs=task_inputs)
+            task_inputs[f"_{task.name}"] = i_response.output_raw
+            completion_tokens += i_response.token_usage.completion_tokens
+            prompt_tokens += i_response.token_usage.prompt_tokens
+            total_tokens += i_response.token_usage.total_tokens
+            collector.add_extra_data_items(i_response.extra_data)
             task_no += 1
+            yield IntermediateTask(
+                task_no=task_no,
+                task_name=task.name,
+                response=i_response,
+            )
 
-        # Send the last task's full response message with usage metrics
-        last_message = chat_history.messages[-1].content
-        # Build final response with Invoke Response
+        # Process the final task with streaming
+        async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
+            # Add metrics (will add 0 if no metadata)
+            call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), content)
+            completion_tokens += call_usage.completion_tokens
+            prompt_tokens += call_usage.prompt_tokens
+            total_tokens += call_usage.total_tokens
+            try:
+                # Attempt to parse as ExtraDataPartial
+                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                collector.add_extra_data_items(extra_data_partial.extra_data)
+            except Exception:
+                # Handle and return partial response
+                final_response_parts.append(content)
+                yield PartialResponse(
+                    content=content,
+                    extra_data=None,
+                )
+        # Build the final InvokeResponse
+        final_response = "".join(final_response_parts)
         response = InvokeResponse(
             token_usage=TokenUsage(
                 completion_tokens=completion_tokens,
@@ -163,15 +155,60 @@ class SequentialSkagents(BaseHandler):
                 total_tokens=total_tokens,
             ),
             extra_data=collector.get_extra_data(),
-            output_raw=last_message,
+            output_raw=final_response,
         )
-        # Format and transform for pydantic output
-        if self.config.config.output_type is None:
-            yield SSEMessage.sse_final_response(response)
-        else:
-            transformed_response = await self._transform_output_if_required(response)
-            yield SSEMessage.sse_final_response(transformed_response)
+        yield response
 
+        # async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+        #     collector = ExtraDataCollector()
+        #     # Initialize tasks count and token metrics
+        #     task_no = 0
+        #     completion_tokens: int = 0
+        #     prompt_tokens: int = 0
+        #     total_tokens: int = 0
+
+        #     # Initialize by parsing chat history and tasks
+        #     chat_history = ChatHistory()
+        #     parse_chat_history(chat_history, inputs)
+        #     task_inputs = SequentialSkagents._parse_task_inputs(inputs)
+
+        #     # Iterate through each task in sequential agent
+        #     for i in range(len(self.tasks) - 1):
+        #         async for chunk in task.invoke_sse(history=chat_history, inputs=task_inputs):
+        #             # Calculate usage metrics if content is a token dictionary
+        #             if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
+        #                 prompt_tokens += chunk["prompt_tokens"]
+        #                 completion_tokens += chunk["completion_tokens"]
+        #                 total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
+        #             else:
+        #                 try:
+        #                     # Attempt to parse as JSON and setup ExtraDataPartial
+        #                     extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(chunk)
+        #                     collector.add_extra_data_items(extra_data_partial.extra_data)
+        #                     yield collector.get_extra_data().model_dump_json()
+        #                 except Exception:
+        #                     # Send regular SSE message
+        #                     yield SSEMessage.sse_partial_response(chunk)
+        #         task_no += 1
+
+        #     # Send the last task's full response message with usage metrics
+        #     last_message = chat_history.messages[-1].content
+        #     # Build final response with Invoke Response
+        #     response = InvokeResponse(
+        #         token_usage=TokenUsage(
+        #             completion_tokens=completion_tokens,
+        #             prompt_tokens=prompt_tokens,
+        #             total_tokens=total_tokens,
+        #         ),
+        #         extra_data=collector.get_extra_data(),
+        #         output_raw=last_message,
+        #     )
+        #     # Format and transform for pydantic output
+        #     if self.config.config.output_type is None:
+        #         yield SSEMessage.sse_final_response(response)
+        #     else:
+        #         transformed_response = await self._transform_output_if_required(response)
+        #         yield SSEMessage.sse_final_response(transformed_response)
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         task_no = 0
