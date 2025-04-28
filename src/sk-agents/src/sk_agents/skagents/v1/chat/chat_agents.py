@@ -10,6 +10,7 @@ from sk_agents.ska_types import (
     BaseConfig,
     BaseHandler,
     InvokeResponse,
+    PartialResponse,
     TokenUsage,
 )
 from sk_agents.skagents.v1 import AgentBuilder
@@ -47,20 +48,56 @@ class ChatAgents(BaseHandler):
             chat_history.add_message(
                 ChatMessageContent(role=AuthorRole.USER, items=[TextContent(text=content)])
             )
-
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+    
+    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[PartialResponse | InvokeResponse]:
         extra_data_collector = ExtraDataCollector()
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
 
+        # Initialize tasks count and token metrics
+        task_no = 0
+        completion_tokens: int = 0
+        prompt_tokens: int = 0
+        total_tokens: int = 0
+        final_response = []
+        # Initialize and parse the chat history
         chat_history = ChatHistory()
-        ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
-        async for content in agent.invoke_stream(chat_history):
-            yield content.content
-        if not extra_data_collector.is_empty():
-            yield ExtraDataPartial(
-                extra_data=extra_data_collector.get_extra_data()
-            ).model_dump_json()
+
+        # Process the final task with streaming
+        async for chunk in agent.invoke_stream(chat_history):
+            # Initialize content as the partial message in chunk
+            content = chunk.content
+            # Calculate usage metrics 
+            call_usage = get_token_usage_for_response(agent.get_model_type(), chunk)
+            completion_tokens += call_usage.completion_tokens
+            prompt_tokens += call_usage.prompt_tokens
+            total_tokens += call_usage.total_tokens
+            try:
+                # Attempt to parse as ExtraDataPartial
+                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                extra_data_collector.add_extra_data_items(extra_data_partial.extra_data)
+            except Exception:
+                # Handle and return partial response
+                final_response.append(content)
+                yield PartialResponse(
+                    output_partial=content
+                )
+        # Build the final response with InvokeResponse
+        final_response = "".join(final_response)
+        response = InvokeResponse(
+            token_usage=TokenUsage(
+                completion_tokens=completion_tokens,
+                prompt_tokens=prompt_tokens,
+                total_tokens=total_tokens,
+            ),
+            extra_data=extra_data_collector.get_extra_data(),
+            output_raw=final_response,
+        )
+        # Format and transform for pydantic output
+        if self.config.config.output_type is None:
+            yield response
+        else:
+            yield await self._transform_output_if_required(response)
 
     async def invoke(
         self,

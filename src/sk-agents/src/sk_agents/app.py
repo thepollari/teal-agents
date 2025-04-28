@@ -3,7 +3,8 @@ import os
 from contextlib import nullcontext
 from typing import Any
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Query
+from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, get_telemetry, initialize_telemetry
@@ -16,7 +17,13 @@ from sk_agents.configs import (
 )
 from sk_agents.middleware import TelemetryMiddleware
 from sk_agents.plugin_loader import get_plugin_loader
-from sk_agents.ska_types import BaseHandler, Config, InvokeResponse
+from sk_agents.ska_types import (
+    BaseHandler,
+    Config,
+    InvokeResponse,
+    IntermediateTaskResponse,
+    PartialResponse,
+)
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.type_loader import get_type_loader
 
@@ -134,9 +141,45 @@ async def invoke_stream(websocket: WebSocket) -> None:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
-                        await websocket.send_text(content)
+                        if isinstance(content, PartialResponse):
+                            await websocket.send_text(content.output_partial)
                     await websocket.close()
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
     except WebSocketDisconnect:
         print("websocket disconnected")
+
+@app.post(f"/{config.service_name}/{str(config.version)}/sse")
+async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
+    """
+    Stream data to the client using Server-Sent Events (SSE).
+    """
+    st = get_telemetry()
+    context = extract(request.headers)
+    authorization = request.headers.get("authorization", None)
+    inv_inputs = inputs.__dict__
+
+    async def event_generator():
+        with (
+            st.tracer.start_as_current_span(
+                f"{config.service_name}-{str(config.version)}-invoke_sse", context=context
+            )
+            if st.telemetry_enabled()
+            else nullcontext()
+        ):
+            match root_handler:
+                case "skagents":
+                    handler: BaseHandler = skagents_handle(config, app_config, authorization)
+                    async for content in handler.invoke_stream(inputs=inv_inputs):
+                        if isinstance(content, IntermediateTaskResponse):
+                            yield f"event: intermediate-task-response\ndata: {content.model_dump_json()}\n\n"
+                        elif isinstance(content, PartialResponse):
+                            yield f"event: partial-response\ndata: {content.model_dump_json()}\n\n"
+                        elif isinstance(content, InvokeResponse):
+                            yield f"event: final-response\ndata: {content.model_dump_json()}\n\n"
+                        else:
+                            yield f"event: unknown\ndata: {str(content)}\n\n"
+                case _:
+                    raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

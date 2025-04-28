@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable
 from enum import Enum
@@ -122,6 +123,13 @@ class InvokeResponse(BaseModel, Generic[T]):
     output_raw: str | None = None
     output_pydantic: T | None = None
 
+class IntermediateTaskResponse(BaseModel):
+    task_no: int
+    task_name: str
+    response: InvokeResponse
+
+class PartialResponse(BaseModel):
+    output_partial: str
 
 class BaseHandler:
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
