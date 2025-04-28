@@ -113,7 +113,7 @@ class SequentialSkagents(BaseHandler):
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
 
-        # Process intermediate tasks 
+        # Process and stream back intermediate tasks results
         for task in self.tasks[:-1]:
             i_response = await task.invoke(history=chat_history, inputs=task_inputs)
             task_inputs[f"_{task.name}"] = i_response.output_raw
@@ -128,7 +128,7 @@ class SequentialSkagents(BaseHandler):
                 response=i_response,
             )
 
-        # Process the final task with streaming
+        # Process and stream back final task results
         async for chunk in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
             # Initialize content as the partial message in chunk
             content = chunk.content
@@ -149,7 +149,6 @@ class SequentialSkagents(BaseHandler):
                     yield PartialResponse(
                         output_partial=content
                     )
-                    
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(
