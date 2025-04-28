@@ -107,7 +107,7 @@ class SequentialSkagents(BaseHandler):
         completion_tokens: int = 0
         prompt_tokens: int = 0
         total_tokens: int = 0
-        final_response_parts = []  # Use a list to collect parts of the response
+        final_response = []
         # Initialize and parse the chat history and task inputs from the provided inputs
         chat_history = ChatHistory()
         parse_chat_history(chat_history, inputs)
@@ -129,24 +129,29 @@ class SequentialSkagents(BaseHandler):
             )
 
         # Process the final task with streaming
-        async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
-            # call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), content)
-            # completion_tokens += call_usage.completion_tokens
-            # prompt_tokens += call_usage.prompt_tokens
-            # total_tokens += call_usage.total_tokens
-            try:
-                # Attempt to parse as ExtraDataPartial
-                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                collector.add_extra_data_items(extra_data_partial.extra_data)
-            except Exception:
-                # Handle and return partial response
-                final_response_parts.append(content)
-                yield PartialResponse(
-                    content=content,
-                    extra_data=None,
-                )
-        # Build the final InvokeResponse
-        final_response = "".join(final_response_parts)
+        async for chunk in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
+            # Initialize content as the partial message in chunk
+            content = chunk.content
+            # Calculate usage metrics if chunk contains usage metadata
+            if chunk.metadata["usage"] is not None:
+                call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), chunk)
+                completion_tokens += call_usage.completion_tokens
+                prompt_tokens += call_usage.prompt_tokens
+                total_tokens += call_usage.total_tokens
+            else:
+                try:
+                    # Attempt to parse as ExtraDataPartial
+                    extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                    collector.add_extra_data_items(extra_data_partial.extra_data)
+                except Exception:
+                    # Handle and return partial response
+                    final_response.append(content)
+                    yield PartialResponse(
+                        output_partial=content
+                    )
+                    
+        # Build the final response with InvokeResponse
+        final_response = "".join(final_response)
         response = InvokeResponse(
             token_usage=TokenUsage(
                 completion_tokens=completion_tokens,
@@ -156,58 +161,11 @@ class SequentialSkagents(BaseHandler):
             extra_data=collector.get_extra_data(),
             output_raw=final_response,
         )
-        yield response
-
-        # async def invoke_sse(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
-        #     collector = ExtraDataCollector()
-        #     # Initialize tasks count and token metrics
-        #     task_no = 0
-        #     completion_tokens: int = 0
-        #     prompt_tokens: int = 0
-        #     total_tokens: int = 0
-
-        #     # Initialize by parsing chat history and tasks
-        #     chat_history = ChatHistory()
-        #     parse_chat_history(chat_history, inputs)
-        #     task_inputs = SequentialSkagents._parse_task_inputs(inputs)
-
-        #     # Iterate through each task in sequential agent
-        #     for i in range(len(self.tasks) - 1):
-        #         async for chunk in task.invoke_sse(history=chat_history, inputs=task_inputs):
-        #             # Calculate usage metrics if content is a token dictionary
-        #             if isinstance(chunk, dict) and "prompt_tokens" in chunk and "completion_tokens" in chunk:
-        #                 prompt_tokens += chunk["prompt_tokens"]
-        #                 completion_tokens += chunk["completion_tokens"]
-        #                 total_tokens += chunk["prompt_tokens"] + chunk["completion_tokens"]
-        #             else:
-        #                 try:
-        #                     # Attempt to parse as JSON and setup ExtraDataPartial
-        #                     extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(chunk)
-        #                     collector.add_extra_data_items(extra_data_partial.extra_data)
-        #                     yield collector.get_extra_data().model_dump_json()
-        #                 except Exception:
-        #                     # Send regular SSE message
-        #                     yield SSEMessage.sse_partial_response(chunk)
-        #         task_no += 1
-
-        #     # Send the last task's full response message with usage metrics
-        #     last_message = chat_history.messages[-1].content
-        #     # Build final response with Invoke Response
-        #     response = InvokeResponse(
-        #         token_usage=TokenUsage(
-        #             completion_tokens=completion_tokens,
-        #             prompt_tokens=prompt_tokens,
-        #             total_tokens=total_tokens,
-        #         ),
-        #         extra_data=collector.get_extra_data(),
-        #         output_raw=last_message,
-        #     )
-        #     # Format and transform for pydantic output
-        #     if self.config.config.output_type is None:
-        #         yield SSEMessage.sse_final_response(response)
-        #     else:
-        #         transformed_response = await self._transform_output_if_required(response)
-        #         yield SSEMessage.sse_final_response(transformed_response)
+        # Format and transform for pydantic output
+        if self.config.config.output_type is None:
+            yield response
+        else:
+            yield await self._transform_output_if_required(response)
 
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         task_no = 0

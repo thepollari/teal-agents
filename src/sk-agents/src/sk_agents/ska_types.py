@@ -104,15 +104,12 @@ class InvokeResponse(BaseModel, Generic[T]):
     output_pydantic: T | None = None
 
 class IntermediateTask(BaseModel):
-    """Represents an intermediate task response."""
     task_no: int
     task_name: str
     response: InvokeResponse
 
 class PartialResponse(BaseModel):
-    """Represents a partial response during streaming."""
-    content: str
-    extra_data: ExtraData | None = None
+    output_partial: str
 
 class BaseHandler:
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
