@@ -90,15 +90,6 @@ app = FastAPI(
 app.add_middleware(TelemetryMiddleware, st=get_telemetry())
 
 
-@app.get(
-    f"/{config.service_name}/{str(config.version)}/healthcheck",
-    tags=["Health"],
-    description="Check the health status of the agent.",
-)
-async def healthcheck():
-    return {"status": "healthy"}
-
-
 @app.post(f"/{config.service_name}/{str(config.version)}")
 @docstring_parameter(description)
 async def invoke(inputs: input_class, request: Request) -> InvokeResponse[output_class]:  # type: ignore
