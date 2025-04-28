@@ -14,7 +14,7 @@ from sk_agents.ska_types import (
     Config as BaseConfig,
     InvokeResponse,
     PartialResponse,
-    IntermediateTask,
+    IntermediateTaskResponse,
     TokenUsage,
 )
 from sk_agents.skagents.kernel_builder import KernelBuilder
@@ -100,7 +100,7 @@ class SequentialSkagents(BaseHandler):
             task_inputs = None
         return task_inputs
 
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[Any]:
+    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[PartialResponse | IntermediateTaskResponse | InvokeResponse]:
         collector = ExtraDataCollector()
         # Initialize tasks count and token metrics
         task_no = 0
@@ -122,7 +122,7 @@ class SequentialSkagents(BaseHandler):
             total_tokens += i_response.token_usage.total_tokens
             collector.add_extra_data_items(i_response.extra_data)
             task_no += 1
-            yield IntermediateTask(
+            yield IntermediateTaskResponse(
                 task_no=task_no,
                 task_name=task.name,
                 response=i_response,
@@ -133,22 +133,20 @@ class SequentialSkagents(BaseHandler):
             # Initialize content as the partial message in chunk
             content = chunk.content
             # Calculate usage metrics if chunk contains usage metadata
-            if chunk.metadata["usage"] is not None:
-                call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), chunk)
-                completion_tokens += call_usage.completion_tokens
-                prompt_tokens += call_usage.prompt_tokens
-                total_tokens += call_usage.total_tokens
-            else:
-                try:
-                    # Attempt to parse as ExtraDataPartial
-                    extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                    collector.add_extra_data_items(extra_data_partial.extra_data)
-                except Exception:
-                    # Handle and return partial response
-                    final_response.append(content)
-                    yield PartialResponse(
-                        output_partial=content
-                    )
+            call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), chunk)
+            completion_tokens += call_usage.completion_tokens
+            prompt_tokens += call_usage.prompt_tokens
+            total_tokens += call_usage.total_tokens
+            try:
+                # Attempt to parse as ExtraDataPartial
+                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                collector.add_extra_data_items(extra_data_partial.extra_data)
+            except Exception:
+                # Handle and return partial response
+                final_response.append(content)
+                yield PartialResponse(
+                    output_partial=content
+                )
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(

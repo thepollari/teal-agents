@@ -103,7 +103,7 @@ class InvokeResponse(BaseModel, Generic[T]):
     output_raw: str | None = None
     output_pydantic: T | None = None
 
-class IntermediateTask(BaseModel):
+class IntermediateTaskResponse(BaseModel):
     task_no: int
     task_name: str
     response: InvokeResponse

@@ -49,7 +49,7 @@ class ChatAgents(BaseHandler):
                 ChatMessageContent(role=AuthorRole.USER, items=[TextContent(text=content)])
             )
     
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[Any]:
+    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[PartialResponse | InvokeResponse]:
         extra_data_collector = ExtraDataCollector()
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
 
@@ -67,23 +67,21 @@ class ChatAgents(BaseHandler):
         async for chunk in agent.invoke_stream(chat_history):
             # Initialize content as the partial message in chunk
             content = chunk.content
-            # Calculate usage metrics if chunk contains usage metadata
-            if chunk.metadata["usage"] is not None:
-                call_usage = get_token_usage_for_response(agent.get_model_type(), chunk)
-                completion_tokens += call_usage.completion_tokens
-                prompt_tokens += call_usage.prompt_tokens
-                total_tokens += call_usage.total_tokens
-            else:
-                try:
-                    # Attempt to parse as ExtraDataPartial
-                    extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
-                    extra_data_collector.add_extra_data_items(extra_data_partial.extra_data)
-                except Exception:
-                    # Handle and return partial response
-                    final_response.append(content)
-                    yield PartialResponse(
-                        output_partial=content
-                    )
+            # Calculate usage metrics 
+            call_usage = get_token_usage_for_response(agent.get_model_type(), chunk)
+            completion_tokens += call_usage.completion_tokens
+            prompt_tokens += call_usage.prompt_tokens
+            total_tokens += call_usage.total_tokens
+            try:
+                # Attempt to parse as ExtraDataPartial
+                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
+                extra_data_collector.add_extra_data_items(extra_data_partial.extra_data)
+            except Exception:
+                # Handle and return partial response
+                final_response.append(content)
+                yield PartialResponse(
+                    output_partial=content
+                )
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(

@@ -42,12 +42,12 @@ def parse_chat_history(
 
 
 def get_token_usage_for_response(model_type: ModelType, content: ChatMessageContent) -> TokenUsage:
-    if model_type == ModelType.OPENAI:
-        return get_token_usage_for_openai_response(content)
-    elif model_type == ModelType.ANTHROPIC:
-        return get_token_usage_for_anthropic_response(content)
-    else:
-        return TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
+    if content.metadata["usage"] is not None:
+        if model_type == ModelType.OPENAI:
+            return get_token_usage_for_openai_response(content)
+        elif model_type == ModelType.ANTHROPIC:
+            return get_token_usage_for_anthropic_response(content)
+    return TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0)
 
 
 def get_token_usage_for_openai_response(content: ChatMessageContent) -> TokenUsage:

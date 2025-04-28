@@ -21,7 +21,7 @@ from sk_agents.ska_types import (
     BaseHandler,
     Config,
     InvokeResponse,
-    IntermediateTask,
+    IntermediateTaskResponse,
     PartialResponse,
 )
 from sk_agents.skagents import handle as skagents_handle
@@ -180,8 +180,8 @@ async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
-                        if isinstance(content, IntermediateTask):
-                            yield f"event: intermediate-task\ndata: {content.model_dump_json()}\n\n"
+                        if isinstance(content, IntermediateTaskResponse):
+                            yield f"event: intermediate-task-response\ndata: {content.model_dump_json()}\n\n"
                         elif isinstance(content, PartialResponse):
                             yield f"event: partial-response\ndata: {content.model_dump_json()}\n\n"
                         elif isinstance(content, InvokeResponse):
