@@ -42,7 +42,7 @@ def parse_chat_history(
 
 
 def get_token_usage_for_response(model_type: ModelType, content: ChatMessageContent) -> TokenUsage:
-    if content.metadata["usage"] is not None:
+    if hasattr(content.inner_content, "usage") and content.inner_content.usage is not None:
         if model_type == ModelType.OPENAI:
             return get_token_usage_for_openai_response(content)
         elif model_type == ModelType.ANTHROPIC:
