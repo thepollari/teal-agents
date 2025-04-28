@@ -150,8 +150,9 @@ async def invoke_stream(websocket: WebSocket) -> None:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
-                        # if partial response, send back text. otherwise ignore
-                        await websocket.send_text(content)
+                        # Send only partial response content as JSON text
+                        if isinstance(content, PartialResponse):
+                            await websocket.send_text(content.model_dump_json())
                     await websocket.close()
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
@@ -181,11 +182,11 @@ async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
                         if isinstance(content, IntermediateTask):
-                            yield f"event: intermediate-task\ndata: {content.json()}\n\n"
+                            yield f"event: intermediate-task\ndata: {content.model_dump_json()}\n\n"
                         elif isinstance(content, PartialResponse):
-                            yield f"event: partial-response\ndata: {content.json()}\n\n"
+                            yield f"event: partial-response\ndata: {content.model_dump_json()}\n\n"
                         elif isinstance(content, InvokeResponse):
-                            yield f"event: final-response\ndata: {content.json()}\n\n"
+                            yield f"event: final-response\ndata: {content.model_dump_json()}\n\n"
                         else:
                             yield f"event: unknown\ndata: {str(content)}\n\n"
                 case _:
