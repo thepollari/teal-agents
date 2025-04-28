@@ -150,9 +150,9 @@ async def invoke_stream(websocket: WebSocket) -> None:
                 case "skagents":
                     handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     async for content in handler.invoke_stream(inputs=inv_inputs):
-                        # Send only partial response content as JSON text
+                        # Send only partial response content
                         if isinstance(content, PartialResponse):
-                            await websocket.send_text(content.model_dump_json())
+                            await websocket.send_text(content.content)
                     await websocket.close()
                 case _:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")

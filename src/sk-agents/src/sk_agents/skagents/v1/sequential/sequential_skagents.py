@@ -130,10 +130,7 @@ class SequentialSkagents(BaseHandler):
 
         # Process the final task with streaming
         async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
-            print("hiya")
-            print(content)
-            # Add metrics (will add 0 if no metadata)
-            # call_usage = get_token_usage_for_response(content.agent.get_model_type(), content)
+            # call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), content)
             # completion_tokens += call_usage.completion_tokens
             # prompt_tokens += call_usage.prompt_tokens
             # total_tokens += call_usage.total_tokens
