@@ -28,7 +28,7 @@ header_scheme = APIKeyHeader(name="authorization", auto_error=False)
 
 
 @router.get(
-    "/conversations/{session_id}",
+    "/conversations/{session_id}/messages",
     tags=["Conversations"],
     description="Get the full conversation history based on a session id.",
 )
@@ -40,12 +40,11 @@ async def get_conversation_by_id(user_id: str, session_id: str):
             status_code=404,
             detail=f"Unable to get conversation with session_id: {session_id} --- {e}",
         )
-
     return {"conversation": conv}
 
 
-@router.put(
-    "/conversations/{session_id}",
+@router.post(
+    "/conversations/{session_id}/messages",
     tags=["Conversations"],
     description="Add a message to a conversation based on a session id.",
 )
@@ -147,16 +146,15 @@ async def add_conversation_message_by_id(
                     status_code=500,
                     detail=f"Error adding response to conversation history --- {e}",
                 )
-
     return {"conversation": conv_manager.get_last_response(conv)}
 
 
 @router.post(
-    "/conversation/new_conversation",
+    "/conversations",
     tags=["Conversations"],
-    description="Start a new conversation. Returns new session ID and agent response.",
+    description="Start a new conversation. Returns new session ID.",
 )
-async def new_conversation(user_id: str, is_resumed: bool):
+async def new_conversation(user_id: str):
     jt = get_telemetry()
     with (
         jt.tracer.start_as_current_span("init-conversation")
@@ -164,13 +162,12 @@ async def new_conversation(user_id: str, is_resumed: bool):
         else nullcontext()
     ):
         try:
-            conv = conv_manager.new_conversation(user_id, is_resumed)
+            conv = conv_manager.new_conversation(user_id, False)
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Error creating new conversation --- {e}"
             )
-
-    return {"conversation": conv}
+    return {"session_id": conv.conversation_id, "user_id": conv.user_id}
 
 
 @router.get(
