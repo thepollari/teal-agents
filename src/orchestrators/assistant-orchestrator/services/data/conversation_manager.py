@@ -4,16 +4,16 @@ from contextlib import nullcontext
 
 from ska_utils import get_telemetry
 
-from data import ChatHistoryManager
+from data.chat_history_manager import ChatHistoryManager
 from model import (
     AgentMessage,
     ChatHistory,
     ChatHistoryItem,
     ConversationResponse,
+    GeneralResponse,
     MessageType,
     UserMessage,
 )
-from model.responses import GeneralResponse
 
 
 def _chat_history_item_to_message(

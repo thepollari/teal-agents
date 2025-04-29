@@ -4,7 +4,7 @@ from pynamodb.models import DoesNotExist
 from ska_utils import AppConfig, Singleton
 
 from configs import TA_ENVIRONMENT
-from data import ChatHistoryManager
+from data.chat_history_manager import ChatHistoryManager
 from model import ChatHistory, ChatHistoryItem, MessageType
 from model.dynamo.chat_history import ChatHistory as DynamoChatHistory
 from model.dynamo.chat_history_item import ChatHistoryItem as DynamoChatHistoryItem

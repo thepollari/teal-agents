@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from model.responses import VerifyTicketResponse
+from model import VerifyTicketResponse
 
 
 class TicketManager(ABC):

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from ska_utils import AppConfig, ModuleLoader, strtobool
 
-from auth import Authenticator
+from auth.authenticator import Authenticator
 from auth.user_id_only_authenticator import (
     UserIdOnlyAuthenticator,
     UserIdOnlyAuthRequest,

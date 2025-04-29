@@ -5,7 +5,7 @@ from configs import (
     TA_CUSTOM_USER_CONTEXT_ENABLED,
     TA_CUSTOM_USER_CONTEXT_MODULE,
 )
-from user_context import UserContextCache
+from user_context.in_memory_context import UserContextCache
 
 
 class CustomUserContextHelper:

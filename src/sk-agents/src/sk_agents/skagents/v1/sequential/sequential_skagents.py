@@ -1,7 +1,4 @@
 import json
-from json.decoder import JSONDecodeError
-from pydantic import ValidationError
-
 from collections.abc import AsyncIterable
 from copy import deepcopy
 from typing import Any
@@ -12,16 +9,16 @@ from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import (
     BaseConfig,
     BaseHandler,
+    IntermediateTaskResponse,
     InvokeResponse,
     PartialResponse,
-    IntermediateTaskResponse,
     TokenUsage,
 )
 from sk_agents.skagents.kernel_builder import KernelBuilder
 from sk_agents.skagents.v1.sequential.config import Config
 from sk_agents.skagents.v1.sequential.output_transformer import OutputTransformer
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
-from sk_agents.skagents.v1.utils import parse_chat_history, get_token_usage_for_response
+from sk_agents.skagents.v1.utils import get_token_usage_for_response, parse_chat_history
 from sk_agents.type_loader import get_type_loader
 
 
@@ -100,7 +97,9 @@ class SequentialSkagents(BaseHandler):
             task_inputs = None
         return task_inputs
 
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[PartialResponse | IntermediateTaskResponse | InvokeResponse]:
+    async def invoke_stream(
+        self, inputs: dict[str, Any] | None = None
+    ) -> AsyncIterable[PartialResponse | IntermediateTaskResponse | InvokeResponse]:
         collector = ExtraDataCollector()
         # Initialize tasks count and token metrics
         task_no = 0
@@ -144,9 +143,7 @@ class SequentialSkagents(BaseHandler):
             except Exception:
                 # Handle and return partial response
                 final_response.append(content)
-                yield PartialResponse(
-                    output_partial=content
-                )
+                yield PartialResponse(output_partial=content)
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(

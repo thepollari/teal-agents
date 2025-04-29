@@ -10,8 +10,7 @@ from configs import (
     TA_REDIS_TTL,
     TA_USER_INFORMATION_SOURCE_KEY,
 )
-from user_context import UserContextCache
-from user_context.in_memory_context import ContextCacheResponse
+from user_context.in_memory_context import ContextCacheResponse, UserContextCache
 
 
 class ExampleCustomUserContext(UserContextCache):

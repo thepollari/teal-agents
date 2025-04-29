@@ -48,8 +48,10 @@ class ChatAgents(BaseHandler):
             chat_history.add_message(
                 ChatMessageContent(role=AuthorRole.USER, items=[TextContent(text=content)])
             )
-    
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[PartialResponse | InvokeResponse]:
+
+    async def invoke_stream(
+        self, inputs: dict[str, Any] | None = None
+    ) -> AsyncIterable[PartialResponse | InvokeResponse]:
         extra_data_collector = ExtraDataCollector()
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
 
@@ -67,7 +69,7 @@ class ChatAgents(BaseHandler):
         async for chunk in agent.invoke_stream(chat_history):
             # Initialize content as the partial message in chunk
             content = chunk.content
-            # Calculate usage metrics 
+            # Calculate usage metrics
             call_usage = get_token_usage_for_response(agent.get_model_type(), chunk)
             completion_tokens += call_usage.completion_tokens
             prompt_tokens += call_usage.prompt_tokens
@@ -79,9 +81,7 @@ class ChatAgents(BaseHandler):
             except Exception:
                 # Handle and return partial response
                 final_response.append(content)
-                yield PartialResponse(
-                    output_partial=content
-                )
+                yield PartialResponse(output_partial=content)
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(
