@@ -3,7 +3,7 @@ import os
 from contextlib import nullcontext
 from typing import Any
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
 from pydantic_yaml import parse_yaml_file_as
@@ -20,8 +20,8 @@ from sk_agents.plugin_loader import get_plugin_loader
 from sk_agents.ska_types import (
     BaseHandler,
     Config,
-    InvokeResponse,
     IntermediateTaskResponse,
+    InvokeResponse,
     PartialResponse,
 )
 from sk_agents.skagents import handle as skagents_handle
@@ -148,6 +148,7 @@ async def invoke_stream(websocket: WebSocket) -> None:
                     raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
     except WebSocketDisconnect:
         print("websocket disconnected")
+
 
 @app.post(f"/{config.service_name}/{str(config.version)}/sse")
 async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:

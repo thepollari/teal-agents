@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from ska_utils import Singleton
+from ska_utils.singleton import Singleton
 
 
 class Config(BaseModel):

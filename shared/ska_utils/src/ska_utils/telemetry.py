@@ -24,7 +24,8 @@ from opentelemetry.sdk.trace.export import (
 )
 from opentelemetry.semconv.resource import ResourceAttributes
 
-from ska_utils import AppConfig, Config, strtobool
+from ska_utils.app_config import AppConfig, Config
+from ska_utils.strtobool import strtobool
 
 TA_TELEMETRY_ENABLED = Config(
     env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="true"
