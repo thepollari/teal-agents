@@ -10,8 +10,8 @@ from semantic_kernel.contents.chat_history import ChatHistory
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import (
+    BaseConfig,
     BaseHandler,
-    Config as BaseConfig,
     InvokeResponse,
     PartialResponse,
     IntermediateTaskResponse,

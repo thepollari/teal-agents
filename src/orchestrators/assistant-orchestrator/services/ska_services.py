@@ -1,30 +1,35 @@
-from fastapi import FastAPI, Request, HTTPException, status
-from pynamodb.exceptions import DoesNotExist
-from ska_utils import AppConfig, initialize_telemetry, get_telemetry, strtobool
+import logging
 
-from auth import CustomAuthHelper, Authenticator
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
+from pynamodb.exceptions import DeleteError, DoesNotExist
+from ska_utils import AppConfig, get_telemetry, initialize_telemetry, strtobool
+
+from auth import Authenticator, CustomAuthHelper
 from configs import CONFIGS, TA_KONG_ENABLED
 from data import (
-    ConversationManager,
-    get_chat_history_manager,
-    get_ticket_manager,
-    TicketManager,
-    get_context_manager,
     ContextManager,
+    ConversationManager,
+    TicketManager,
+    get_chat_history_manager,
+    get_context_manager,
+    get_ticket_manager,
 )
 from middleware import TelemetryMiddleware
 from model import (
-    ConversationResponse,
-    NewConversationRequest,
-    GetConversationRequest,
-    AddConversationMessageRequest,
-    GeneralResponse,
     AddContextItemRequest,
-    UpdateContextItemRequest,
+    AddConversationMessageRequest,
     AuthenticationResponse,
+    ConversationResponse,
+    GeneralResponse,
+    GetConversationRequest,
+    NewConversationRequest,
+    UpdateContextItemRequest,
 )
 from model.requests import VerifyTicketRequest
 from model.responses import CreateTicketResponse, VerifyTicketResponse
+
+logger = logging.getLogger(__name__)
 
 AppConfig.add_configs(CONFIGS)
 app_config = AppConfig()
@@ -38,19 +43,43 @@ app = FastAPI(
     redoc_url="/services/v1/redoc",
 )
 
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, ex: HTTPException):
+    logger.warning(
+        f"HTTP {ex.status_code} error during {request.method} {request.url.path}",
+        extra={"headers": dict(request.headers), "detail": ex.detail},
+    )
+    return JSONResponse(
+        status_code=ex.status_code,
+        content={
+            "detail": ex.detail,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, ex: Exception):
+    logger.exception(f"Unexpected error: {str(ex)}")
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An unexpected error has occured, check logs for further information",
+            "path": request.url.path,
+        },
+    )
+
+
 # noinspection PyTypeChecker
 app.add_middleware(TelemetryMiddleware, st=get_telemetry())
 
-conversation_manager: ConversationManager = ConversationManager(
-    get_chat_history_manager()
-)
+conversation_manager: ConversationManager = ConversationManager(get_chat_history_manager())
 ticket_manager: TicketManager = get_ticket_manager()
 context_manager: ContextManager = get_context_manager()
 
 auth_helper: CustomAuthHelper = CustomAuthHelper(app_config)
-authenticator: Authenticator[auth_helper.get_request_type()] = (
-    auth_helper.get_authenticator()
-)
+authenticator: Authenticator[auth_helper.get_request_type()] = auth_helper.get_authenticator()
 
 
 @app.post("/services/v1/{orchestrator_name}/authenticate")
@@ -59,11 +88,11 @@ async def authenticate_user(
 ) -> AuthenticationResponse:
     auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
-        return AuthenticationResponse(orchestrator_name=auth_response.orch_name, user_id=auth_response.user_id)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Failed"
+        return AuthenticationResponse(
+            orchestrator_name=auth_response.orch_name, user_id=auth_response.user_id
         )
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Failed")
 
 
 @app.post("/services/v1/{orchestrator_name}/tickets", tags=["Tickets"])
@@ -77,24 +106,31 @@ async def create_ticket(
         ip_address = request.client.host
     auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
-        return CreateTicketResponse(
-            ticket=ticket_manager.create_ticket(
-                orchestrator_name, auth_response.user_id, ip_address
+        try:
+            return CreateTicketResponse(
+                ticket=ticket_manager.create_ticket(
+                    orchestrator_name, auth_response.user_id, ip_address
+                )
             )
-        )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"{type(e).__name__} - {e.msg}",
+            )
     else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Failed"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Failed")
 
 
 @app.post("/services/v1/{orchestrator_name}/tickets/verify", tags=["Tickets"])
 async def verify_ticket(
     orchestrator_name: str, payload: VerifyTicketRequest, request: Request
 ) -> VerifyTicketResponse:
-    return ticket_manager.verify_ticket(
-        orchestrator_name, payload.ticket, payload.ip_address
-    )
+    try:
+        return ticket_manager.verify_ticket(orchestrator_name, payload.ticket, payload.ip_address)
+    except DoesNotExist as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{type(e).__name__} - {e.msg}"
+        )
 
 
 @app.post(
@@ -104,9 +140,15 @@ async def verify_ticket(
 async def new_conversation(
     orchestrator_name: str, payload: NewConversationRequest, request: Request
 ) -> ConversationResponse:
-    return conversation_manager.new_conversation(
-        orchestrator_name, payload.user_id, payload.is_resumed
-    )
+    try:
+        return conversation_manager.new_conversation(
+            orchestrator_name, payload.user_id, payload.is_resumed
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
 
 
 @app.get(
@@ -116,9 +158,14 @@ async def new_conversation(
 async def get_conversation_message(
     orchestrator_name: str, payload: GetConversationRequest, request: Request
 ) -> ConversationResponse:
-    return conversation_manager.get_conversation(
-        orchestrator_name, payload.user_id, payload.session_id
-    )
+    try:
+        return conversation_manager.get_conversation(
+            orchestrator_name, payload.user_id, payload.session_id
+        )
+    except DoesNotExist as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{type(e).__name__} - {e.msg}"
+        )
 
 
 @app.post(
@@ -130,22 +177,34 @@ async def add_conversation_message(
     conversation_id: str,
     request: AddConversationMessageRequest,
 ) -> GeneralResponse:
-    return conversation_manager.add_conversation_message(
-        orchestrator_name=orchestrator_name,
-        conversation_id=conversation_id,
-        message_type=request.message_type,
-        agent_name=request.agent_name,
-        message=request.message,
-    )
+    try:
+        return conversation_manager.add_conversation_message(
+            orchestrator_name=orchestrator_name,
+            conversation_id=conversation_id,
+            message_type=request.message_type,
+            agent_name=request.agent_name,
+            message=request.message,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
 
 
 @app.post("/services/v1/{orchestrator_name}/users/{user_id}/context", tags=["Users"])
 async def create_context_item(
     orchestrator_name: str, user_id: str, request: AddContextItemRequest
 ) -> GeneralResponse:
-    context_manager.add_context(
-        orchestrator_name, user_id, request.item_key, request.item_value
-    )
+    try:
+        context_manager.add_context(
+            orchestrator_name, user_id, request.item_key, request.item_value
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
     return GeneralResponse(status=200, message="Context item added successfully")
 
 
@@ -159,9 +218,13 @@ async def update_context_item(
     item_key: str,
     request: UpdateContextItemRequest,
 ) -> GeneralResponse:
-    context_manager.update_context(
-        orchestrator_name, user_id, item_key, request.item_value
-    )
+    try:
+        context_manager.update_context(orchestrator_name, user_id, item_key, request.item_value)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
     return GeneralResponse(status=200, message="Context item updated successfully")
 
 
@@ -174,14 +237,27 @@ async def delete_context_item(
 ) -> GeneralResponse:
     try:
         context_manager.delete_context(orchestrator_name, user_id, item_key)
-    except DoesNotExist:
-        raise HTTPException(status_code=404, detail="Context item not found")
+    except DoesNotExist as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{type(e).__name__} - {e.msg}"
+        )
+    except DeleteError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
     return GeneralResponse(status=200, message="Context item deleted successfully")
 
 
 @app.get("/services/v1/{orchestrator_name}/users/{user_id}/context", tags=["Users"])
 async def get_context_items(orchestrator_name: str, user_id: str) -> dict[str, str]:
-    return context_manager.get_context(orchestrator_name, user_id)
+    try:
+        return context_manager.get_context(orchestrator_name, user_id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{type(e).__name__} - {e.msg}",
+        )
 
 
 @app.get(

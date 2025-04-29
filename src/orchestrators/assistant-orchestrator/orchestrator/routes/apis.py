@@ -1,19 +1,22 @@
-from .deps import (
-    get_conv_manager,
-    get_conn_manager,
-    get_rec_chooser,
-    get_config,
-    get_agent_catalog,
-    get_fallback_agent,
-    get_user_context_cache,
-)
 from contextlib import nullcontext
-from fastapi import Depends, APIRouter, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from ska_utils import get_telemetry
-from jose_types import ExtraData
+
 from context_directive import parse_context_directives
+from jose_types import ExtraData
 from model.requests import ConversationMessageRequest
+
+from .deps import (
+    get_agent_catalog,
+    get_config,
+    get_conn_manager,
+    get_conv_manager,
+    get_fallback_agent,
+    get_rec_chooser,
+    get_user_context_cache,
+)
 
 conv_manager = get_conv_manager()
 conn_manager = get_conn_manager()
@@ -28,7 +31,7 @@ header_scheme = APIKeyHeader(name="authorization", auto_error=False)
 
 
 @router.get(
-    "/conversations/{session_id}/messages",
+    "/conversations/{session_id}",
     tags=["Conversations"],
     description="Get the full conversation history based on a session id.",
 )
@@ -40,11 +43,12 @@ async def get_conversation_by_id(user_id: str, session_id: str):
             status_code=404,
             detail=f"Unable to get conversation with session_id: {session_id} --- {e}",
         )
+
     return {"conversation": conv}
 
 
-@router.post(
-    "/conversations/{session_id}/messages",
+@router.put(
+    "/conversations/{session_id}",
     tags=["Conversations"],
     description="Add a message to a conversation based on a session id.",
 )
@@ -82,9 +86,7 @@ async def add_conversation_message_by_id(
         ):
             # Select an agent
             try:
-                selected_agent = await rec_chooser.choose_recipient(
-                    request.message, conv
-                )
+                selected_agent = await rec_chooser.choose_recipient(request.message, conv)
             except Exception as e:
                 raise HTTPException(
                     status_code=500,
@@ -146,15 +148,16 @@ async def add_conversation_message_by_id(
                     status_code=500,
                     detail=f"Error adding response to conversation history --- {e}",
                 )
+
     return {"conversation": conv_manager.get_last_response(conv)}
 
 
 @router.post(
-    "/conversations",
+    "/conversation/new_conversation",
     tags=["Conversations"],
-    description="Start a new conversation. Returns new session ID.",
+    description="Start a new conversation. Returns new session ID and agent response.",
 )
-async def new_conversation(user_id: str):
+async def new_conversation(user_id: str, is_resumed: bool):
     jt = get_telemetry()
     with (
         jt.tracer.start_as_current_span("init-conversation")
@@ -162,12 +165,11 @@ async def new_conversation(user_id: str):
         else nullcontext()
     ):
         try:
-            conv = conv_manager.new_conversation(user_id, False)
+            conv = conv_manager.new_conversation(user_id, is_resumed)
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Error creating new conversation --- {e}"
-            )
-    return {"session_id": conv.conversation_id, "user_id": conv.user_id}
+            raise HTTPException(status_code=500, detail=f"Error creating new conversation --- {e}")
+
+    return {"conversation": conv}
 
 
 @router.get(
