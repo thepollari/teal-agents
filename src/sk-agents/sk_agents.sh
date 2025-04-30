@@ -12,7 +12,7 @@ if [ "${TA_GITHUB}" == "true" ]; then
   echo "Creating temp dir ${WORK_DIR}"
   cd ${WORK_DIR} || exit
   echo "Cloning ${TA_GH_ORG}/${TA_GH_REPO}#${TA_GH_BRANCH} to ${WORK_DIR}"
-  git clone --no-checkout --depth=1 https://oauth2:${TA_GH_TOKEN}@github.com/${TA_GH_ORG}/${TA_GH_REPO}.git
+  git clone https://oauth2:${TA_GH_TOKEN}@github.com/${TA_GH_ORG}/${TA_GH_REPO}.git
   cd ${TA_GH_REPO} || exit
   echo "Checking out ${TA_GH_BRANCH} to ${WORK_DIR}"
   git checkout ${TA_GH_BRANCH} -- ${TA_AGENT_NAME}
