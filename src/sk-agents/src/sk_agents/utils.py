@@ -4,9 +4,9 @@ from ska_utils import AppConfig
 
 from sk_agents.a2a_types import (
     A2AErrorResponse,
-    A2APartialResponseEvent,
-    A2AInvokeResponseEvent,
     A2AErrorResponseEvent,
+    A2AInvokeResponseEvent,
+    A2APartialResponseEvent,
 )
 from sk_agents.configs import TA_PLUGIN_MODULE
 from sk_agents.plugin_loader import get_plugin_loader
@@ -41,9 +41,7 @@ def get_sse_event_for_response(
     response: IntermediateTaskResponse | PartialResponse | InvokeResponse,
 ) -> str:
     if isinstance(response, IntermediateTaskResponse):
-        return (
-            f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
-        )
+        return f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
     elif isinstance(response, PartialResponse):
         return f"event: partial-response\ndata: {response.model_dump_json()}\n\n"
     elif isinstance(response, InvokeResponse):

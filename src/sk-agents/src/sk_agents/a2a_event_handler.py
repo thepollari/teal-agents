@@ -4,20 +4,20 @@ import logging
 from contextlib import nullcontext
 from typing import Any
 
-from dapr.clients import DaprClient
-from dapr.clients.grpc._response import TopicEventResponse
 from opentelemetry.propagate import extract
 from pydantic import ValidationError
 from ska_utils import AppConfig, get_telemetry
 
+from dapr.clients import DaprClient
+from dapr.clients.grpc._response import TopicEventResponse
 from sk_agents.a2a_types import (
-    A2AInvokeEvent,
-    A2AEventType,
-    A2ANonRecoverableError,
     A2AErrorResponse,
+    A2AEventType,
+    A2AInvokeEvent,
+    A2ANonRecoverableError,
 )
 from sk_agents.configs import TA_A2A_EVENT_SOURCE_NAME
-from sk_agents.ska_types import BaseHandler, BaseConfig
+from sk_agents.ska_types import BaseConfig, BaseHandler
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.utils import invoke_response_to_a2a_event
 
@@ -92,22 +92,20 @@ class A2AEventHandler:
         except Exception as e:
             logging.error(f"Error parsing event data: {e}")
             logging.error(f"Event data: {event_data_raw}")
-            raise A2ANonRecoverableError("Invalid event data format")
+            raise A2ANonRecoverableError("Invalid event data format") from e
 
     def _parse_invoke_event(self, event_data) -> A2AInvokeEvent:
         try:
             data = A2AInvokeEvent(**event_data)
             return data
-        except (ValidationError, TypeError, ValueError):
+        except (ValidationError, TypeError, ValueError) as e:
             event_id = "unknown"
             if "event_id" in event_data:
                 event_id = event_data["event_id"]
             elif hasattr(event_data, "event_id"):
                 event_id = event_data.event_id
-            self._publish_error_event(
-                event_id, 400, f"Invalid event data: {event_data}"
-            )
-            raise A2ANonRecoverableError(f"Invalid event data: {event_data}")
+            self._publish_error_event(event_id, 400, f"Invalid event data: {event_data}")
+            raise A2ANonRecoverableError(f"Invalid event data: {event_data}") from e
 
     def _get_handler(self, event_id: str, authorization: str):
         if self.root_handler == "skagents":
@@ -115,24 +113,20 @@ class A2AEventHandler:
                 return skagents_handle(self.config, self.app_config, authorization)
             except Exception as e:
                 self._publish_error_event(event_id, 500, str(e))
-                raise A2ANonRecoverableError(str(e))
+                raise A2ANonRecoverableError(str(e)) from e
         else:
             self._publish_error_event(
                 event_id, 500, f"Unknown apiVersion: {self.config.apiVersion}"
             )
-            raise A2ANonRecoverableError(
-                f"Unknown apiVersion: {self.config.apiVersion}"
-            )
+            raise A2ANonRecoverableError(f"Unknown apiVersion: {self.config.apiVersion}")
 
-    def _invoke_stream(
-        self, event_id: str, handler: BaseHandler, inputs: dict[str, Any]
-    ):
+    def _invoke_stream(self, event_id: str, handler: BaseHandler, inputs: dict[str, Any]):
         try:
             asyncio.run(self.publish_stream(event_id, handler, inputs))
             return TopicEventResponse("success")
         except Exception as e:
             self._publish_error_event(event_id, 500, str(e))
-            raise A2ANonRecoverableError(str(e))
+            raise A2ANonRecoverableError(str(e)) from e
 
     def _invoke(self, event_id: str, handler: BaseHandler, inputs: dict[str, Any]):
         try:
@@ -141,7 +135,7 @@ class A2AEventHandler:
             return TopicEventResponse("success")
         except Exception as e:
             self._publish_error_event(event_id, 500, str(e))
-            raise A2ANonRecoverableError(str(e))
+            raise A2ANonRecoverableError(str(e)) from e
 
     def _invoke_appropriately(
         self,

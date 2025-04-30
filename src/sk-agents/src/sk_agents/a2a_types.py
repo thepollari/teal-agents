@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from sk_agents.ska_types import BaseMultiModalInput, PartialResponse, InvokeResponse
+from sk_agents.ska_types import BaseMultiModalInput, InvokeResponse, PartialResponse
 
 
 class A2AEventType(Enum):
