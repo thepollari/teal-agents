@@ -7,8 +7,12 @@ TA_SERVICE_CONFIG = Config(
 TA_REMOTE_PLUGIN_PATH = Config(
     env_name="TA_REMOTE_PLUGIN_PATH", is_required=False, default_value=None
 )
-TA_TYPES_MODULE = Config(env_name="TA_TYPES_MODULE", is_required=False, default_value=None)
-TA_PLUGIN_MODULE = Config(env_name="TA_PLUGIN_MODULE", is_required=False, default_value=None)
+TA_TYPES_MODULE = Config(
+    env_name="TA_TYPES_MODULE", is_required=False, default_value=None
+)
+TA_PLUGIN_MODULE = Config(
+    env_name="TA_PLUGIN_MODULE", is_required=False, default_value=None
+)
 TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE = Config(
     env_name="TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE",
     is_required=False,
@@ -24,9 +28,11 @@ TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL = Config(
     is_required=False,
     default_value="gpt-4o",
 )
-TA_EVENTS_ENABLED = Config(env_name="TA_EVENTS_ENABLED", is_required=True, default_value="false")
-TA_EVENT_SOURCE_NAME = Config(
-    env_name="TA_EVENT_SOURCE_NAME", is_required=True, default_value="agenttask"
+TA_A2A_EVENTS_ENABLED = Config(
+    env_name="TA_A2A_EVENTS_ENABLED", is_required=True, default_value="false"
+)
+TA_A2A_EVENT_SOURCE_NAME = Config(
+    env_name="TA_A2A_EVENT_SOURCE_NAME", is_required=True, default_value="agenttask"
 )
 
 configs: list[Config] = [
@@ -38,6 +44,6 @@ configs: list[Config] = [
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE,
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME,
     TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL,
-    TA_EVENTS_ENABLED,
-    TA_EVENT_SOURCE_NAME,
+    TA_A2A_EVENTS_ENABLED,
+    TA_A2A_EVENT_SOURCE_NAME,
 ]

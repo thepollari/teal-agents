@@ -2,10 +2,12 @@ import os
 from types import NoneType
 
 from fastapi import FastAPI
-from ska_utils import AppConfig
+from ska_utils import AppConfig, strtobool
 
+from sk_agents.a2a_event_handler import A2AEventHandler
 from sk_agents.configs import (
     TA_SERVICE_CONFIG,
+    TA_A2A_EVENTS_ENABLED,
 )
 from sk_agents.routes import Routes
 from sk_agents.ska_types import (
@@ -17,7 +19,9 @@ from sk_agents.utils import initialize_plugin_loader
 
 class AppV2:
     @staticmethod
-    def run(name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI):
+    def run(
+        name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI
+    ):
         config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
         agents_path = str(os.path.dirname(config_file))
 
@@ -29,6 +33,14 @@ class AppV2:
             description = config.metadata.description
         else:
             description = f"{config.name} API"
+
+        events_enabled = strtobool(app_config.get(TA_A2A_EVENTS_ENABLED.env_name))
+        if events_enabled:
+            event_handler = A2AEventHandler(
+                app_config=app_config, config=config, root_handler=root_handler
+            )
+            app.add_event_handler("startup", event_handler.initialize)
+            app.add_event_handler("shutdown", event_handler.shutdown)
 
         app.include_router(
             Routes.get_rest_routes(
