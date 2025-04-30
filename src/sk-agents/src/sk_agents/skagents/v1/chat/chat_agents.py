@@ -22,13 +22,14 @@ from sk_agents.skagents.v1.utils import (
 
 
 class ChatAgents(BaseHandler):
-    def __init__(self, config: BaseConfig, agent_builder: AgentBuilder):
-        if config.input_type not in [
-            "BaseInput",
-            "BaseInputWithUserContext",
-            "BaseMultiModalInput",
-        ]:
-            raise ValueError("Invalid input type")
+    def __init__(self, config: BaseConfig, agent_builder: AgentBuilder, is_v2: bool = False):
+        if not is_v2:
+            if config.input_type not in [
+                "BaseInput",
+                "BaseInputWithUserContext",
+                "BaseMultiModalInput",
+            ]:
+                raise ValueError("Invalid input type")
 
         if hasattr(config, "spec"):
             self.config = Config(config=config)
@@ -41,7 +42,7 @@ class ChatAgents(BaseHandler):
     def _augment_with_user_context(
         inputs: dict[str, Any] | None, chat_history: ChatHistory
     ) -> None:
-        if hasattr(inputs, "user_context"):
+        if "user_context" in inputs:
             content = "The following user context was provided:\n"
             for key, value in inputs["user_context"].items():
                 content += f"  {key}: {value}\n"
@@ -56,13 +57,13 @@ class ChatAgents(BaseHandler):
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
 
         # Initialize tasks count and token metrics
-        task_no = 0
         completion_tokens: int = 0
         prompt_tokens: int = 0
         total_tokens: int = 0
         final_response = []
         # Initialize and parse the chat history
         chat_history = ChatHistory()
+        ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
 
         # Process the final task with streaming
@@ -79,9 +80,10 @@ class ChatAgents(BaseHandler):
                 extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
                 extra_data_collector.add_extra_data_items(extra_data_partial.extra_data)
             except Exception:
-                # Handle and return partial response
-                final_response.append(content)
-                yield PartialResponse(output_partial=content)
+                if len(content) > 0:
+                    # Handle and return partial response
+                    final_response.append(content)
+                    yield PartialResponse(output_partial=content)
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(
@@ -93,11 +95,7 @@ class ChatAgents(BaseHandler):
             extra_data=extra_data_collector.get_extra_data(),
             output_raw=final_response,
         )
-        # Format and transform for pydantic output
-        if self.config.config.output_type is None:
-            yield response
-        else:
-            yield await self._transform_output_if_required(response)
+        yield response
 
     async def invoke(
         self,

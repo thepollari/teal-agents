@@ -46,6 +46,13 @@ class ContentType(Enum):
     TEXT = "text"
 
 
+class SseEventType(Enum):
+    INTERMEDIATE_TASK_RESPONSE = "intermediate-task-response"
+    PARTIAL_RESPONSE = "partial-response"
+    FINAL_RESPONSE = "final-response"
+    UNKNOWN = "unknown"
+
+
 class EmbeddedImage(BaseModel):
     format: str
     data: str
@@ -94,17 +101,6 @@ class BaseInputWithUserContext(KernelBaseModel):
     user_context: dict[str, str] | None = None
 
 
-class Config(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    apiVersion: str
-    description: str | None = None
-    service_name: str
-    version: float
-    input_type: str
-    output_type: str | None = None
-
-
 class TokenUsage(BaseModel):
     completion_tokens: int
     prompt_tokens: int
@@ -137,7 +133,9 @@ class BaseHandler:
     async def invoke(self, inputs: dict[str, Any] | None = None) -> InvokeResponse:
         pass
 
-    async def invoke_stream(self, inputs: dict[str, Any] | None = None) -> AsyncIterable[str]:
+    async def invoke_stream(
+        self, inputs: dict[str, Any] | None = None
+    ) -> AsyncIterable[str] | AsyncIterable[PartialResponse | InvokeResponse]:
         pass
 
 

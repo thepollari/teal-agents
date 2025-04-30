@@ -24,6 +24,12 @@ TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL = Config(
     is_required=False,
     default_value="gpt-4o",
 )
+TA_A2A_EVENTS_ENABLED = Config(
+    env_name="TA_A2A_EVENTS_ENABLED", is_required=True, default_value="false"
+)
+TA_A2A_EVENT_SOURCE_NAME = Config(
+    env_name="TA_A2A_EVENT_SOURCE_NAME", is_required=True, default_value="agenttask"
+)
 
 configs: list[Config] = [
     TA_API_KEY,
@@ -34,4 +40,6 @@ configs: list[Config] = [
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE,
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME,
     TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL,
+    TA_A2A_EVENTS_ENABLED,
+    TA_A2A_EVENT_SOURCE_NAME,
 ]

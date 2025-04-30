@@ -17,6 +17,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc",
     "ska-utils",
     "lock",
+    "dapr>=1.15.0",
 ]
 
 [project.urls]

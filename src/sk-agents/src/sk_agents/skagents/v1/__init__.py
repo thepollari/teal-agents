@@ -17,26 +17,31 @@ from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
 
 
 def handle(config: BaseConfig, app_config: AppConfig, authorization: str | None = None):
-    if config.apiVersion != "skagents/v1":
+    if config.apiVersion != "skagents/v1" and config.apiVersion != "skagents/v2alpha1":
         raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
     match config.kind:
         case "Sequential":
             return _handle_sequential(config, app_config, authorization)
         case "Chat":
-            return _handle_chat(config, app_config, authorization)
+            return _handle_chat(config, app_config, authorization, False)
+        case "Agent":
+            return _handle_chat(config, app_config, authorization, True)
         case _:
             raise ValueError(f"Unknown kind: {config.kind}")
 
 
 def _handle_chat(
-    config: BaseConfig, app_config: AppConfig, authorization: str | None = None
+    config: BaseConfig,
+    app_config: AppConfig,
+    authorization: str | None = None,
+    is_v2: bool = False,
 ) -> BaseHandler:
     remote_plugin_loader = RemotePluginLoader(RemotePluginCatalog(app_config))
     chat_completion_builder = ChatCompletionBuilder(app_config)
     kernel_builder = KernelBuilder(chat_completion_builder, remote_plugin_loader, app_config)
     agent_builder = AgentBuilder(kernel_builder, authorization)
-    chat_agents = ChatAgents(config, agent_builder)
+    chat_agents = ChatAgents(config, agent_builder, is_v2)
     return chat_agents
 
 

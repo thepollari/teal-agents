@@ -12,7 +12,7 @@ def handle(
         raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
     match version:
-        case "v1":
+        case "v1" | "v2alpha1":
             return skagents_v1_handle(config, app_config, authorization)
         case _:
             raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
