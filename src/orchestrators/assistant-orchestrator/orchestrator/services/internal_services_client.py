@@ -90,7 +90,7 @@ class InternalServicesClient(ServicesClient):
         if item_key not in self.contexts[user_id]:
             return ItemNotFoundResponse()
         self.contexts[user_id][item_key] = item_value
-        return ItemDeleteResponse
+        return ItemDeleteResponse()
 
     def delete_context_item(self, user_id: str, item_key: str) -> GeneralResponse:
         if user_id not in self.contexts:
