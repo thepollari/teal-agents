@@ -63,7 +63,7 @@ class BaseEmbeddedImage(KernelBaseModel):
 
 
 class MultiModalItem(BaseModel):
-    content_type: ContentType
+    content_type: ContentType = ContentType.TEXT
     content: str
 
 
