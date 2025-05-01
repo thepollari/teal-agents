@@ -43,10 +43,10 @@ def initialize() -> None:
     _config = parse_yaml_file_as(Config, config_file)
 
     if _config is None:
-        raise ImportError("_config was None which should not happen")
+        raise TypeError("_config was None which should not happen")
 
     if _config.spec is None:
-        raise ImportError("_config.spec was None which should not happen")
+        raise TypeError("_config.spec was None which should not happen")
 
     initialize_telemetry(_config.service_name, app_config)
 
