@@ -68,7 +68,7 @@ def mock_task_builder(mocker):
     return task_builder
 
 @pytest.fixture
-def mocker_response_fixture(mocker):
+def task_invoke_response_mock(mocker):
     mock_response = InvokeResponse(
         token_usage=TokenUsage(
             completion_tokens=10,
@@ -104,7 +104,7 @@ class MockChatHistory():
 
 @pytest.mark.asyncio
 async def test_sequential_invoke(
-        config, mock_task_builder, mock_kernel_builder, mocker_response_fixture,
+        config, mock_task_builder, mock_kernel_builder, task_invoke_response_mock,
         mock_extra_data_collector, mocker
 )-> None:
     """
@@ -138,7 +138,7 @@ async def test_sequential_invoke(
 
 @pytest.mark.asyncio
 async def test_sequential_invoke_with_output_type(
-        config, mock_task_builder, mock_kernel_builder, mocker_response_fixture,
+        config, mock_task_builder, mock_kernel_builder, task_invoke_response_mock,
         mock_extra_data_collector, mocker
 )-> None:
     
