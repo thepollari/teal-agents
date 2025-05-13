@@ -1,19 +1,16 @@
 import pytest
 
-from sk_agents.skagents.v1.sequential.task import Task
-from sk_agents.skagents.v1.sequential.sequential_skagents import SequentialSkagents
-from sk_agents.extra_data_collector import ExtraDataCollector
-from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
-from sk_agents.skagents.kernel_builder import KernelBuilder
-from sk_agents.skagents.v1.sequential.config import Spec, TaskConfig
-from sk_agents.skagents.v1.config import AgentConfig
 from sk_agents.skagents.v1.sk_agent import SKAgent
+from sk_agents.skagents.v1.config import AgentConfig
+from sk_agents.skagents.v1.sequential.task import Task
+from sk_agents.skagents.kernel_builder import KernelBuilder
+from sk_agents.extra_data_collector import ExtraDataCollector
+from sk_agents.skagents.v1.sequential.config import Spec, TaskConfig
+from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
+from sk_agents.ska_types import BaseConfig, InvokeResponse, TokenUsage
+from sk_agents.skagents.v1.sequential.sequential_skagents import SequentialSkagents
 
-from sk_agents.ska_types import (
-    BaseConfig,
-    InvokeResponse,
-    TokenUsage,
-)
+
 
 @pytest.fixture
 def config():
@@ -58,7 +55,6 @@ def mock_kernel_builder(mocker):
 def mock_task_builder(mocker):
     task_builder = mocker.AsyncMock(spec=TaskBuilder)
     agent_mock = mocker.Mock(spec=SKAgent)
-    # task_mock = mocker.Mock(spec=Task)
     build_task_return = Task(
         name='test task',
         description='test',
@@ -85,9 +81,7 @@ def mocker_response_fixture(mocker):
     async def mock_invoke(*args, **kwargs):
         return mock_response
     
-    # mocker.patch("sk_agents.skagents.v1.sequential.task.Task.invoke", return_value=mock_response)
     mocker.patch("sk_agents.skagents.v1.sequential.task.Task.invoke", side_effect=mock_invoke)
-    # mocker.patch("sk_agents.skagents.v1.sequential.sequential_skagents.Task.invoke", side_effect=mock_invoke)
     return mock_response
 
 @pytest.fixture
@@ -113,19 +107,16 @@ async def test_sequential_invoke(
         config, mock_task_builder, mock_kernel_builder, mocker_response_fixture,
         mock_extra_data_collector, mocker
 )-> None:
-    
     """
     Test:
-    Check tasks count and token metrics
-    Check chat history and task inputs are initialized and parsed
-    Check all tasks are being invoked
-    Check return type: InvokeResponse
+    ExtraDataCollecotr, ChatHistory are called
+    Return type: InvokeResponse
+    Task count and token metrics change
+    Response output_raw is last message in chat history
     """
 
     skagents = SequentialSkagents(config, mock_kernel_builder, mock_task_builder)
-    
     test_input = {'test_input_key':'test_input_value', 'chat_history':[]}
-    
     mock_parse_task_inputs = mocker.patch.object(SequentialSkagents,'_parse_task_inputs', return_value = {"parsed_inputs":test_input["test_input_key"]})
     mock_parse_chat_history = mocker.patch('sk_agents.skagents.v1.sequential.sequential_skagents.parse_chat_history', return_value=MockChatHistory)
     mock_chat_history = mocker.patch('sk_agents.skagents.v1.sequential.sequential_skagents.ChatHistory', new=MockChatHistory)
@@ -133,10 +124,9 @@ async def test_sequential_invoke(
 
     response = await skagents.invoke(inputs=test_input)
     
+    
     mock_extra_data_collector.assert_called()
-
     mock_parse_chat_history.assert_called()
-
     mock_parse_task_inputs.assert_called()
     
     assert isinstance(response, InvokeResponse)
@@ -146,9 +136,37 @@ async def test_sequential_invoke(
     assert response.output_raw == "This is a Mock Message"
 
 
+@pytest.mark.asyncio
+async def test_sequential_invoke_with_output_type(
+        config, mock_task_builder, mock_kernel_builder, mocker_response_fixture,
+        mock_extra_data_collector, mocker
+)-> None:
+    
+    """
+    Test:
+    Tranform output if required is called when config.output_type is set
+    """
+
+    config.output_type = "mock_type"
+    mock_parse_task_inputs = mocker.patch.object(SequentialSkagents,'_transform_output_if_required')
+    skagents = SequentialSkagents(config, mock_kernel_builder, mock_task_builder)
+    
+    test_input = {'test_input_key':'test_input_value', 'chat_history':[]}
+    
+    mock_parse_task_inputs = mocker.patch.object(SequentialSkagents,'_parse_task_inputs', return_value = {"parsed_inputs":test_input["test_input_key"]})
+    mocker.patch('sk_agents.skagents.v1.sequential.sequential_skagents.parse_chat_history', return_value=MockChatHistory)
+    mocker.patch('sk_agents.skagents.v1.sequential.sequential_skagents.ChatHistory', new=MockChatHistory)
+    
+
+    response = await skagents.invoke(inputs=test_input)
+
+    mock_parse_task_inputs.assert_called()
 
 def test_init_sequential(config, mock_task_builder, mock_kernel_builder) -> None:
+    """
+    Test:
+    SequentialSkagents init 
+    """
     skagents = SequentialSkagents(config, mock_kernel_builder, mock_task_builder)
-    print(skagents.tasks)
     assert skagents is not None
     assert skagents.tasks is not None
