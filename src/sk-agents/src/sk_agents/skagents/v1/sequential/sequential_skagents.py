@@ -20,6 +20,7 @@ from sk_agents.skagents.v1.sequential.output_transformer import OutputTransforme
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
 from sk_agents.skagents.v1.utils import get_token_usage_for_response, parse_chat_history
 from sk_agents.type_loader import get_type_loader
+from sk_agents.exceptions import InvalidConfigException, InvalidInputException, AgentInvokeException
 
 
 class SequentialSkagents(BaseHandler):
@@ -32,7 +33,7 @@ class SequentialSkagents(BaseHandler):
         if hasattr(config, "spec"):
             self.config = Config(config=config)
         else:
-            raise ValueError("Invalid config")
+            raise InvalidConfigException(f"Invalid config: Expected 'spec' attribute, got {config.__dict__}")
 
         self.kernel_builder = kernel_builder
 
@@ -182,6 +183,10 @@ class SequentialSkagents(BaseHandler):
             collector.add_extra_data_items(i_response.extra_data)
             task_no += 1
         last_message = chat_history.messages[-1].content
+        
+        if not last_message:
+            raise AgentInvokeException("Agent invoke did not produce a message")
+        
         response = InvokeResponse(
             token_usage=TokenUsage(
                 completion_tokens=completion_tokens,
