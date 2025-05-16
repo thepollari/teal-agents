@@ -37,6 +37,7 @@ dev = [
     "pytest-cov",
     "hatchling",
     "hatch",
+    "freezegun",
 ]
 
 [tool.ruff]
