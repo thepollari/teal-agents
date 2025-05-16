@@ -68,8 +68,7 @@ follow_imports = "skip"
 python_version = 3.11
 
 [tool.coverage.run]
-source = ["src/ska_utils"]
-omit = ["*/tests/*", "test_*", "__init__.py", "__about__.py"]
+source = ["tests","src/ska_utils"]
 
 [tool.coverage.report]
 show_missing = true
