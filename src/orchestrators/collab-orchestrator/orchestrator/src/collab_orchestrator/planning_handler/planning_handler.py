@@ -46,6 +46,11 @@ class PlanningHandler(KindHandler):
         self.plan_manager = None
         self.planning_agent = None
 
+    def _start_span(self, name: str, attributes: dict | None = None):
+        if self.t.telemetry_enabled():
+            return self.t.tracer.start_as_current_span(name=name, attributes=attributes)
+        return nullcontext()
+
     async def initialize(self):
         spec: PlanningSpec = PlanningSpec.model_validate(
             obj=self.config.spec.model_dump()
@@ -70,18 +75,8 @@ class PlanningHandler(KindHandler):
         request_id = uuid.uuid4().hex
         source = f"{self.config.service_name}:{self.config.version}"
 
-        with (
-            self.t.tracer.start_as_current_span(
-                name="invoke-sse", attributes={"goal": request}
-            )
-            if self.t.telemetry_enabled()
-            else nullcontext()
-        ):
-            with (
-                self.t.tracer.start_as_current_span(name="build-plan")
-                if self.t.telemetry_enabled()
-                else nullcontext()
-            ):
+        with self._start_span(name="invoke-sse", attributes={"goal": request}):
+            with self._start_span(name="build-plan"):
                 try:
                     plan = await self.plan_manager.generate_plan(
                         chat_history=chat_history,
@@ -116,11 +111,7 @@ class PlanningHandler(KindHandler):
                 plan.request_id = request_id
                 yield new_event_response(EventType.PLAN, plan)
 
-            with (
-                self.t.tracer.start_as_current_span(name="execute-plan")
-                if self.t.telemetry_enabled()
-                else nullcontext()
-            ):
+            with self._start_span(name="execute-plan"):
                 step_executor = StepExecutor(self.task_agents)
                 for step in plan.steps:
                     try:

@@ -57,16 +57,30 @@ class TeamHandler(KindHandler):
         source: str | None = None,
         request_id: str | None = None,
     ) -> AsyncIterable[str]:
-        async for result in self.task_executor.execute_task_sse(
-            task_id=task_id,
-            instructions=instructions,
-            agent_name=agent_name,
-            conversation=conversation,
-            session_id=session_id,
-            source=source,
-            request_id=request_id,
-        ):
-            yield result
+        """Executes a single task and streams results."""
+        try:
+            async for result in self.task_executor.execute_task_sse(
+                task_id=task_id,
+                instructions=instructions,
+                agent_name=agent_name,
+                conversation=conversation,
+                session_id=session_id,
+                source=source,
+                request_id=request_id,
+            ):
+                yield result
+        except Exception as e:
+            yield new_event_response(
+                EventType.ERROR,
+                ErrorResponse(
+                    session_id=session_id or "",
+                    source=source or "",
+                    request_id=request_id or "",
+                    status_code=500,
+                    detail=str(e),
+                ),
+            )
+            return
 
     async def initialize(self):
         spec = TeamSpec.model_validate(obj=self.config.spec.model_dump())
@@ -191,3 +205,4 @@ class TeamHandler(KindHandler):
                                 abort_reason=f"Max rounds surpassed: {self.max_rounds}",
                             ),
                         )
+                        break

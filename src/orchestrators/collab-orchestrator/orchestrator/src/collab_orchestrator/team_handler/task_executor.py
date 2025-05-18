@@ -59,25 +59,37 @@ class TaskExecutor:
 
             task_result = ""
             pre_reqs = conversation.to_pre_requisites()
-            async for content in task_agent.perform_task_sse(
-                session_id, instructions, pre_reqs
-            ):
-                if isinstance(content, PartialResponse):
-                    yield new_event_response(EventType.PARTIAL_RESPONSE, content)
-                elif isinstance(content, InvokeResponse):
-                    task_result = content.output_raw
-                    yield new_event_response(EventType.FINAL_RESPONSE, content)
-                elif isinstance(content, ServerSentEvent):
-                    yield f"event: {content.event}\ndata: {content.data}\n\n"
-                else:
-                    yield new_event_response(
-                        EventType.ERROR,
-                        ErrorResponse(
-                            session_id=session_id,
-                            source=source,
-                            request_id=request_id,
-                            status_code=500,
-                            detail=f"Unknown response type - {str(content)}",
-                        ),
-                    )
+            try:
+                async for content in task_agent.perform_task_sse(
+                    session_id, instructions, pre_reqs
+                ):
+                    if isinstance(content, PartialResponse):
+                        yield new_event_response(EventType.PARTIAL_RESPONSE, content)
+                    elif isinstance(content, InvokeResponse):
+                        task_result = content.output_raw
+                        yield new_event_response(EventType.FINAL_RESPONSE, content)
+                    elif isinstance(content, ServerSentEvent):
+                        yield f"event: {content.event}\ndata: {content.data}\n\n"
+                    else:
+                        yield new_event_response(
+                            EventType.ERROR,
+                            ErrorResponse(
+                                session_id=session_id,
+                                source=source,
+                                request_id=request_id,
+                                status_code=500,
+                                detail=f"Unknown response type - {str(content)}",
+                            ),
+                        )
+            except Exception as e:
+                yield new_event_response(
+                    EventType.ERROR,
+                    ErrorResponse(
+                        session_id=session_id,
+                        source=source,
+                        request_id=request_id,
+                        status_code=500,
+                        detail=f"Unexpected error occurred: {e}",
+                    ),
+                )
             conversation.add_item(task_id, agent_name, instructions, task_result)

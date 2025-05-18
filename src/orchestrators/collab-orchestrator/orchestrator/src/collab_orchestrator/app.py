@@ -1,12 +1,13 @@
 import uuid
 from contextlib import nullcontext
 from copy import deepcopy
-from typing import List, Dict
+from typing import List, Dict, AsyncIterable
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic_yaml import parse_yaml_file_as
 from ska_utils import AppConfig, strtobool, initialize_telemetry, get_telemetry
+from opentelemetry.propagate import extract, Context
 
 from collab_orchestrator.agents import (
     AgentGateway,
@@ -104,6 +105,18 @@ app.add_event_handler("startup", initialize)
 session_cache: Dict[str, BaseMultiModalInput] = {}
 
 
+async def invoke_with_span(
+    context: Context, chat_history: BaseMultiModalInput, request: str
+) -> AsyncIterable:
+    with (
+        t.tracer.start_as_current_span(name="invoke-sse", context=context)
+        if t.telemetry_enabled()
+        else nullcontext()
+    ):
+        async for event in handler.invoke(chat_history, request):
+            yield event
+
+
 @app.post(f"/{config.service_name}/{config.version}")
 @docstring_parameter(description)
 async def invoke_sse():
@@ -116,12 +129,12 @@ async def invoke_sse():
 
 @app.post(f"/{config.service_name}/{config.version}/sse")
 @docstring_parameter(description)
-async def invoke_sse(chat_history: BaseMultiModalInput):
+async def invoke_sse(chat_history: BaseMultiModalInput, request: Request):
     """
     {0}
 
     """
-
+    context = extract(request.headers)
     if not chat_history:
         raise HTTPException(status_code=400, detail="Chat history is required")
     if chat_history.chat_history[-1].role != "user":
@@ -133,7 +146,7 @@ async def invoke_sse(chat_history: BaseMultiModalInput):
     request = chat_history.chat_history.pop()
 
     return StreamingResponse(
-        handler.invoke(chat_history, request.items[-1].content),
+        invoke_with_span(context, chat_history, request.items[-1].content),
         media_type="text/event-stream",
     )
 
@@ -167,7 +180,7 @@ async def invoke_browser(chat_history: BaseMultiModalInput):
 
 @app.get(f"/{config.service_name}/{config.version}/browser/{{session_id}}")
 @docstring_parameter(description)
-async def get_browser_response(session_id: str):
+async def get_browser_response(session_id: str, request: Request):
     """
     {0}
 
@@ -176,15 +189,21 @@ async def get_browser_response(session_id: str):
     receive the SSE event stream in a browser.
     """
 
-    if not session_id:
-        raise HTTPException(status_code=400, detail="Session ID is required")
-    if session_id not in session_cache:
-        raise HTTPException(status_code=400, detail="Session ID not found")
+    context = extract(request.headers)
+    with (
+        t.tracer.start_as_current_span(name="invoke-sse", context=context)
+        if t.telemetry_enabled()
+        else nullcontext()
+    ):
+        if not session_id:
+            raise HTTPException(status_code=400, detail="Session ID is required")
+        if session_id not in session_cache:
+            raise HTTPException(status_code=400, detail="Session ID not found")
 
-    chat_history = deepcopy(session_cache[session_id])
-    request = chat_history.chat_history.pop()
+        chat_history = deepcopy(session_cache[session_id])
+        request = chat_history.chat_history.pop()
 
-    return StreamingResponse(
-        handler.invoke(chat_history, request.items[-1].content),
-        media_type="text/event-stream",
-    )
+        return StreamingResponse(
+            handler.invoke(chat_history, request.items[-1].content),
+            media_type="text/event-stream",
+        )

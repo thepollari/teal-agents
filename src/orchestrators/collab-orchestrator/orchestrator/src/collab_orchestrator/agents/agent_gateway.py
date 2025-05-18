@@ -56,6 +56,7 @@ class AgentGateway(BaseModel):
         headers = {
             "taAgwKey": self.agw_key,
         }
+        inject(headers)
         endpoint = self._get_sse_endpoint_for_agent(agent_name, agent_version)
         async with httpx.AsyncClient(timeout=60.0) as client:
             async with aconnect_sse(
