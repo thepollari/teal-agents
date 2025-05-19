@@ -38,6 +38,8 @@ dev = [
     "hatchling",
     "hatch",
     "freezegun",
+    "pytest-mock",
+    "pytest-asyncio",
 ]
 
 [tool.ruff]
