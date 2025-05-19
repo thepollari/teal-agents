@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from model import Conversation
 
 
-class MessageType(Enum):
-    USER = "user"
-    AGENT = "agent"
+class MessageType(str,Enum):
+    USER: str = "user"
+    AGENT: str = "agent"
 
 
 class GeneralResponse(BaseModel):

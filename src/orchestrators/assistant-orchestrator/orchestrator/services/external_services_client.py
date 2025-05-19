@@ -84,7 +84,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.get(
                     url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/conversation-history/{session_id}",
                     headers=self.headers,
-                    params=conv_request.model_dump(),
+                    json=conv_request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
