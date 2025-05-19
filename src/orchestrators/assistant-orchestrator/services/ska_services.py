@@ -83,7 +83,9 @@ authenticator: Authenticator[auth_helper.get_request_type()] = auth_helper.get_a
 
 
 @app.post("/services/v1/{orchestrator_name}/authenticate")
-async def authenticate_user(orchestrator_name: str, payload: auth_helper.get_request_type()) -> AuthenticationResponse:
+async def authenticate_user(
+    orchestrator_name: str, payload: auth_helper.get_request_type()
+) -> AuthenticationResponse:
     auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
         return AuthenticationResponse(
@@ -164,6 +166,7 @@ async def get_conversation_message(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"{type(e).__name__} - {e.msg}"
         ) from e
+
 
 @app.post(
     "/services/v1/{orchestrator_name}/conversation-history/{conversation_id}/messages",

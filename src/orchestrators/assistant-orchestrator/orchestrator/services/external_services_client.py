@@ -1,7 +1,6 @@
 import json
 
 import aiohttp
-import requests
 from opentelemetry.propagate import inject
 from pydantic import BaseModel
 
@@ -159,7 +158,7 @@ class ExternalServicesClient(ServicesClient):
         context_request = AddContextRequest(item_key=item_key, item_value=item_value)
 
         inject(self.headers)
-    
+
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.post(
