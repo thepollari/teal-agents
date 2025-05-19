@@ -156,9 +156,14 @@ async def new_conversation(
 async def get_conversation_message(
     orchestrator_name: str, payload: GetConversationRequest, request: Request
 ) -> ConversationResponse:
+    try:
         return conversation_manager.get_conversation(
             orchestrator_name, payload.user_id, payload.session_id
         )
+    except DoesNotExist as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{type(e).__name__} - {e.msg}"
+        ) from e
 
 @app.post(
     "/services/v1/{orchestrator_name}/conversation-history/{conversation_id}/messages",
