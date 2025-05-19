@@ -1,5 +1,6 @@
 import pytest
 
+from sk_agents.exceptions import AgentInvokeException, InvalidConfigException
 from sk_agents.extra_data_collector import ExtraDataCollector
 from sk_agents.ska_types import BaseConfig, InvokeResponse, TokenUsage
 from sk_agents.skagents.kernel_builder import KernelBuilder
@@ -9,7 +10,6 @@ from sk_agents.skagents.v1.sequential.sequential_skagents import SequentialSkage
 from sk_agents.skagents.v1.sequential.task import Task
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
 from sk_agents.skagents.v1.sk_agent import SKAgent
-from sk_agents.exceptions import InvalidConfigException, AgentInvokeException
 
 
 @pytest.fixture
