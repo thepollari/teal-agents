@@ -45,7 +45,7 @@ class SequentialSkagents(BaseHandler):
         task_configs = self.config.get_tasks()
         if not task_configs:
             raise InvalidConfigException(
-                f"Invalid config: Expected 'spec.tasks' in agent configuration, got {config.spec.tasks}"
+                f"Invalid agent configuration: Expected 'spec.tasks', got {config.spec.tasks}"
             )
         sorted_configs = sorted(task_configs, key=lambda x: x.task_no)
         self.tasks = []
@@ -139,8 +139,8 @@ class SequentialSkagents(BaseHandler):
                 )
             except Exception as e:
                 raise AgentInvokeException(
-                    f"Error while invoking agent to perform task {task.name} with exception error {str(e)}"
-                )
+                    f"Error while invoking task {task.name}: {str(e)}"
+                ) from e
         # Process and stream back final task results
         async for content in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
             # Calculate usage metrics if chunk contains usage metadata
@@ -199,8 +199,8 @@ class SequentialSkagents(BaseHandler):
                 task_no += 1
             except Exception as e:
                 raise AgentInvokeException(
-                    f"Error while invoking agent to perform task {task.name} with exception error {str(e)}"
-                )
+                    f"Error while invoking task {task.name}: {str(e)}"
+                ) from e
         logger.info(f"Token count after invoking Agent: {total_tokens}")
         last_message = chat_history.messages[-1].content
         response = InvokeResponse(
