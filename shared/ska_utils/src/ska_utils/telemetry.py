@@ -28,7 +28,7 @@ from ska_utils.app_config import AppConfig, Config
 from ska_utils.strtobool import strtobool
 
 TA_TELEMETRY_ENABLED = Config(
-    env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="true"
+    env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="false"
 )
 TA_OTEL_ENDPOINT = Config(env_name="TA_OTEL_ENDPOINT", is_required=False, default_value=None)
 
