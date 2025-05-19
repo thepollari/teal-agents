@@ -38,4 +38,4 @@ fi
 
 echo "Running SK Agent ${TA_AGENT_NAME}"
 cd ${APP_DIR} || exit
-uv run -- fastapi run src/sk_agents/app.py --port 8000
+uv run -- fastapi run src/sk_agents/app.py --port 8000 --timeout-keep-alive 120
