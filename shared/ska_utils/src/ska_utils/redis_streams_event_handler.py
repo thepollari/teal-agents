@@ -93,7 +93,7 @@ class RedisStreamsEventHandler(ABC, Generic[TEventType]):
 
     @abstractmethod
     async def process_event(self, event: TEventType) -> None:
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     def _create_consumer_group(self):
         try:
@@ -163,6 +163,6 @@ class RedisStreamsEventHandler(ABC, Generic[TEventType]):
                 self._shutdown = True
                 break
             if not event:
-                continue # pragma: no cover
+                continue  # pragma: no cover
             await self.process_event(event)
         self._logger.info("Event handler shutdown completed")
