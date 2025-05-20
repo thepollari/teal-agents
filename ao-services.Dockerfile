@@ -25,4 +25,4 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 
-CMD ["uv", "run", "--", "fastapi", "run", "ska_services.py", "--port", "8000", "--timeout-keep-alive", "120"]
+CMD ["uv", "run", "--", "fastapi", "run", "ska_services.py", "--port", "8000"]

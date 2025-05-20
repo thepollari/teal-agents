@@ -27,5 +27,5 @@ fi
 
 echo "Running Assistant Orchestrator ${TA_AO_NAME}"
 cd ${APP_DIR} || exit
-uv run -- fastapi run jose.py --port 8000 --timeout-keep-alive 120
+uv run -- fastapi run jose.py --port 8000
 #uv run -- uvicorn jose:app --reload --host 0.0.0.0 --port 8000 --log-level trace
