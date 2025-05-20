@@ -83,7 +83,9 @@ authenticator: Authenticator[auth_helper.get_request_type()] = auth_helper.get_a
 
 
 @app.post("/services/v1/{orchestrator_name}/authenticate")
-async def authenticate_user(orchestrator_name: str, payload: type) -> AuthenticationResponse:
+async def authenticate_user(
+    orchestrator_name: str, payload: auth_helper.get_request_type()
+) -> AuthenticationResponse:
     auth_response = authenticator.authenticate(orchestrator_name, payload)
     if auth_response.success:
         return AuthenticationResponse(
@@ -95,7 +97,7 @@ async def authenticate_user(orchestrator_name: str, payload: type) -> Authentica
 
 @app.post("/services/v1/{orchestrator_name}/tickets", tags=["Tickets"])
 async def create_ticket(
-    orchestrator_name: str, payload: type, request: Request
+    orchestrator_name: str, payload: auth_helper.get_request_type(), request: Request
 ) -> CreateTicketResponse:
     ip_address: str
     if strtobool(str(app_config.get(TA_KONG_ENABLED.env_name))):
