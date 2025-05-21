@@ -14,7 +14,7 @@ lint:
 
 .PHONY: mypy
 mypy:
-	uv run mypy src/sk_agents
+	uv run mypy src/collab_orchestrator
 
 .PHONY: tests
 tests:

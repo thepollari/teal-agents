@@ -1,25 +1,25 @@
 import uuid
+from collections.abc import AsyncIterable
 from contextlib import nullcontext
-from typing import List, AsyncIterable
 
 from ska_utils import Telemetry
 
 from collab_orchestrator.agents import (
     AgentGateway,
-    BaseAgentBuilder,
     BaseAgent,
+    BaseAgentBuilder,
     TaskAgent,
 )
 from collab_orchestrator.co_types import (
-    BaseConfig,
-    new_event_response,
-    EventType,
-    ErrorResponse,
     AbortResult,
-    KindHandler,
+    BaseConfig,
     BaseMultiModalInput,
+    ErrorResponse,
+    EventType,
     InvokeResponse,
+    KindHandler,
     TokenUsage,
+    new_event_response,
 )
 from collab_orchestrator.planning_handler.plan_manager import (
     PlanManager,
@@ -37,8 +37,8 @@ class PlanningHandler(KindHandler):
         config: BaseConfig,
         agent_gateway: AgentGateway,
         base_agent_builder: BaseAgentBuilder,
-        task_agents_bases: List[BaseAgent],
-        task_agents: List[TaskAgent],
+        task_agents_bases: list[BaseAgent],
+        task_agents: list[TaskAgent],
     ):
         super().__init__(
             t, config, agent_gateway, base_agent_builder, task_agents_bases, task_agents
@@ -52,21 +52,13 @@ class PlanningHandler(KindHandler):
         return nullcontext()
 
     async def initialize(self):
-        spec: PlanningSpec = PlanningSpec.model_validate(
-            obj=self.config.spec.model_dump()
-        )
+        spec: PlanningSpec = PlanningSpec.model_validate(obj=self.config.spec.model_dump())
 
-        planning_agent_base = await self.base_agent_builder.build_agent(
-            spec.planning_agent
-        )
-        self.planning_agent = PlanningAgent(
-            agent=planning_agent_base, gateway=self.agent_gateway
-        )
+        planning_agent_base = await self.base_agent_builder.build_agent(spec.planning_agent)
+        self.planning_agent = PlanningAgent(agent=planning_agent_base, gateway=self.agent_gateway)
         self.plan_manager = PlanManager(self.planning_agent)
 
-    async def invoke(
-        self, chat_history: BaseMultiModalInput, request: str
-    ) -> AsyncIterable:
+    async def invoke(self, chat_history: BaseMultiModalInput, request: str) -> AsyncIterable:
         session_id: str
         if chat_history.session_id:
             session_id = chat_history.session_id
@@ -137,9 +129,7 @@ class PlanningHandler(KindHandler):
                     session_id=session_id,
                     source=source,
                     request_id=request_id,
-                    token_usage=TokenUsage(
-                        completion_tokens=0, prompt_tokens=0, total_tokens=0
-                    ),
+                    token_usage=TokenUsage(completion_tokens=0, prompt_tokens=0, total_tokens=0),
                     output_raw=plan.steps[-1].step_tasks[0].result,
                 ),
             )

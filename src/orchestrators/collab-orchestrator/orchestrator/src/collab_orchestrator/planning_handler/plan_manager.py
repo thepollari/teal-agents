@@ -1,5 +1,3 @@
-from typing import List
-
 from collab_orchestrator.agents import BaseAgent
 from collab_orchestrator.co_types import BaseMultiModalInput
 from collab_orchestrator.planning_handler.plan import Plan
@@ -18,13 +16,11 @@ class PlanManager:
         self,
         chat_history: BaseMultiModalInput,
         overall_goal: str,
-        task_agents: List[BaseAgent],
+        task_agents: list[BaseAgent],
     ) -> Plan:
         gen_plan_response = await self.planning_agent.generate_plan(
             chat_history, overall_goal, task_agents
         )
         if not gen_plan_response.can_succeed:
-            raise PlanningFailedException(
-                f"Planning failed: {gen_plan_response.reasoning}"
-            )
+            raise PlanningFailedException(f"Planning failed: {gen_plan_response.reasoning}")
         return Plan.new_from_response(gen_plan_response)

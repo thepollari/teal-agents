@@ -1,30 +1,30 @@
 import uuid
+from collections.abc import AsyncIterable
 from contextlib import nullcontext
-from typing import List, AsyncIterable
 
 from ska_utils import Telemetry
 
 from collab_orchestrator.agents import (
     AgentGateway,
-    BaseAgentBuilder,
     BaseAgent,
+    BaseAgentBuilder,
     TaskAgent,
 )
 from collab_orchestrator.co_types import (
-    BaseConfig,
-    new_event_response,
-    EventType,
-    ErrorResponse,
     AbortResult,
+    BaseConfig,
     BaseMultiModalInput,
-    KindHandler,
+    ErrorResponse,
+    EventType,
     InvokeResponse,
+    KindHandler,
     TokenUsage,
+    new_event_response,
 )
 from collab_orchestrator.team_handler.conversation import Conversation
 from collab_orchestrator.team_handler.manager_agent import (
-    ManagerAgent,
     Action,
+    ManagerAgent,
 )
 from collab_orchestrator.team_handler.task_executor import TaskExecutor
 from collab_orchestrator.team_handler.types import TeamSpec
@@ -37,8 +37,8 @@ class TeamHandler(KindHandler):
         config: BaseConfig,
         agent_gateway: AgentGateway,
         base_agent_builder: BaseAgentBuilder,
-        task_agents_bases: List[BaseAgent],
-        task_agents: List[TaskAgent],
+        task_agents_bases: list[BaseAgent],
+        task_agents: list[TaskAgent],
     ):
         super().__init__(
             t, config, agent_gateway, base_agent_builder, task_agents_bases, task_agents
@@ -85,18 +85,12 @@ class TeamHandler(KindHandler):
     async def initialize(self):
         spec = TeamSpec.model_validate(obj=self.config.spec.model_dump())
 
-        manager_agent_base = await self.base_agent_builder.build_agent(
-            spec.manager_agent
-        )
-        self.manager_agent = ManagerAgent(
-            agent=manager_agent_base, gateway=self.agent_gateway
-        )
+        manager_agent_base = await self.base_agent_builder.build_agent(spec.manager_agent)
+        self.manager_agent = ManagerAgent(agent=manager_agent_base, gateway=self.agent_gateway)
         self.max_rounds = spec.max_rounds
         self.task_executor = TaskExecutor(self.task_agents)
 
-    async def invoke(
-        self, chat_history: BaseMultiModalInput, request: str
-    ) -> AsyncIterable:
+    async def invoke(self, chat_history: BaseMultiModalInput, request: str) -> AsyncIterable:
         session_id: str
         if chat_history.session_id:
             session_id = chat_history.session_id
@@ -106,9 +100,7 @@ class TeamHandler(KindHandler):
         source = f"{self.config.service_name}:{self.config.version}"
 
         with (
-            self.t.tracer.start_as_current_span(
-                name="invoke-sse", attributes={"goal": request}
-            )
+            self.t.tracer.start_as_current_span(name="invoke-sse", attributes={"goal": request})
             if self.t.telemetry_enabled()
             else nullcontext()
         ):

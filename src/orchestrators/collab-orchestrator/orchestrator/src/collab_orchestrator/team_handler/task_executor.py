@@ -1,23 +1,23 @@
+from collections.abc import AsyncIterable
 from contextlib import nullcontext
-from typing import List, AsyncIterable
 
 from httpx_sse import ServerSentEvent
 from ska_utils import get_telemetry
 
 from collab_orchestrator.agents import TaskAgent
 from collab_orchestrator.co_types import (
-    new_event_response,
-    EventType,
     AgentRequestEvent,
-    PartialResponse,
-    InvokeResponse,
     ErrorResponse,
+    EventType,
+    InvokeResponse,
+    PartialResponse,
+    new_event_response,
 )
 from collab_orchestrator.team_handler.conversation import Conversation
 
 
 class TaskExecutor:
-    def __init__(self, agents: List[TaskAgent]):
+    def __init__(self, agents: list[TaskAgent]):
         self.agents = {}
         for agent in agents:
             self.agents[f"{agent.agent.name}:{agent.agent.version}"] = agent

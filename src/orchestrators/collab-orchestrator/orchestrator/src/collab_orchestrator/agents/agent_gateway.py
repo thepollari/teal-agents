@@ -1,13 +1,14 @@
-from typing import Any, AsyncIterable
+from collections.abc import AsyncIterable
+from typing import Any
 
 import aiohttp
 import httpx
 import websockets
-from httpx_sse import aconnect_sse, ServerSentEvent
+from httpx_sse import ServerSentEvent, aconnect_sse
 from opentelemetry.propagate import inject
 from pydantic import BaseModel
 
-from collab_orchestrator.co_types import PartialResponse, InvokeResponse
+from collab_orchestrator.co_types import InvokeResponse, PartialResponse
 
 
 class AgentGateway(BaseModel):

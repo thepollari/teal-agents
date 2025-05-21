@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List
 
 import aiohttp
 from pydantic import BaseModel
@@ -24,10 +23,10 @@ class ConversationMessage(BaseModel):
 
 
 class ManagerInput(BaseModel):
-    chat_history: List[HistoryMultiModalMessage] | None = None
+    chat_history: list[HistoryMultiModalMessage] | None = None
     overall_goal: str
-    agent_list: List[TeamBaseAgent]
-    conversation: List[ConversationMessage] | None = None
+    agent_list: list[TeamBaseAgent]
+    conversation: list[ConversationMessage] | None = None
 
 
 class Action(Enum):
@@ -65,13 +64,11 @@ class ManagerAgent(InvokableAgent):
         self,
         chat_history: BaseMultiModalInput,
         overall_goal: str,
-        task_agents: List[BaseAgent],
-        conversation: List[ConversationMessage],
+        task_agents: list[BaseAgent],
+        conversation: list[ConversationMessage],
     ) -> ManagerOutput:
         team_task_agents = [
-            TeamBaseAgent(
-                name=f"{agent.name}:{agent.version}", description=agent.description
-            )
+            TeamBaseAgent(name=f"{agent.name}:{agent.version}", description=agent.description)
             for agent in task_agents
         ]
         request = ManagerInput(

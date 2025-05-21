@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -10,7 +10,7 @@ class ChatHistoryItem(BaseModel):
 
 
 class ChatHistory(BaseModel):
-    chat_history: List[ChatHistoryItem]
+    chat_history: list[ChatHistoryItem]
 
 
 class ContentType(Enum):

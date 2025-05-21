@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, AsyncIterable, TYPE_CHECKING
+from collections.abc import AsyncIterable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ska_utils import Telemetry
 
     from collab_orchestrator.agents import (
         AgentGateway,
-        BaseAgentBuilder,
         BaseAgent,
+        BaseAgentBuilder,
         TaskAgent,
     )
     from collab_orchestrator.co_types.config import BaseConfig
@@ -21,8 +22,8 @@ class KindHandler(ABC):
         config: "BaseConfig",
         agent_gateway: "AgentGateway",
         base_agent_builder: "BaseAgentBuilder",
-        task_agents_bases: List["BaseAgent"],
-        task_agents: List["TaskAgent"],
+        task_agents_bases: list["BaseAgent"],
+        task_agents: list["TaskAgent"],
     ):
         self.t = t
         self.config = config
@@ -36,7 +37,5 @@ class KindHandler(ABC):
         pass
 
     @abstractmethod
-    async def invoke(
-        self, chat_history: "BaseMultiModalInput", request: str
-    ) -> AsyncIterable:
+    async def invoke(self, chat_history: "BaseMultiModalInput", request: str) -> AsyncIterable:
         pass

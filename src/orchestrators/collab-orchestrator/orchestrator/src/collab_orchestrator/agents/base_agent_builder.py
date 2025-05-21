@@ -1,9 +1,8 @@
-from typing import Dict
-
 import aiohttp
+from pydantic import BaseModel, ConfigDict
+
 from collab_orchestrator.agents.agent_gateway import AgentGateway
 from collab_orchestrator.agents.agent_types import BaseAgent
-from pydantic import BaseModel, ConfigDict
 
 
 class OpenApiPost(BaseModel):
@@ -18,7 +17,7 @@ class OpenApiPath(BaseModel):
 
 class OpenApiResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
-    paths: Dict[str, OpenApiPath]
+    paths: dict[str, OpenApiPath]
 
 
 class BaseAgentBuilder:

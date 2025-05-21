@@ -1,27 +1,27 @@
 import uuid
+from collections.abc import AsyncIterable
 from contextlib import nullcontext
 from copy import deepcopy
-from typing import List, Dict, AsyncIterable
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from opentelemetry.propagate import Context, extract
 from pydantic_yaml import parse_yaml_file_as
-from ska_utils import AppConfig, strtobool, initialize_telemetry, get_telemetry
-from opentelemetry.propagate import extract, Context
+from ska_utils import AppConfig, get_telemetry, initialize_telemetry, strtobool
 
 from collab_orchestrator.agents import (
     AgentGateway,
-    BaseAgentBuilder,
     BaseAgent,
+    BaseAgentBuilder,
     TaskAgent,
 )
-from collab_orchestrator.co_types import BaseConfig, KindHandler, BaseMultiModalInput
+from collab_orchestrator.co_types import BaseConfig, BaseMultiModalInput, KindHandler
 from collab_orchestrator.configs import (
     CONFIGS,
-    TA_SERVICE_CONFIG,
     TA_AGW_HOST,
-    TA_AGW_SECURE,
     TA_AGW_KEY,
+    TA_AGW_SECURE,
+    TA_SERVICE_CONFIG,
 )
 from collab_orchestrator.handler_factory import HandlerFactory
 
@@ -53,8 +53,8 @@ t = get_telemetry()
 
 agent_gateway: AgentGateway
 base_agent_builder: BaseAgentBuilder
-task_agents_bases: List[BaseAgent] = []
-task_agents: List[TaskAgent] = []
+task_agents_bases: list[BaseAgent] = []
+task_agents: list[TaskAgent] = []
 handler: KindHandler
 
 
@@ -62,9 +62,7 @@ async def initialize():
     global agent_gateway, base_agent_builder, task_agents_bases, task_agents, handler
 
     with (
-        t.tracer.start_as_current_span("initialization")
-        if t.telemetry_enabled()
-        else nullcontext()
+        t.tracer.start_as_current_span("initialization") if t.telemetry_enabled() else nullcontext()
     ):
         agent_gateway = AgentGateway(
             host=app_config.get(TA_AGW_HOST.env_name),
@@ -102,7 +100,7 @@ app = FastAPI(
 )
 app.add_event_handler("startup", initialize)
 
-session_cache: Dict[str, BaseMultiModalInput] = {}
+session_cache: dict[str, BaseMultiModalInput] = {}
 
 
 async def invoke_with_span(
@@ -119,7 +117,7 @@ async def invoke_with_span(
 
 @app.post(f"/{config.service_name}/{config.version}")
 @docstring_parameter(description)
-async def invoke_sse():
+async def invoke():
     """
     {0}
 
@@ -204,6 +202,6 @@ async def get_browser_response(session_id: str, request: Request):
         request = chat_history.chat_history.pop()
 
         return StreamingResponse(
-            handler.invoke(chat_history, request.items[-1].content),
+            invoke_with_span(context, chat_history, request.items[-1].content),
             media_type="text/event-stream",
         )

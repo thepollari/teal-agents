@@ -1,30 +1,28 @@
 import asyncio
+from collections.abc import AsyncIterable
 from contextlib import nullcontext
-from typing import AsyncIterable, List, Dict
 
 from httpx_sse import ServerSentEvent
 from ska_utils import get_telemetry
 
-from collab_orchestrator.agents import TaskAgent, PreRequisite
+from collab_orchestrator.agents import PreRequisite, TaskAgent
 from collab_orchestrator.co_types import (
-    new_event_response,
-    EventType,
     AgentRequestEvent,
     ErrorResponse,
-    PartialResponse,
+    EventType,
     InvokeResponse,
+    PartialResponse,
+    new_event_response,
 )
-from collab_orchestrator.planning_handler.plan import ExecutableTask, TaskStatus, Step
+from collab_orchestrator.planning_handler.plan import ExecutableTask, Step, TaskStatus
 
 
 class StepExecutor:
-    def __init__(self, task_agents: List[TaskAgent]):
-        self.task_agents: Dict[str, TaskAgent] = {}
+    def __init__(self, task_agents: list[TaskAgent]):
+        self.task_agents: dict[str, TaskAgent] = {}
         for task_agent in task_agents:
-            self.task_agents[f"{task_agent.agent.name}:{task_agent.agent.version}"] = (
-                task_agent
-            )
-        self.task_accumulator: Dict[str, ExecutableTask] = {}
+            self.task_agents[f"{task_agent.agent.name}:{task_agent.agent.version}"] = task_agent
+        self.task_accumulator: dict[str, ExecutableTask] = {}
         self.t = get_telemetry()
 
     @staticmethod
@@ -45,10 +43,8 @@ class StepExecutor:
             task_agent = self.task_agents[task.task_agent]
             if not task_agent:
                 raise ValueError(f"Task agent {task.task_agent} not found.")
-            pre_requisites: List[PreRequisite] = [
-                StepExecutor._task_to_pre_requisite(
-                    self.task_accumulator[pre_requisite]
-                )
+            pre_requisites: list[PreRequisite] = [
+                StepExecutor._task_to_pre_requisite(self.task_accumulator[pre_requisite])
                 for pre_requisite in task.prerequisite_tasks
             ]
             async for content in task_agent.perform_task_sse(
@@ -98,9 +94,7 @@ class StepExecutor:
                         task_goal=task.task_goal,
                     ),
                 )
-                async for result in self._execute_task_sse(
-                    session_id, source, request_id, task
-                ):
+                async for result in self._execute_task_sse(session_id, source, request_id, task):
                     yield result
 
             streams = [process_task(task) for task in step.step_tasks]
@@ -108,7 +102,7 @@ class StepExecutor:
                 yield result
 
     async def _merge_async_iterables(
-        self, async_iterables: List[AsyncIterable[str]]
+        self, async_iterables: list[AsyncIterable[str]]
     ) -> AsyncIterable[str]:
         async def consume(iterable, queue):
             async for item in iterable:
@@ -116,10 +110,7 @@ class StepExecutor:
             await queue.put(None)  # Signal the end of the iterable
 
         queue = asyncio.Queue()
-        consumers = [
-            asyncio.create_task(consume(iterable, queue))
-            for iterable in async_iterables
-        ]
+        consumers = [asyncio.create_task(consume(iterable, queue)) for iterable in async_iterables]
         num_finished = 0
         while num_finished < len(async_iterables):
             result = await queue.get()
