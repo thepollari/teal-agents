@@ -19,9 +19,7 @@ from sk_agents.utils import initialize_plugin_loader
 
 class AppV2:
     @staticmethod
-    def run(
-        name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI
-    ):
+    def run(name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI):
         is_v2 = strtobool(app_config.get(TA_A2A_EVENTS_ENABLED.env_name))
         config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
         agents_path = str(os.path.dirname(config_file))

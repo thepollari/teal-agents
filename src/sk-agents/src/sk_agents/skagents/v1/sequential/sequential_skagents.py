@@ -45,9 +45,7 @@ class SequentialSkagents(BaseHandler):
         self.tasks = []
         for i in range(len(sorted_configs) - 1):
             task_config = sorted_configs[i]
-            self.tasks.append(
-                task_builder.build_task(task_config, self.config.get_agents())
-            )
+            self.tasks.append(task_builder.build_task(task_config, self.config.get_agents()))
         self.tasks.append(
             task_builder.build_task(
                 sorted_configs[-1],
@@ -56,18 +54,14 @@ class SequentialSkagents(BaseHandler):
             )
         )
 
-    async def _transform_output_if_required(
-        self, response: InvokeResponse
-    ) -> InvokeResponse:
+    async def _transform_output_if_required(self, response: InvokeResponse) -> InvokeResponse:
         if self.tasks[-1].agent.so_supported():
             type_loader = get_type_loader()
             output_type = type_loader.get_type(self.config.config.output_type)
             response.output_pydantic = output_type(**json.loads(response.output_raw))
             return response
         else:
-            return await self._transform_output(
-                response, self.config.config.output_type
-            )
+            return await self._transform_output(response, self.config.config.output_type)
 
     async def _transform_output(
         self, current_response: InvokeResponse, output_type_str: str
@@ -131,9 +125,7 @@ class SequentialSkagents(BaseHandler):
 
         # Process and stream back intermediate tasks results
         for task in self.tasks[:-1]:
-            i_response: InvokeResponse = await task.invoke(
-                history=chat_history, inputs=task_inputs
-            )
+            i_response: InvokeResponse = await task.invoke(history=chat_history, inputs=task_inputs)
             i_response.session_id = session_id
             i_response.source = f"{self.name}:{self.version}"
             i_response.request_id = request_id
@@ -151,23 +143,17 @@ class SequentialSkagents(BaseHandler):
             )
 
         # Process and stream back final task results
-        async for chunk in self.tasks[-1].invoke_stream(
-            history=chat_history, inputs=task_inputs
-        ):
+        async for chunk in self.tasks[-1].invoke_stream(history=chat_history, inputs=task_inputs):
             # Initialize content as the partial message in chunk
             content = chunk.content
             # Calculate usage metrics if chunk contains usage metadata
-            call_usage = get_token_usage_for_response(
-                self.tasks[-1].agent.get_model_type(), chunk
-            )
+            call_usage = get_token_usage_for_response(self.tasks[-1].agent.get_model_type(), chunk)
             completion_tokens += call_usage.completion_tokens
             prompt_tokens += call_usage.prompt_tokens
             total_tokens += call_usage.total_tokens
             try:
                 # Attempt to parse as ExtraDataPartial
-                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(
-                    content
-                )
+                extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(content)
                 collector.add_extra_data_items(extra_data_partial.extra_data)
             except Exception:
                 # Handle and return partial response

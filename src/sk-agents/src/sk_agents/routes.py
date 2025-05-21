@@ -52,9 +52,7 @@ class Routes:
             ):
                 match root_handler_name:
                     case "skagents":
-                        handler: BaseHandler = skagents_handle(
-                            config, app_config, authorization
-                        )
+                        handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     case _:
                         raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
@@ -64,9 +62,7 @@ class Routes:
 
         @router.post("/sse")
         @docstring_parameter(description)
-        async def invoke_sse(
-            inputs: input_class, request: Request
-        ) -> StreamingResponse:
+        async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
             """
             {0}
             Initiate SSE call
@@ -91,9 +87,7 @@ class Routes:
                                 config, app_config, authorization
                             )
                             # noinspection PyTypeChecker
-                            async for content in handler.invoke_stream(
-                                inputs=inv_inputs
-                            ):
+                            async for content in handler.invoke_stream(inputs=inv_inputs):
                                 yield get_sse_event_for_response(content)
                         case _:
                             raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
@@ -110,9 +104,7 @@ class Routes:
 
         def _assert_valid_event(a2a_event: A2AInvokeEvent) -> None:
             if not a2a_event.event_id:
-                raise HTTPException(
-                    status_code=400, detail="Invalid event data - Missing event_id"
-                )
+                raise HTTPException(status_code=400, detail="Invalid event data - Missing event_id")
             if not a2a_event.event_type or (
                 a2a_event.event_type != A2AEventType.INVOKE
                 and a2a_event.event_type != A2AEventType.INVOKE_STREAM
@@ -189,9 +181,7 @@ class Routes:
                                 config, app_config, authorization
                             )
                             # noinspection PyTypeChecker
-                            async for content in handler.invoke_stream(
-                                inputs=inv_inputs
-                            ):
+                            async for content in handler.invoke_stream(inputs=inv_inputs):
                                 if isinstance(content, PartialResponse):
                                     await websocket.send_text(content.output_partial)
                             await websocket.close()
