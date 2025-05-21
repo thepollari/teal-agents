@@ -120,9 +120,6 @@ class ConversationManager:
             self.chat_history_manager.set_last_session_id_for_user(
                 orchestrator_name, user_id, session_id
             )
-            self.chat_history_manager.set_last_session_id_for_user(
-                orchestrator_name, user_id, session_id
-            )
         return ConversationResponse(conversation_id=session_id, history=messages)
 
     def _load_messages(
