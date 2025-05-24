@@ -16,10 +16,24 @@ from sk_agents.extra_data_collector import (
 )
 
 
+class ConfigSkill(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    name: str
+    description: str
+    tags: list[str]
+    examples: list[str] | None = None
+    input_modes: list[str] | None = None
+    output_modes: list[str] | None = None
+
+
 class ConfigMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    description: str | None = None
+    description: str
+    skills: list[ConfigSkill]
+    documentation_url: str | None = None
 
 
 class BaseConfig(BaseModel):

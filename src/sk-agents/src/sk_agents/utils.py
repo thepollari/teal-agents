@@ -2,12 +2,6 @@ import os
 
 from ska_utils import AppConfig
 
-from sk_agents.a2a_types import (
-    A2AErrorResponse,
-    A2AErrorResponseEvent,
-    A2AInvokeResponseEvent,
-    A2APartialResponseEvent,
-)
 from sk_agents.configs import TA_PLUGIN_MODULE
 from sk_agents.plugin_loader import get_plugin_loader
 from sk_agents.ska_types import (
@@ -41,25 +35,12 @@ def get_sse_event_for_response(
     response: IntermediateTaskResponse | PartialResponse | InvokeResponse,
 ) -> str:
     if isinstance(response, IntermediateTaskResponse):
-        return f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
+        return (
+            f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
+        )
     elif isinstance(response, PartialResponse):
         return f"event: partial-response\ndata: {response.model_dump_json()}\n\n"
     elif isinstance(response, InvokeResponse):
         return f"event: final-response\ndata: {response.model_dump_json()}\n\n"
     else:
         return f"event: unknown\ndata: {str(response)}\n\n"
-
-
-def invoke_response_to_a2a_event(
-    response: PartialResponse | InvokeResponse | A2AErrorResponse,
-) -> str:
-    if isinstance(response, PartialResponse):
-        return A2APartialResponseEvent(event_data=response).model_dump_json()
-    elif isinstance(response, InvokeResponse):
-        return A2AInvokeResponseEvent(event_data=response).model_dump_json()
-    elif isinstance(response, A2AErrorResponse):
-        return A2AErrorResponseEvent(event_data=response).model_dump_json()
-    else:
-        return A2AErrorResponseEvent(
-            event_data=A2AErrorResponse(status_code=500, detail=str(response))
-        ).model_dump_json()

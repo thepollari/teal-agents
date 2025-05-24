@@ -17,6 +17,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc",
     "ska-utils",
     "lock",
+    "a2a-sdk==0.2.4"
 ]
 
 [project.urls]
