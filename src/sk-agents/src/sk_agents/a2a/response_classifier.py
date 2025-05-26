@@ -164,7 +164,7 @@ class A2AResponseClassifier:
         "        }\n"
         "        ```\n"
         "* **Primary Agent Output:** \"I'm sorry, I encountered an unexpected error and cannot "
-        "    process your request at this time. Error code: 503. Please try again later.\"\n"
+        '    process your request at this time. Error code: 503. Please try again later."\n'
         "    * **Your JSON Output:**\n"
         "        ```json\n"
         "        {\n"
