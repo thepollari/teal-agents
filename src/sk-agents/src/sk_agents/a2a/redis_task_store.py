@@ -49,7 +49,7 @@ class RedisTaskStore(TaskStore):
             task: The Task object to save
         """
         # Convert the Task object to a serializable dictionary
-        task_dict = task.model_dump()
+        task_dict = task.model_dump(mode="json")
 
         # Serialize the task dictionary to JSON
         task_json = json.dumps(task_dict)

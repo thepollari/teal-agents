@@ -7,7 +7,6 @@ from a2a.types import (
 )
 from a2a.utils import new_agent_text_message
 from ska_utils import AppConfig
-from typing_extensions import override
 
 from sk_agents.a2a.request_processor import RequestProcessor
 from sk_agents.a2a.response_classifier import A2AResponseClassifier
@@ -37,29 +36,29 @@ class A2AAgentExecutor(AgentExecutor):
         self.state_manager = state_manager
 
     async def execute(self, context: RequestContext, event_queue: EventQueue):
-        # try:
-        handler: BaseHandler = skagents_handle(self.config, self.app_config, None)
-        processor = RequestProcessor(
-            handler,
-            self.response_classifier,
-            context,
-            event_queue,
-            self.state_manager,
-        )
-        await processor.process_request()
+        try:
+            handler: BaseHandler = skagents_handle(self.config, self.app_config, None)
+            processor = RequestProcessor(
+                handler,
+                self.response_classifier,
+                context,
+                event_queue,
+                self.state_manager,
+            )
+            await processor.process_request()
 
-    # except Exception as e:
-    #     event_queue.enqueue_event(
-    #         TaskStatusUpdateEvent(
-    #             contextId=context.context_id,
-    #             taskId=context.task_id,
-    #             final=True,
-    #             status=TaskStatus(
-    #                 state=TaskState.failed,
-    #                 message=new_agent_text_message(str(e)),
-    #             ),
-    #         )
-    #     )
+        except Exception as e:
+            event_queue.enqueue_event(
+                TaskStatusUpdateEvent(
+                    contextId=context.context_id,
+                    taskId=context.task_id,
+                    final=True,
+                    status=TaskStatus(
+                        state=TaskState.failed,
+                        message=new_agent_text_message(str(e)),
+                    ),
+                )
+            )
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue):
         await self.state_manager.set_canceled(context.task_id)

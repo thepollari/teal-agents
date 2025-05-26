@@ -24,7 +24,7 @@ from sk_agents.ska_types import (
 )
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
-from sk_agents.state.state_manager import StateManager
+from sk_agents.state import StateManager
 from sk_agents.utils import docstring_parameter, get_sse_event_for_response
 
 
@@ -88,7 +88,7 @@ class Routes:
             agent_executor=A2AAgentExecutor(
                 config, app_config, chat_completion_builder, state_manager
             ),
-            task_store=InMemoryTaskStore(),
+            task_store=task_store,
         )
 
     @staticmethod

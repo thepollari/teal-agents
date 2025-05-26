@@ -1,15 +1,15 @@
 import os
 from enum import Enum
 from types import NoneType
-from redis.asyncio import Redis
 
-from a2a.server.tasks.task_store import TaskStore
 from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill, AgentProvider
 from fastapi import FastAPI
+from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
 
-from sk_agents.a2a.redis_task_store import RedisTaskStore
+from sk_agents.a2a import RedisTaskStore
 from sk_agents.configs import (
     TA_A2A_ENABLED,
     TA_SERVICE_CONFIG,
@@ -31,9 +31,7 @@ from sk_agents.ska_types import (
     BaseMultiModalInput,
 )
 from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
-from sk_agents.state.in_memory_state_manager import InMemoryStateManager
-from sk_agents.state.redis_state_manager import RedisStateManager
-from sk_agents.state.state_manager import StateManager
+from sk_agents.state import StateManager, RedisStateManager, InMemoryStateManager
 from sk_agents.utils import initialize_plugin_loader
 
 
