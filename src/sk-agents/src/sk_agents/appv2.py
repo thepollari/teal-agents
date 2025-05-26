@@ -1,29 +1,47 @@
 import os
+from enum import Enum
 from types import NoneType
+from redis.asyncio import Redis
 
-from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks.task_store import TaskStore
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill, AgentProvider
 from fastapi import FastAPI
 from ska_utils import AppConfig, strtobool
 
-from sk_agents.a2a_agent_executor import A2AAgentExecutor
+from sk_agents.a2a.redis_task_store import RedisTaskStore
 from sk_agents.configs import (
     TA_A2A_ENABLED,
     TA_SERVICE_CONFIG,
     TA_PROVIDER_ORG,
     TA_PROVIDER_URL,
     TA_AGENT_BASE_URL,
+    TA_A2A_OUTPUT_CLASSIFIER_MODEL,
+    TA_STATE_MANAGEMENT,
+    TA_REDIS_HOST,
+    TA_REDIS_PORT,
+    TA_REDIS_DB,
+    TA_REDIS_TTL,
+    TA_REDIS_SSL,
+    TA_REDIS_PWD,
 )
 from sk_agents.routes import Routes
 from sk_agents.ska_types import (
     BaseConfig,
     BaseMultiModalInput,
 )
+from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
+from sk_agents.state.in_memory_state_manager import InMemoryStateManager
+from sk_agents.state.redis_state_manager import RedisStateManager
+from sk_agents.state.state_manager import StateManager
 from sk_agents.utils import initialize_plugin_loader
 
 
 class AppV2:
+    class StateStores(Enum):
+        IN_MEMORY = "in-memory"
+        REDIS = "redis"
+
     @staticmethod
     def get_url(name: str, version: str, app_config: AppConfig) -> str:
         base_url = app_config.get(TA_AGENT_BASE_URL.env_name)
@@ -42,6 +60,8 @@ class AppV2:
     def get_agent_card(config: BaseConfig, app_config: AppConfig) -> AgentCard:
         if config.metadata is None:
             raise ValueError("Agent card metadata is not provided in the config.")
+        if not config.name:
+            raise ValueError("Agent name is not provided in the config.")
 
         metadata = config.metadata
         skills = [
@@ -60,7 +80,7 @@ class AppV2:
             name=config.name,
             version=str(config.version),
             description=metadata.description,
-            url=AppV2.get_url(config.name, config.version, app_config),
+            url=AppV2.get_url(config.name, str(config.version), app_config),
             provider=AppV2.get_provider(app_config),
             documentationUrl=config.metadata.documentation_url,
             capabilities=AgentCapabilities(
@@ -72,10 +92,61 @@ class AppV2:
         )
 
     @staticmethod
-    def get_request_handler() -> DefaultRequestHandler:
-        return DefaultRequestHandler(
-            agent_executor=A2AAgentExecutor(), task_store=InMemoryTaskStore()
+    def _get_redis_client(app_config: AppConfig) -> Redis:
+        redis_host = app_config.get(TA_REDIS_HOST.env_name)
+        redis_port = app_config.get(TA_REDIS_PORT.env_name)
+        redis_db = app_config.get(TA_REDIS_DB.env_name)
+        redis_ssl = strtobool(app_config.get(TA_REDIS_SSL.env_name))
+        redis_pwd = app_config.get(TA_REDIS_PWD.env_name)
+
+        if not redis_host:
+            raise ValueError("Redis host must be provided for Redis task store.")
+        if not redis_port:
+            raise ValueError("Redis port must be provided for Redis task store.")
+
+        return Redis(
+            host=redis_host,
+            port=int(redis_port),
+            db=int(redis_db) if redis_db else 0,
+            ssl=redis_ssl,
+            password=redis_pwd if redis_pwd else None,
         )
+
+    @staticmethod
+    def _get_redis_task_store(app_config: AppConfig) -> TaskStore:
+        redis_ttl = app_config.get(TA_REDIS_TTL.env_name)
+
+        return RedisTaskStore(
+            redis_client=AppV2._get_redis_client(app_config),
+            ttl=int(redis_ttl) if redis_ttl else None,
+        )
+
+    @staticmethod
+    def _get_redis_state_manager(app_config: AppConfig) -> StateManager:
+        redis_ttl = app_config.get(TA_REDIS_TTL.env_name)
+
+        return RedisStateManager(
+            redis_client=AppV2._get_redis_client(app_config),
+            ttl=int(redis_ttl) if redis_ttl else None,
+        )
+
+    @staticmethod
+    def _get_task_store(app_config: AppConfig) -> TaskStore:
+        state_store = app_config.get(TA_STATE_MANAGEMENT.env_name)
+        match state_store:
+            case AppV2.StateStores.REDIS.value:
+                return AppV2._get_redis_task_store(app_config)
+            case _:
+                return InMemoryTaskStore()
+
+    @staticmethod
+    def _get_state_manager(app_config: AppConfig) -> StateManager:
+        state_store = app_config.get(TA_STATE_MANAGEMENT.env_name)
+        match state_store:
+            case AppV2.StateStores.REDIS.value:
+                return AppV2._get_redis_state_manager(app_config)
+            case _:
+                return InMemoryStateManager()
 
     @staticmethod
     def run(
@@ -119,6 +190,13 @@ class AppV2:
             prefix=f"/{name}/{version}",
         )
         if a2a_enabled:
+            chat_completion_builder = ChatCompletionBuilder(app_config)
+            chat_completion_builder.get_chat_completion_for_model(
+                "test-to-confirm-model-availability",
+                app_config.get(TA_A2A_OUTPUT_CLASSIFIER_MODEL.env_name),
+            )
+            task_store = AppV2._get_task_store(app_config)
+            state_manager = AppV2._get_state_manager(app_config)
             app.include_router(
                 Routes.get_a2a_routes(
                     name=name,
@@ -126,6 +204,9 @@ class AppV2:
                     description=description,
                     config=config,
                     app_config=app_config,
+                    chat_completion_builder=chat_completion_builder,
+                    task_store=task_store,
+                    state_manager=state_manager,
                 ),
                 prefix=f"/{name}/{version}/a2a",
             )

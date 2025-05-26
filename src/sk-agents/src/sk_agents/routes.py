@@ -3,13 +3,14 @@ from contextlib import nullcontext
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill, AgentProvider
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
 from ska_utils import AppConfig, get_telemetry
 
-from sk_agents.a2a_agent_executor import A2AAgentExecutor
+from sk_agents.a2a import A2AAgentExecutor
 from sk_agents.configs import (
     TA_PROVIDER_ORG,
     TA_PROVIDER_URL,
@@ -22,6 +23,8 @@ from sk_agents.ska_types import (
     PartialResponse,
 )
 from sk_agents.skagents import handle as skagents_handle
+from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
+from sk_agents.state.state_manager import StateManager
 from sk_agents.utils import docstring_parameter, get_sse_event_for_response
 
 
@@ -75,10 +78,16 @@ class Routes:
 
     @staticmethod
     def get_request_handler(
-        config: BaseConfig, app_config: AppConfig
+        config: BaseConfig,
+        app_config: AppConfig,
+        chat_completion_builder: ChatCompletionBuilder,
+        state_manager: StateManager,
+        task_store: TaskStore,
     ) -> DefaultRequestHandler:
         return DefaultRequestHandler(
-            agent_executor=A2AAgentExecutor(config, app_config),
+            agent_executor=A2AAgentExecutor(
+                config, app_config, chat_completion_builder, state_manager
+            ),
             task_store=InMemoryTaskStore(),
         )
 
@@ -89,10 +98,15 @@ class Routes:
         description: str,
         config: BaseConfig,
         app_config: AppConfig,
+        chat_completion_builder: ChatCompletionBuilder,
+        task_store: TaskStore,
+        state_manager: StateManager,
     ) -> APIRouter:
         a2a_app = A2AStarletteApplication(
             agent_card=Routes.get_agent_card(config, app_config),
-            http_handler=Routes.get_request_handler(config, app_config),
+            http_handler=Routes.get_request_handler(
+                config, app_config, chat_completion_builder, state_manager, task_store
+            ),
         )
         a2a_router = APIRouter()
 

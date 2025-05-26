@@ -1990,6 +1990,7 @@ dependencies = [
     { name = "pygithub" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "redis" },
     { name = "semantic-kernel" },
     { name = "ska-utils" },
 ]
@@ -2020,6 +2021,7 @@ requires-dist = [
     { name = "pygithub" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "redis", specifier = ">=6.0.0" },
     { name = "semantic-kernel", specifier = "==1.29.0" },
     { name = "ska-utils", directory = "../../shared/ska_utils" },
 ]
