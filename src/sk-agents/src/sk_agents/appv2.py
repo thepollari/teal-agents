@@ -4,7 +4,7 @@ from types import NoneType
 
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.tasks.task_store import TaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill, AgentProvider
+from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
 from fastapi import FastAPI
 from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
@@ -12,18 +12,18 @@ from ska_utils import AppConfig, strtobool
 from sk_agents.a2a import RedisTaskStore
 from sk_agents.configs import (
     TA_A2A_ENABLED,
-    TA_SERVICE_CONFIG,
+    TA_A2A_OUTPUT_CLASSIFIER_MODEL,
+    TA_AGENT_BASE_URL,
     TA_PROVIDER_ORG,
     TA_PROVIDER_URL,
-    TA_AGENT_BASE_URL,
-    TA_A2A_OUTPUT_CLASSIFIER_MODEL,
-    TA_STATE_MANAGEMENT,
+    TA_REDIS_DB,
     TA_REDIS_HOST,
     TA_REDIS_PORT,
-    TA_REDIS_DB,
-    TA_REDIS_TTL,
-    TA_REDIS_SSL,
     TA_REDIS_PWD,
+    TA_REDIS_SSL,
+    TA_REDIS_TTL,
+    TA_SERVICE_CONFIG,
+    TA_STATE_MANAGEMENT,
 )
 from sk_agents.routes import Routes
 from sk_agents.ska_types import (
@@ -31,7 +31,7 @@ from sk_agents.ska_types import (
     BaseMultiModalInput,
 )
 from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
-from sk_agents.state import StateManager, RedisStateManager, InMemoryStateManager
+from sk_agents.state import InMemoryStateManager, RedisStateManager, StateManager
 from sk_agents.utils import initialize_plugin_loader
 
 
@@ -147,9 +147,7 @@ class AppV2:
                 return InMemoryStateManager()
 
     @staticmethod
-    def run(
-        name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI
-    ):
+    def run(name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI):
         a2a_enabled = strtobool(app_config.get(TA_A2A_ENABLED.env_name))
         config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
         agents_path = str(os.path.dirname(config_file))

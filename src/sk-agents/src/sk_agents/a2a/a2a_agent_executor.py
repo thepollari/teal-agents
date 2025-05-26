@@ -1,9 +1,9 @@
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.types import (
-    TaskStatusUpdateEvent,
-    TaskStatus,
     TaskState,
+    TaskStatus,
+    TaskStatusUpdateEvent,
 )
 from a2a.utils import new_agent_text_message
 from ska_utils import AppConfig
@@ -20,7 +20,6 @@ from sk_agents.state.state_manager import StateManager
 
 
 class A2AAgentExecutor(AgentExecutor):
-
     def __init__(
         self,
         config: BaseConfig,

@@ -2,9 +2,8 @@ from contextlib import nullcontext
 
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.tasks.task_store import TaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentSkill, AgentProvider
+from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
@@ -12,9 +11,9 @@ from ska_utils import AppConfig, get_telemetry
 
 from sk_agents.a2a import A2AAgentExecutor
 from sk_agents.configs import (
+    TA_AGENT_BASE_URL,
     TA_PROVIDER_ORG,
     TA_PROVIDER_URL,
-    TA_AGENT_BASE_URL,
 )
 from sk_agents.ska_types import (
     BaseConfig,
@@ -163,9 +162,7 @@ class Routes:
             ):
                 match root_handler_name:
                     case "skagents":
-                        handler: BaseHandler = skagents_handle(
-                            config, app_config, authorization
-                        )
+                        handler: BaseHandler = skagents_handle(config, app_config, authorization)
                     case _:
                         raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
@@ -175,9 +172,7 @@ class Routes:
 
         @router.post("/sse")
         @docstring_parameter(description)
-        async def invoke_sse(
-            inputs: input_class, request: Request
-        ) -> StreamingResponse:
+        async def invoke_sse(inputs: input_class, request: Request) -> StreamingResponse:
             """
             {0}
             Initiate SSE call
@@ -202,9 +197,7 @@ class Routes:
                                 config, app_config, authorization
                             )
                             # noinspection PyTypeChecker
-                            async for content in handler.invoke_stream(
-                                inputs=inv_inputs
-                            ):
+                            async for content in handler.invoke_stream(inputs=inv_inputs):
                                 yield get_sse_event_for_response(content)
                         case _:
                             raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
@@ -249,9 +242,7 @@ class Routes:
                                 config, app_config, authorization
                             )
                             # noinspection PyTypeChecker
-                            async for content in handler.invoke_stream(
-                                inputs=inv_inputs
-                            ):
+                            async for content in handler.invoke_stream(inputs=inv_inputs):
                                 if isinstance(content, PartialResponse):
                                     await websocket.send_text(content.output_partial)
                             await websocket.close()

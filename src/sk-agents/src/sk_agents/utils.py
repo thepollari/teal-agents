@@ -35,9 +35,7 @@ def get_sse_event_for_response(
     response: IntermediateTaskResponse | PartialResponse | InvokeResponse,
 ) -> str:
     if isinstance(response, IntermediateTaskResponse):
-        return (
-            f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
-        )
+        return f"event: intermediate-task-response\ndata: {response.model_dump_json()}\n\n"
     elif isinstance(response, PartialResponse):
         return f"event: partial-response\ndata: {response.model_dump_json()}\n\n"
     elif isinstance(response, InvokeResponse):

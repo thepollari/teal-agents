@@ -1,5 +1,6 @@
 import threading
 from typing import override
+
 from pydantic import BaseModel
 
 from sk_agents.ska_types import HistoryMultiModalMessage

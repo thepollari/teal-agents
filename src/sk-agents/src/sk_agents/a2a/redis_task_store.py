@@ -4,12 +4,10 @@ This implementation uses Redis as the persistent store for Task objects.
 """
 
 import json
-from typing import Optional
-
-from redis.asyncio import Redis
 
 from a2a.server.tasks.task_store import TaskStore
 from a2a.types import Task
+from redis.asyncio import Redis
 
 
 class RedisTaskStore(TaskStore):
@@ -18,9 +16,7 @@ class RedisTaskStore(TaskStore):
     This class provides Redis-based persistence for Task objects.
     """
 
-    def __init__(
-        self, redis_client: Redis, ttl: int | None = None, key_prefix: str = "task:"
-    ):
+    def __init__(self, redis_client: Redis, ttl: int | None = None, key_prefix: str = "task:"):
         """Initialize the RedisTaskStore with a Redis client.
 
         Args:
@@ -57,7 +53,7 @@ class RedisTaskStore(TaskStore):
         # Store the serialized task in Redis using the task ID as the key
         await self._redis.set(self._get_key(task.id), task_json, ex=self._ttl)
 
-    async def get(self, task_id: str) -> Optional[Task]:
+    async def get(self, task_id: str) -> Task | None:
         """Retrieves a task from the Redis store by ID.
 
         Args:

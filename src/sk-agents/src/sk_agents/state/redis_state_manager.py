@@ -4,12 +4,11 @@ This implementation uses Redis as the persistent store for task state management
 """
 
 import json
-from typing import List
 
 from redis.asyncio import Redis
 
-from sk_agents.state.state_manager import StateManager
 from sk_agents.ska_types import HistoryMultiModalMessage
+from sk_agents.state.state_manager import StateManager
 
 
 class RedisStateManager(StateManager):
@@ -58,7 +57,7 @@ class RedisStateManager(StateManager):
 
     async def update_task_messages(
         self, task_id: str, new_message: HistoryMultiModalMessage
-    ) -> List[HistoryMultiModalMessage]:
+    ) -> list[HistoryMultiModalMessage]:
         """Updates the messages for a specific task.
 
         Appends a new message to the task's message history and returns
@@ -87,8 +86,7 @@ class RedisStateManager(StateManager):
 
         # Deserialize each message from JSON
         messages = [
-            HistoryMultiModalMessage.model_validate(json.loads(msg))
-            for msg in message_jsons
+            HistoryMultiModalMessage.model_validate(json.loads(msg)) for msg in message_jsons
         ]
 
         return messages
