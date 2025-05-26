@@ -18,7 +18,12 @@ class RedisStateManager(StateManager):
     This class provides Redis-based persistence for task state management.
     """
 
-    def __init__(self, redis_client: Redis, ttl: int, key_prefix: str = "task_state:"):
+    def __init__(
+        self,
+        redis_client: Redis,
+        ttl: int | None = None,
+        key_prefix: str = "task_state:",
+    ):
         """Initialize the RedisStateManager with a Redis client.
 
         Args:
@@ -27,7 +32,7 @@ class RedisStateManager(StateManager):
         """
         self._redis = redis_client
         self._key_prefix = key_prefix
-        self._ttl = int(ttl) if ttl else None
+        self._ttl = ttl
 
     def _get_message_key(self, task_id: str) -> str:
         """Generate a Redis key for a task's messages.

@@ -21,7 +21,7 @@ class InMemoryStateManager(StateManager):
         self._lock = threading.RLock()
 
     @override
-    def update_task_messages(
+    async def update_task_messages(
         self, task_id: str, new_message: HistoryMultiModalMessage
     ) -> list[HistoryMultiModalMessage]:
         with self._lock:
@@ -35,13 +35,13 @@ class InMemoryStateManager(StateManager):
             return list(self._tasks[task_id].messages)
 
     @override
-    def set_canceled(self, task_id: str) -> None:
+    async def set_canceled(self, task_id: str) -> None:
         with self._lock:
             if task_id in self._tasks:
                 self._tasks[task_id].cancelled = True
 
     @override
-    def is_canceled(self, task_id) -> bool:
+    async def is_canceled(self, task_id) -> bool:
         with self._lock:
             if task_id in self._tasks:
                 return self._tasks[task_id].cancelled

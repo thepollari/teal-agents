@@ -18,7 +18,9 @@ class RedisTaskStore(TaskStore):
     This class provides Redis-based persistence for Task objects.
     """
 
-    def __init__(self, redis_client: Redis, ttl: int, key_prefix: str = "task:"):
+    def __init__(
+        self, redis_client: Redis, ttl: int | None = None, key_prefix: str = "task:"
+    ):
         """Initialize the RedisTaskStore with a Redis client.
 
         Args:
@@ -26,7 +28,7 @@ class RedisTaskStore(TaskStore):
             key_prefix: Prefix used for Redis keys (default: "task:")
         """
         self._redis = redis_client
-        self._ttl = int(ttl) if ttl else None
+        self._ttl = ttl
         self._key_prefix = key_prefix
 
     def _get_key(self, task_id: str) -> str:
