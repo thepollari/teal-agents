@@ -24,13 +24,34 @@ TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL = Config(
     is_required=False,
     default_value="gpt-4o",
 )
-TA_A2A_EVENTS_ENABLED = Config(
-    env_name="TA_A2A_EVENTS_ENABLED", is_required=True, default_value="false"
+TA_A2A_ENABLED = Config(env_name="TA_A2A_ENABLED", is_required=True, default_value="false")
+TA_AGENT_BASE_URL = Config(
+    env_name="TA_AGENT_BASE_URL",
+    is_required=True,
+    default_value="http://localhost:8000",
+)
+TA_PROVIDER_ORG = Config(
+    env_name="TA_PROVIDER_ORG", is_required=True, default_value="My Organization"
+)
+TA_PROVIDER_URL = Config(
+    env_name="TA_PROVIDER_URL", is_required=True, default_value="http://localhost:8000"
+)
+TA_A2A_OUTPUT_CLASSIFIER_MODEL = Config(
+    env_name="TA_A2A_OUTPUT_CLASSIFIER_MODEL",
+    is_required=False,
+    default_value="gpt-4o-mini",
+)
+TA_STATE_MANAGEMENT = Config(
+    env_name="TA_STATE_MANAGEMENT",
+    is_required=True,
+    default_value="in-memory",
 )
 TA_REDIS_HOST = Config(env_name="TA_REDIS_HOST", is_required=False, default_value=None)
 TA_REDIS_PORT = Config(env_name="TA_REDIS_PORT", is_required=False, default_value=None)
 TA_REDIS_DB = Config(env_name="TA_REDIS_DB", is_required=False, default_value=None)
-
+TA_REDIS_TTL = Config(env_name="TA_REDIS_TTL", is_required=False, default_value=None)
+TA_REDIS_SSL = Config(env_name="TA_REDIS_SSL", is_required=False, default_value="true")
+TA_REDIS_PWD = Config(env_name="TA_REDIS_PWD", is_required=False, default_value=None)
 
 configs: list[Config] = [
     TA_API_KEY,
@@ -41,8 +62,16 @@ configs: list[Config] = [
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE,
     TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME,
     TA_STRUCTURED_OUTPUT_TRANSFORMER_MODEL,
-    TA_A2A_EVENTS_ENABLED,
+    TA_A2A_ENABLED,
+    TA_AGENT_BASE_URL,
+    TA_PROVIDER_ORG,
+    TA_PROVIDER_URL,
+    TA_A2A_OUTPUT_CLASSIFIER_MODEL,
+    TA_STATE_MANAGEMENT,
     TA_REDIS_HOST,
     TA_REDIS_PORT,
     TA_REDIS_DB,
+    TA_REDIS_TTL,
+    TA_REDIS_SSL,
+    TA_REDIS_PWD,
 ]
