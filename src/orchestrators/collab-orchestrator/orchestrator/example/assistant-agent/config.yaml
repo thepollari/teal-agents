@@ -7,9 +7,13 @@ metadata:
   description: >
     Generate a report based on a given topic
   skills:
-    - name: generate_report
+    - id: generate_report
+      name: Assistant Agent
       description: >
         Generate a report based on a given topic
+      tags:
+        - prompt-only
+        - author
       examples:
         - Using the context provided, generate a comprehensive report on narwhals
 spec:

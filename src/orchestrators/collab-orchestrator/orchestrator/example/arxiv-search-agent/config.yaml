@@ -7,9 +7,13 @@ metadata:
   description: >
     An agent that can search Arxiv for papers related to a given topic, including abstracts
   skills:
-    - name: search_arxiv
+    - id: search_arxiv
+      name: Search Arxiv
       description: >
         Search Arxiv for papers related to a given topic, including abstracts
+      tags:
+        - search
+        - arxiv
       examples:
         - Find research papers about narwhals
 spec:

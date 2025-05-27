@@ -7,9 +7,13 @@ metadata:
   description: >
     An agent that can search Wikipedia for answers to question on a specific topic.
   skills:
-    - name: search_wikipedia
+    - id: search_wikipedia
+      name: Search Wikipedia
       description: >
         An agent that can search Wikipedia for answers to question on a specific topic.
+      tags:
+        - search
+        - wikipedia
       examples:
         - Search wikipedia for information on narwhals
 spec:
