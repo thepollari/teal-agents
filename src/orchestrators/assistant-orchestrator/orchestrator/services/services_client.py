@@ -7,8 +7,8 @@ from model import Conversation
 
 
 class MessageType(str, Enum):
-    USER: str = "user"
-    AGENT: str = "agent"
+    USER = "user"
+    AGENT = "agent"
 
 
 class GeneralResponse(BaseModel):
@@ -34,7 +34,7 @@ class ItemUpdatedResponse(GeneralResponse):
 class ItemDeleteResponse(GeneralResponse):
     def __init__(self):
         super().__init__(status=200, message="Item deleted successfully")
-
+ 
 
 class ItemAddedResponse(GeneralResponse):
     def __init__(self):
