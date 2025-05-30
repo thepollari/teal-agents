@@ -51,8 +51,8 @@ class OutputTransformer:
         history = ChatHistory()
         history.add_user_message(output)
 
-        async for content in agent.invoke(history):
-            data = json.loads(content.content)
+        async for content in agent.invoke(messages=history):
+            data = json.loads(content.content.content)
             return InvokeResponse(
                 token_usage=TokenUsage(
                     completion_tokens=content.inner_content.usage.completion_tokens,
