@@ -2,7 +2,7 @@ from collections.abc import AsyncIterable
 from contextlib import nullcontext
 
 from httpx_sse import ServerSentEvent
-from ska_utils import get_telemetry, KeepaliveMessage, execute_with_keepalive
+from ska_utils import KeepaliveMessage, execute_with_keepalive, get_telemetry
 
 from collab_orchestrator.agents import TaskAgent
 from collab_orchestrator.co_types import (
@@ -62,9 +62,7 @@ class TaskExecutor:
             task_result = ""
             pre_reqs = conversation.to_pre_requisites()
             try:
-                self._logger.debug(
-                    f"Starting task execution for {task_id} with agent {agent_name}"
-                )
+                self._logger.debug(f"Starting task execution for {task_id} with agent {agent_name}")
                 async for content in task_agent.perform_task_sse(
                     session_id, instructions, pre_reqs
                 ):
@@ -77,9 +75,7 @@ class TaskExecutor:
                         task_result = content.output_raw
                         yield new_event_response(EventType.FINAL_RESPONSE, content)
                     elif isinstance(content, ServerSentEvent):
-                        self._logger.warning(
-                            f"Received unexpected ServerSentEvent: {content}"
-                        )
+                        self._logger.warning(f"Received unexpected ServerSentEvent: {content}")
                         yield f"event: {content.event}\ndata: {content.data}\n\n"
                     else:
                         self._logger.warning(
@@ -147,21 +143,15 @@ class TaskExecutor:
                 pre_reqs = conversation.to_pre_requisites()
                 task_response: InvokeResponse
 
-                perform_task_coro = task_agent.perform_task(
-                    session_id, instructions, pre_reqs
-                )
-                async for message in execute_with_keepalive(
-                    perform_task_coro, logger=self._logger
-                ):
+                perform_task_coro = task_agent.perform_task(session_id, instructions, pre_reqs)
+                async for message in execute_with_keepalive(perform_task_coro, logger=self._logger):
                     if isinstance(message, KeepaliveMessage):
                         yield new_event_response(EventType.KEEPALIVE_RESPONSE, message)
                     else:
                         task_response = message
                         break
 
-                conversation.add_item(
-                    task_id, agent_name, instructions, task_response.output_raw
-                )
+                conversation.add_item(task_id, agent_name, instructions, task_response.output_raw)
                 yield new_event_response(EventType.FINAL_RESPONSE, task_response)
             except Exception as e:
                 yield new_event_response(

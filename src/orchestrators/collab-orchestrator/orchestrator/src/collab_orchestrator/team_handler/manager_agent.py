@@ -67,9 +67,7 @@ class ManagerAgent(InvokableAgent):
         conversation: list[ConversationMessage],
     ) -> ManagerOutput:
         team_task_agents = [
-            TeamBaseAgent(
-                name=f"{agent.name}:{agent.version}", description=agent.description
-            )
+            TeamBaseAgent(name=f"{agent.name}:{agent.version}", description=agent.description)
             for agent in task_agents
         ]
         request = ManagerInput(

@@ -33,19 +33,11 @@ class TaskAgent(InvokableAgent):
     ) -> list[HistoryMultiModalMessage]:
         user_message = HistoryMultiModalMessage(
             role="user",
-            items=[
-                MultiModalItem(
-                    content_type=ContentType.TEXT, content=pre_requisite.goal
-                )
-            ],
+            items=[MultiModalItem(content_type=ContentType.TEXT, content=pre_requisite.goal)],
         )
         assistant_message = HistoryMultiModalMessage(
             role="assistant",
-            items=[
-                MultiModalItem(
-                    content_type=ContentType.TEXT, content=pre_requisite.result
-                )
-            ],
+            items=[MultiModalItem(content_type=ContentType.TEXT, content=pre_requisite.result)],
         )
         return [user_message, assistant_message]
 
@@ -62,9 +54,7 @@ class TaskAgent(InvokableAgent):
                 items=[MultiModalItem(content_type=ContentType.TEXT, content=goal)],
             )
         )
-        return BaseMultiModalInput(
-            session_id=session_id, chat_history=chat_history_messages
-        )
+        return BaseMultiModalInput(session_id=session_id, chat_history=chat_history_messages)
 
     async def perform_task_sse(
         self,

@@ -6,7 +6,7 @@ import httpx
 from httpx_sse import ServerSentEvent, aconnect_sse
 from opentelemetry.propagate import inject
 from pydantic import BaseModel
-from ska_utils import get_telemetry, KeepaliveMessage
+from ska_utils import KeepaliveMessage, get_telemetry
 
 from collab_orchestrator.co_types import (
     InvokeResponse,
@@ -59,7 +59,7 @@ class AgentGateway(BaseModel):
                 # Create a new client for each attempt to avoid connection reuse issues
                 async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                     self._logger.info(
-                        f"Invoking agent {agent_name} version {agent_version} (attempt {attempt+1}/{max_retries})"
+                        f"Invoking agent {agent_name}:{agent_version} ({attempt + 1}/{max_retries})"
                     )
                     response = await client.post(
                         self._get_endpoint_for_agent(agent_name, agent_version),
@@ -71,7 +71,7 @@ class AgentGateway(BaseModel):
             except httpx.TimeoutException as e:
                 last_exception = e
                 self._logger.warning(
-                    f"Timeout invoking agent {agent_name} (attempt {attempt+1}/{max_retries}): {e}"
+                    f"Timeout invoking agent {agent_name} ({attempt + 1}/{max_retries}): {e}"
                 )
                 # Add a small delay before retry to allow resources to clear
                 await asyncio.sleep(1)
@@ -79,7 +79,7 @@ class AgentGateway(BaseModel):
             except Exception as e:
                 last_exception = e
                 self._logger.warning(
-                    f"Error invoking agent {agent_name} (attempt {attempt+1}/{max_retries}): {e}"
+                    f"Error invoking agent {agent_name} ({attempt + 1}/{max_retries}): {e}"
                 )
                 attempt += 1
         # More specific error message with the actual exception
@@ -106,9 +106,7 @@ class AgentGateway(BaseModel):
 
     async def invoke_agent_sse(
         self, agent_name: str, agent_version: str, agent_input: BaseModel
-    ) -> AsyncIterable[
-        PartialResponse | InvokeResponse | KeepaliveMessage | ServerSentEvent
-    ]:
+    ) -> AsyncIterable[PartialResponse | InvokeResponse | KeepaliveMessage | ServerSentEvent]:
         json_input = agent_input.model_dump(mode="json")
         headers = {
             "taAgwKey": self.agw_key,
@@ -166,9 +164,7 @@ class AgentGateway(BaseModel):
                                         if isinstance(response, InvokeResponse):
                                             return
                                 except Exception as e:
-                                    self._logger.error(
-                                        f"Error processing SSE event: {e}"
-                                    )
+                                    self._logger.error(f"Error processing SSE event: {e}")
                                     raise e
                     else:
                         # After first event, just process the stream normally

@@ -45,9 +45,7 @@ class PlanningAgent(InvokableAgent):
         task_agents: list[BaseAgent],
     ) -> GeneratePlanResponse:
         planning_task_agents = [
-            PlanningBaseAgent(
-                name=f"{agent.name}:{agent.version}", description=agent.description
-            )
+            PlanningBaseAgent(name=f"{agent.name}:{agent.version}", description=agent.description)
             for agent in task_agents
         ]
         request = GeneratePlanRequest(
