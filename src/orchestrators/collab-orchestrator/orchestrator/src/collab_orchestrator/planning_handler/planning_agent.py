@@ -1,10 +1,10 @@
-import aiohttp
 from pydantic import BaseModel
 
 from collab_orchestrator.agents import BaseAgent, InvokableAgent
 from collab_orchestrator.co_types import (
     BaseMultiModalInput,
     HistoryMultiModalMessage,
+    InvokeResponse,
 )
 
 
@@ -45,7 +45,9 @@ class PlanningAgent(InvokableAgent):
         task_agents: list[BaseAgent],
     ) -> GeneratePlanResponse:
         planning_task_agents = [
-            PlanningBaseAgent(name=f"{agent.name}:{agent.version}", description=agent.description)
+            PlanningBaseAgent(
+                name=f"{agent.name}:{agent.version}", description=agent.description
+            )
             for agent in task_agents
         ]
         request = GeneratePlanRequest(
@@ -53,6 +55,5 @@ class PlanningAgent(InvokableAgent):
             overall_goal=overall_goal,
             agent_list=planning_task_agents,
         )
-        async with aiohttp.ClientSession() as session:
-            response = await self.invoke(session, request)
+        response: InvokeResponse = await self.invoke(request)
         return GeneratePlanResponse(**response["output_pydantic"])

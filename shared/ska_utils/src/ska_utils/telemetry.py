@@ -7,7 +7,11 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor, ConsoleLogExporter, LogExporter
+from opentelemetry.sdk._logs.export import (
+    BatchLogRecordProcessor,
+    ConsoleLogExporter,
+    LogExporter,
+)
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
     ConsoleMetricExporter,
@@ -30,9 +34,12 @@ from ska_utils.strtobool import strtobool
 TA_TELEMETRY_ENABLED = Config(
     env_name="TA_TELEMETRY_ENABLED", is_required=True, default_value="true"
 )
-TA_OTEL_ENDPOINT = Config(env_name="TA_OTEL_ENDPOINT", is_required=False, default_value=None)
+TA_OTEL_ENDPOINT = Config(
+    env_name="TA_OTEL_ENDPOINT", is_required=False, default_value=None
+)
+TA_LOG_LEVEL = Config(env_name="TA_LOG_LEVEL", is_required=False, default_value="info")
 
-TELEMETRY_CONFIGS: list[Config] = [TA_TELEMETRY_ENABLED, TA_OTEL_ENDPOINT]
+TELEMETRY_CONFIGS: list[Config] = [TA_TELEMETRY_ENABLED, TA_OTEL_ENDPOINT, TA_LOG_LEVEL]
 
 AppConfig.add_configs(TELEMETRY_CONFIGS)
 
@@ -40,11 +47,28 @@ AppConfig.add_configs(TELEMETRY_CONFIGS)
 class Telemetry:
     def __init__(self, service_name: str, app_config: AppConfig):
         self.service_name = service_name
-        self.resource = Resource.create({ResourceAttributes.SERVICE_NAME: self.service_name})
-        self._telemetry_enabled = strtobool(str(app_config.get(TA_TELEMETRY_ENABLED.env_name)))
+        self._handler: LoggingHandler | None = None
+        self.resource = Resource.create(
+            {ResourceAttributes.SERVICE_NAME: self.service_name}
+        )
+        self._telemetry_enabled = strtobool(
+            str(app_config.get(TA_TELEMETRY_ENABLED.env_name))
+        )
         self.endpoint = app_config.get(TA_OTEL_ENDPOINT.env_name)
         self._check_enable_telemetry()
         self.tracer: trace.Tracer | None = self._get_tracer()
+
+        match app_config.get(TA_LOG_LEVEL.env_name):
+            case "debug":
+                self._log_level = logging.DEBUG
+            case "warning":
+                self._log_level = logging.WARNING
+            case "error":
+                self._log_level = logging.ERROR
+            case "critical":
+                self._log_level = logging.CRITICAL
+            case _:
+                self._log_level = logging.INFO
 
     def telemetry_enabled(self) -> bool:
         return self._telemetry_enabled
@@ -76,6 +100,23 @@ class Telemetry:
 
         trace.set_tracer_provider(provider)
 
+    def get_logger(self, name: str) -> logging.Logger:
+        if not self._telemetry_enabled:
+            logger = logging.getLogger(name)
+            logger.setLevel(self._log_level)
+            return logger
+
+        logger = logging.getLogger(name)
+        logger.addHandler(self._get_handler())
+        logger.setLevel(self._log_level)
+        logger.propagate = False
+        return logger
+
+    def _get_handler(self) -> LoggingHandler:
+        if self._handler is None:
+            self._handler = LoggingHandler()
+        return self._handler
+
     def _enable_logging(self) -> None:
         exporter: LogExporter
         if self.endpoint:
@@ -87,9 +128,8 @@ class Telemetry:
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
         set_logger_provider(logger_provider)
 
-        handler = LoggingHandler()
         logger = logging.getLogger()
-        logger.addHandler(handler)
+        logger.addHandler(self._get_handler())
         logger.setLevel(logging.INFO)
 
     def _enable_metrics(self) -> None:
@@ -100,7 +140,9 @@ class Telemetry:
             exporter = ConsoleMetricExporter()
 
         meter_provider = MeterProvider(
-            metric_readers=[PeriodicExportingMetricReader(exporter, export_interval_millis=5000)],
+            metric_readers=[
+                PeriodicExportingMetricReader(exporter, export_interval_millis=5000)
+            ],
             resource=self.resource,
             views=[
                 # Dropping all instrument names except for those starting with "semantic_kernel"
