@@ -11,7 +11,7 @@ class Conversation(BaseModel):
         pre_requisites: list[PreRequisite] = []
         for message in self.messages:
             prereq_goal = (
-                f"Task '{message.task_id}' for agent {message.agent_name}:"
+                f"Task '{message.task_id}' goal for agent {message.agent_name}:"
                 f"\n\n{message.instructions}"
             )
             prereq_result = (
