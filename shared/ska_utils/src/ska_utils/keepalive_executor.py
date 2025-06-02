@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from collections.abc import AsyncGenerator, Awaitable
+from typing import TypeVar
+
 from pydantic import BaseModel
-from typing import AsyncGenerator, Awaitable, Callable, TypeVar, Union, Optional
 
 
 class KeepaliveMessage(BaseModel):
@@ -15,8 +17,8 @@ async def execute_with_keepalive(
     task_coro: Awaitable[TResponseType],
     keepalive_interval_seconds: float = 30.0,
     keepalive_poll_interval_seconds: float = 1.0,
-    logger: Optional[logging.Logger] = None,
-) -> AsyncGenerator[Union[KeepaliveMessage, TResponseType], None]:
+    logger: logging.Logger | None = None,
+) -> AsyncGenerator[KeepaliveMessage | TResponseType, None]:
     """
     Executes a long-running coroutine while periodically yielding keepalive messages.
 
@@ -42,7 +44,7 @@ async def execute_with_keepalive(
             if logger:
                 logger.error(f"Keepalive exception: {e}")
 
-    keepalive_task: Optional[asyncio.Task[None]] = asyncio.create_task(run_keepalive())
+    keepalive_task: asyncio.Task[None] | None = asyncio.create_task(run_keepalive())
     try:
         main_task: asyncio.Task[TResponseType] = asyncio.create_task(task_coro)
         while not main_task.done():
@@ -51,7 +53,7 @@ async def execute_with_keepalive(
                     keepalive_queue.get(), keepalive_poll_interval_seconds
                 )
                 yield message
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
         # Get and yield the final result
@@ -67,5 +69,5 @@ async def execute_with_keepalive(
             keepalive_task.cancel()
             try:
                 await asyncio.wait_for(keepalive_task, 1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
+            except (asyncio.CancelledError, TimeoutError):
                 pass

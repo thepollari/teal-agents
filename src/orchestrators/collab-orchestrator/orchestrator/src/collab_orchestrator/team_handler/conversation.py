@@ -10,7 +10,15 @@ class Conversation(BaseModel):
     def to_pre_requisites(self) -> list[PreRequisite]:
         pre_requisites: list[PreRequisite] = []
         for message in self.messages:
-            pre_requisites.append(PreRequisite(goal=message.instructions, result=message.result))
+            prereq_goal = (
+                f"Task '{message.task_id}' for agent {message.agent_name}:"
+                f"\n\n{message.instructions}"
+            )
+            prereq_result = (
+                f"Task '{message.task_id}' result from agent {message.agent_name}:"
+                f"\n\n{message.result}"
+            )
+            pre_requisites.append(PreRequisite(goal=prereq_goal, result=prereq_result))
         return pre_requisites
 
     def add_item(self, task_id: str, agent_name: str, instructions: str, result: str):
