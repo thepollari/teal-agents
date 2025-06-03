@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from collections.abc import AsyncGenerator, Coroutine
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
