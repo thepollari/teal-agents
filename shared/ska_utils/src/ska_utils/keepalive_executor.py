@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from collections.abc import AsyncGenerator, Awaitable
-from typing import TypeVar
+from collections.abc import AsyncGenerator, Coroutine
+from typing import TypeVar, Any
 
 from pydantic import BaseModel
 
@@ -14,7 +14,7 @@ TResponseType = TypeVar("TResponseType")  # Return type of the main task
 
 
 async def execute_with_keepalive(
-    task_coro: Awaitable[TResponseType],
+    task_coro: Coroutine[Any, Any, TResponseType],
     keepalive_interval_seconds: float = 30.0,
     keepalive_poll_interval_seconds: float = 1.0,
     logger: logging.Logger | None = None,
