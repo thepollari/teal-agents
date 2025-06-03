@@ -13,6 +13,7 @@ class EventType(Enum):
     ERROR = "error"
     PARTIAL_RESPONSE = "partial-response"
     FINAL_RESPONSE = "final-response"
+    KEEPALIVE_RESPONSE = "keepalive"
 
 
 class ErrorResponse(BaseModel):
