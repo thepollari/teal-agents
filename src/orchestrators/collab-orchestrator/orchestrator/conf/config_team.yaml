@@ -1,3 +1,4 @@
+#nonk8s
 apiVersion: skagents/v1
 kind: TeamOrchestrator
 description: >
@@ -11,4 +12,3 @@ spec:
     - WikipediaAgent:0.1
     - ArxivSearchAgent:0.1
     - AssistantAgent:0.1
-    - WeatherAgent:0.1

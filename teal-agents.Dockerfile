@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y curl git \
@@ -11,7 +11,7 @@ RUN groupadd -g 1000 skagent && \
 
 USER skagent
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 ENV PATH=$PATH:/home/skagent/.local/bin
 
 WORKDIR /app
