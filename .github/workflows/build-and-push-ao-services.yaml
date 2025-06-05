@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - feature/auto-version
+      - test/auto-version
   pull_request:
     # All PRs, including stacked PRs
 
@@ -45,6 +47,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: tests
+    permissions:
+        id-token: write
+        contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,6 +60,17 @@ jobs:
       - name: Install dependencies
         working-directory: ./src/orchestrators/assistant-orchestrator/services
         run: make sync
+      - name: bump version with hatch
+        id: bump_version
+        working-directory: ./src/orchestrators/assistant-orchestrator/services
+        run: |
+          echo ${{  github.ref }}
+          git checkout ${{  github.ref }}
+          uv run hatch version dev
+          git config --global user.name "Teal Agents Bot"
+          git config --global user.email " "
+          git commit -am "bump dev version [skip ci]"
+          git push --set-upstream origin ${{  github.ref }}
       - name: Extract version with hatch
         id: extract_version
         working-directory: ./src/orchestrators/assistant-orchestrator/services
