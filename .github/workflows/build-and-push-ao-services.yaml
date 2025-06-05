@@ -4,8 +4,14 @@ on:
   push:
     branches:
       - main
-      - feature/auto-version
-      - test/auto-version
+    paths:
+      - 'shared/ska_utils/**/*'
+      - 'src/orchestrators/assistant-orchestrator/services/**/*'
+      - '**/*.py'
+      - '**/*.toml'
+      - '**/*.lock'
+      - '**/*.sh'
+      - .github/workflows/build-and-push-ao-services.yml
   pull_request:
     # All PRs, including stacked PRs
 
@@ -48,8 +54,8 @@ jobs:
     if: github.event_name == 'push'
     needs: tests
     permissions:
-        id-token: write
-        contents: write
+      id-token: write
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,13 +70,12 @@ jobs:
         id: bump_version
         working-directory: ./src/orchestrators/assistant-orchestrator/services
         run: |
-          echo ${{  github.ref }}
-          git checkout ${{  github.ref }}
+          git checkout ${{ github.ref_name }}
           uv run hatch version dev
           git config --global user.name "Teal Agents Bot"
           git config --global user.email " "
           git commit -am "bump dev version [skip ci]"
-          git push --set-upstream origin ${{  github.ref }}
+          git push --set-upstream origin ${{ github.ref_name }}
       - name: Extract version with hatch
         id: extract_version
         working-directory: ./src/orchestrators/assistant-orchestrator/services
