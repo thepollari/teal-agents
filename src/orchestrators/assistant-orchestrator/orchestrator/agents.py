@@ -77,7 +77,6 @@ class BaseAgent(ABC, BaseModel):
 
         return response.json()
 
-
     async def invoke_sse(self, conv: Conversation, authorization: str | None = None) -> dict:
         """Invoke the agent via an HTTP API call for SSE response."""
         base_input = _conversation_to_agent_input(conv)
@@ -90,13 +89,12 @@ class BaseAgent(ABC, BaseModel):
         }
         response = requests.post(f"{self.endpoint_api}/sse", data=input_message, headers=headers)
 
-
         if response.status_code != 200:
             raise Exception(f"Failed to invoke agent API: {response.status_code} - {response.text}")
 
         # Iterate over the response content line by line and yield each decoded line.
         for line in response.iter_lines():
-            yield line.decode('utf-8') + '\n' 
+            yield line.decode("utf-8") + "\n"
 
 
 class AgentCatalog(BaseModel):

@@ -22,6 +22,7 @@ class AgentMessage(BaseModel):
     content: str
     sender: str
 
+
 class Conversation(BaseModel):
     conversation_id: str
     user_id: str
@@ -63,15 +64,19 @@ class Conversation(BaseModel):
         except ValueError:
             return self.add_context_item(key, value, ContextType.TRANSIENT)
 
+
 class SseMessage(BaseModel):
     task: str
     message: str
 
+
 class SseFinalMessage(BaseModel):
     conversation: Conversation
 
+
 class SseError(BaseModel):
     error: str
+
 
 class SseEventType(Enum):
     INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"

@@ -1,17 +1,12 @@
-import json
 from contextlib import nullcontext
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import APIKeyHeader
-from fastapi.responses import StreamingResponse
 from ska_utils import get_telemetry
 
 from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.requests import ConversationMessageRequest
-from model.conversation import SseEventType
-from collections import namedtuple
-from functools import lru_cache
 
 from .deps import (
     get_agent_catalog,
@@ -33,6 +28,7 @@ cache_user_context = get_user_context_cache()
 
 router = APIRouter()
 header_scheme = APIKeyHeader(name="authorization", auto_error=False)
+
 
 @router.get(
     "/conversations/{conversation_id}/messages",
@@ -155,6 +151,7 @@ async def add_conversation_message_by_id(
         conversation_result = await conv_manager.get_last_response(conv)
     return {"conversation": conversation_result}
 
+
 @router.post(
     "/conversations",
     tags=["Conversations"],
@@ -175,6 +172,7 @@ async def new_conversation(user_id: str):
             ) from e
 
     return {"conversation_id": conv.conversation_id, "user_id": conv.user_id}
+
 
 @router.get(
     "/healthcheck",

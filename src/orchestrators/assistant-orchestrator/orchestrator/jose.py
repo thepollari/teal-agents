@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from routes import apis, deps, websockets, sse
+from routes import apis, deps, sse, websockets
 
 # Get configurations
 config = deps.get_config()
