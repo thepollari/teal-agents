@@ -11,7 +11,7 @@ from configs import (
 )
 from connection_manager import ConnectionManager
 from conversation_manager import ConversationManager
-from jose_types import Config
+from ao_types import Config
 from recipient_chooser import RecipientChooser
 from user_context import CustomUserContextHelper, UserContextCache
 
