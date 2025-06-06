@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/auto-version
     paths:
       - 'shared/ska_utils/**/*'
       - 'src/orchestrators/assistant-orchestrator/orchestrator/**/*'

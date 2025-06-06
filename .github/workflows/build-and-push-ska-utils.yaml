@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
+      - feature/auto-version
     paths:
-      - 'shared/ska_utils/**'
+      - 'shared/ska_utils/**/*'
       - .github/workflows/build-and-push-ska-utils.yml
   pull_request:
     # All PRs, including stacked PRs
