@@ -3,7 +3,7 @@ from collections.abc import AsyncIterable
 from contextlib import nullcontext
 from copy import deepcopy
 
-import redis.asyncio as redis                           # ➊ NEW
+import redis.asyncio as redis  # ➊ NEW
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import Context, extract
@@ -22,14 +22,14 @@ from collab_orchestrator.configs import (
     TA_AGW_HOST,
     TA_AGW_KEY,
     TA_AGW_SECURE,
-    TA_REDIS_DB,          # ➋ NEW
-    TA_REDIS_HOST,        # ➋
-    TA_REDIS_PORT,        # ➋
+    TA_REDIS_DB,  # ➋ NEW
+    TA_REDIS_HOST,  # ➋
+    TA_REDIS_PORT,  # ➋
     TA_SERVICE_CONFIG,
 )
 from collab_orchestrator.handler_factory import HandlerFactory
 from collab_orchestrator.planning_handler.pending_plans import PendingPlanStore  # ➌
-from collab_orchestrator.planning_handler.plan import Plan                       # ➌
+from collab_orchestrator.planning_handler.plan import Plan  # ➌
 
 
 # ----------------------------------------------------------------- helpers
@@ -37,6 +37,7 @@ def docstring_parameter(*sub):
     def dec(obj):
         obj.__doc__ = obj.__doc__.format(*sub)
         return obj
+
     return dec
 
 

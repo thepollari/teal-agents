@@ -1,10 +1,13 @@
 from __future__ import annotations
-import json, asyncio, redis.asyncio as redis
-from ska_utils import AppConfig
+
+import asyncio
+import json
 from enum import Enum
-from collab_orchestrator.configs import (
-    TA_REDIS_HOST, TA_REDIS_PORT, TA_REDIS_DB, TA_REDIS_TTL
-)
+
+import redis.asyncio as redis
+from ska_utils import AppConfig
+
+from collab_orchestrator.configs import TA_REDIS_DB, TA_REDIS_HOST, TA_REDIS_PORT, TA_REDIS_TTL
 
 
 class PendingPlanStore:
@@ -32,19 +35,21 @@ class PendingPlanStore:
         await self._r.hset(
             self.key(sid),
             mapping={
-                "plan": json.dumps(plan_dict, default=lambda o: o.value if isinstance(o, Enum) else str(o)),
+                "plan": json.dumps(
+                    plan_dict, default=lambda o: o.value if isinstance(o, Enum) else str(o)
+                ),
                 "status": "pending",
                 "edited_plan": "",
             },
         )
         await self._r.expire(self.key(sid), self._ttl)
 
-    async def set_decision(
-            self, sid: str, status: str, edited_plan: dict | None = None
-    ) -> None:
+    async def set_decision(self, sid: str, status: str, edited_plan: dict | None = None) -> None:
         m: dict[str, str] = {"status": status}
         if edited_plan is not None:
-            m["edited_plan"] = json.dumps(edited_plan, default=lambda o: o.value if isinstance(o, Enum) else str(o))
+            m["edited_plan"] = json.dumps(
+                edited_plan, default=lambda o: o.value if isinstance(o, Enum) else str(o)
+            )
         await self._r.hset(self.key(sid), mapping=m)
         await self._r.publish(self.key(sid), "go")
 
@@ -78,6 +83,7 @@ class PendingPlanStore:
         pubsub = self._r.pubsub()
         await pubsub.subscribe(self.key(sid))
         try:
+
             async def _listen():
                 async for message in pubsub.listen():
                     # Only respond for actual published messages, not subscription confirmations
@@ -90,7 +96,7 @@ class PendingPlanStore:
                     await asyncio.wait_for(waiter, timeout)
                 else:
                     await waiter
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return None
             return await self.get(sid)
         finally:
