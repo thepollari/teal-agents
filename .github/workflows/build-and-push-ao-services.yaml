@@ -4,15 +4,12 @@ on:
   push:
     branches:
       - main
-      - feature/auto-version
     paths:
-      - 'shared/ska_utils/**/*'
-      - 'src/orchestrators/assistant-orchestrator/services/**/*'
-      - '**/*.py'
-      - '**/*.toml'
-      - '**/*.lock'
-      - '**/*.sh'
       - .github/workflows/build-and-push-ao-services.yml
+      - ao-services.Dockerfile
+      - 'shared/ska_utils/**'
+      - 'src/orchestrators/assistant-orchestrator/services/**'
+      - '!**.md'
   pull_request:
     # All PRs, including stacked PRs
 

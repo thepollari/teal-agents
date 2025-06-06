@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
-      - feature/auto-version
     paths:
-      - 'shared/ska_utils/**/*'
       - .github/workflows/build-and-push-ska-utils.yml
+      - 'shared/ska_utils/**/*'
+      - '!**.md'
   pull_request:
     # All PRs, including stacked PRs
 
@@ -80,11 +80,11 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies
-        working-directory: ./src/sk-agents
+        working-directory: ./shared/ska_utils
         run: make sync
       - name: bump version with hatch
         id: bump_version
-        working-directory: ./src/orchestrators/assistant-orchestrator/services
+        working-directory: ./shared/ska_utils
         run: |
           git checkout ${{ github.ref_name }}
           uv run hatch version dev

@@ -4,15 +4,12 @@ on:
   push:
     branches:
       - main
-      - feature/auto-version
     paths:
-      - 'shared/ska_utils/**/*'
-      - 'src/sk-agents/**/*'
-      - '**/*.py'
-      - '**/*.toml'
-      - '**/*.lock'
-      - '**/*.sh'
       - .github/workflows/build-and-push-teal-agents.yml
+      - teal-agents.Dockerfile
+      - 'shared/ska_utils/**'
+      - 'src/sk-agents/**'
+      - '!**.md'
   pull_request:
     # All PRs, including stacked PRs
 
@@ -69,7 +66,7 @@ jobs:
         run: make sync
       - name: bump version with hatch
         id: bump_version
-        working-directory: ./src/orchestrators/assistant-orchestrator/services
+        working-directory: ./src/sk-agents
         run: |
           git checkout ${{ github.ref_name }}
           uv run hatch version dev
