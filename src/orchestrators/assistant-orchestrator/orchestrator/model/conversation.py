@@ -22,6 +22,10 @@ class AgentMessage(BaseModel):
     content: str
     sender: str
 
+class SseEventType(Enum):
+    ORCH_INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"
+    ORCH_FINAL_RESPONSE = "orchestrator-final-response"
+    UNKNOWN = "unknown"
 
 class Conversation(BaseModel):
     conversation_id: str
