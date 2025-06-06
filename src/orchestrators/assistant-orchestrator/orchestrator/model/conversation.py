@@ -22,6 +22,17 @@ class AgentMessage(BaseModel):
     content: str
     sender: str
 
+class SseMessage(BaseModel):
+    task: str
+    message: str
+
+class SseError(BaseModel):
+    error: str
+
+class SseAgent(BaseModel):
+    task: str
+    agent_name: str
+
 class SseEventType(Enum):
     ORCH_INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"
     ORCH_FINAL_RESPONSE = "orchestrator-final-response"

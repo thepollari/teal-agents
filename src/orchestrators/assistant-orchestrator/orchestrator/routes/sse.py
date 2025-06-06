@@ -10,10 +10,11 @@ from ska_utils import get_telemetry
 from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.requests import ConversationMessageRequest
-from model.conversation import SseEventType
+from model.conversation import SseEventType, SseMessage, SseError, SseAgent
 from collections import namedtuple
 from functools import lru_cache
 from typing import Any
+from agents import Conversation
 
 from .deps import (
     get_agent_catalog,
@@ -53,17 +54,187 @@ session_cache: dict[str, SessionData] = {}
 #    conv = await conv_manager.get_conversation(user_id, conversation_id)
 #    return SessionData(conversation=conv, request=request, authorization=authorization)
 
-# Helper function to format SSE messages (still useful if you want event types)
+# Helper function to format SSE messages
 def format_sse_message(data: dict[str, Any], event_type: SseEventType) -> str:
     """Formats data into a Server-Sent Event string with an event type."""
     json_data = json.dumps(data)
     return f"event: {event_type.value}\ndata: {json_data}\n\n"
 
-# Helper function to format only data field for SSE
-def format_sse_data_only(data: dict[str, Any]) -> str:
-    """Formats data into a Server-Sent Event string with only the data field."""
-    json_data = json.dumps(data)
-    return f"data: {json_data}\n\n"
+# Main function to Add and Stream Conversation Message through SSE
+async def sse_event_response(
+    conv: Conversation,
+    request: ConversationMessageRequest,
+    authorization: Any,
+):
+    jt = get_telemetry()
+    in_memory_user_context = None
+    if cache_user_context:
+        in_memory_user_context = cache_user_context.get_user_context_from_cache(
+            user_id=conv.user_id
+        ).model_dump()["user_context"]
+        await conv_manager.add_transient_context(conv, in_memory_user_context)
+
+    with (
+        jt.tracer.start_as_current_span("conversation-turn")
+        if jt.telemetry_enabled()
+        else nullcontext()
+    ):
+        # --- Call Agent Selector Agent ---
+        with (
+            jt.tracer.start_as_current_span("choose-recipient")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            try:
+                selected_agent = await rec_chooser.choose_recipient(request.message, conv)
+            except Exception as e:
+                sse_error = SseError(
+                    error=f"Error retrieving agent: {e}",
+                )
+                yield format_sse_message(
+                    sse_error.model_dump(),
+                    SseEventType.UNKNOWN
+                )
+                return
+
+            # Determine the selected agent
+            if selected_agent.agent_name not in agent_catalog.agents:
+                agent = fallback_agent
+                sel_agent_name = fallback_agent.name
+            else:
+                agent = agent_catalog.agents[selected_agent.agent_name]
+                sel_agent_name = agent.name
+
+        # --- Orchestrator Response: Agent Chosen ---
+        # Send agent chosen event
+        sse_agent = SseAgent(
+            task="agent_chosen",
+            agent_name=sel_agent_name
+        )
+        yield format_sse_message(
+            sse_agent.model_dump(),
+            SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+        )
+
+        # --- Update History User ---
+        # Add user message to conversation history
+        with (
+            jt.tracer.start_as_current_span("update-history-user")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            try:
+                await conv_manager.add_user_message(conv, request.message, sel_agent_name)
+                # Send intermediate event for user message added to history
+                sse_message = SseMessage(
+                    task="user_message_added",
+                    message="User message added to history."
+                )
+                yield format_sse_message(
+                    sse_message.model_dump(),
+                    SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+                )
+            except Exception as e:
+                sse_error = SseError(
+                    error=f"Error adding user message to history: {e}",
+                )
+                yield format_sse_message(
+                    sse_error.model_dump(),
+                    SseEventType.UNKNOWN
+                )
+                return
+
+        # --- Agent Response (Streaming Partial) and (Final Response) ---
+        with (
+            jt.tracer.start_as_current_span("agent-streaming-partial-response")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            try:
+                # Initialize agent_response to be an empty string, will be populated from final raw output
+                agent_response = ""
+                async for raw_sse_line in agent.invoke_sse(conv, authorization):
+                    # Yield the agent response stream directly
+                    if raw_sse_line:
+                        yield f"{raw_sse_line}"
+                    # Check for final response, and if so parse the output raw data
+                    if raw_sse_line.startswith("event:"):
+                        last_event_type = raw_sse_line[len("event:"):].strip()
+                    elif raw_sse_line.startswith("data:"):
+                        if last_event_type == "final-response":
+                            json_data_str = raw_sse_line[len("data: "):].strip()
+                            try:
+                                data = json.loads(json_data_str)
+                                agent_response = data.get("output_raw", "")
+                            except json.JSONDecodeError:
+                                print(f"Error decoding JSON: {json_data_str}")
+                        await asyncio.sleep(0.001)
+
+            except Exception as e:
+                sse_error = SseError(
+                    error=f"Error during agent streaming: {e}",
+                )
+                yield format_sse_message(
+                    sse_error.model_dump(),
+                    SseEventType.UNKNOWN
+                )
+                return
+                
+        # --- Update History Agent ---
+        with (
+            jt.tracer.start_as_current_span("update-history-assistant")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            try:
+                # Send intermediate event for agent message added to history
+                await conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
+                sse_message = SseMessage(
+                    task="agent_message_added",
+                    message="Agent response added to history"
+                )
+                yield format_sse_message(
+                    sse_message.model_dump(),
+                    SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+                )
+            except Exception as e:
+                sse_error = SseError(
+                    error=f"Error adding agent response to history:{e}",
+                )
+                yield format_sse_message(
+                    sse_error.model_dump(),
+                    SseEventType.UNKNOWN
+                )
+                return
+
+@router.post(
+    "/conversations/{conversation_id}/sse",
+    tags=["Conversations SSE"],
+    description="Stream back response from agents based on user and session id.",
+)
+async def add_and_stream_conversation_sse_message_by_id(
+    user_id: str,
+    conversation_id: str,
+    request: ConversationMessageRequest,
+    authorization: str = Depends(header_scheme),
+):    
+    """
+    {0}
+
+    This endpoint initializes a session cache for the specified conversation and streams back 
+    the response from agents based on user and conversation id.
+    """
+    try:
+        conv = await conv_manager.get_conversation(user_id, conversation_id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unable to get conversation with conversation_id: {conversation_id} --- {e}",
+        ) from e
+    
+    # Return StreamingResponse with the event_generator and correct media type
+    return StreamingResponse(sse_event_response(conv, request, authorization), media_type="text/event-stream")
+
 
 @router.post(
     "/conversations/{conversation_id}/messages/sse",
@@ -96,7 +267,7 @@ async def add_conversation_sse_message_by_id(
 @router.get(
     "/conversations/{conversation_id}/messages/sse",
     tags=["Conversations SSE"],
-    description="Stream back response from agents based on user and session id.",
+    description="Stream back response from agents based on user and conversation id.",
 )
 async def stream_conversation_sse_message_by_id(conversation_id: str):
     """
@@ -112,7 +283,6 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
     The event stream provides updates such as agent selection, intermediate task
     responses, and the final conversation result.
     """
-    jt = get_telemetry()
     
     # --- Initialize Session Data based on conversation_id ---
     try:
@@ -125,129 +295,12 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
         conv = session_data.conversation
         request = session_data.request
         authorization = session_data.authorization
+        del session_cache[conversation_id]
     except Exception as e:
         raise HTTPException(
             status_code=404,
             detail=f"Unable to find session cache for conversation_id: {conversation_id}",
         ) from e
 
-    async def event_generator():
-        in_memory_user_context = None
-        if cache_user_context:
-            in_memory_user_context = cache_user_context.get_user_context_from_cache(
-                user_id=user_id
-            ).model_dump()["user_context"]
-            await conv_manager.add_transient_context(conv, in_memory_user_context)
-
-        with (
-            jt.tracer.start_as_current_span("conversation-turn")
-            if jt.telemetry_enabled()
-            else nullcontext()
-        ):
-            # --- Call Agent Selector Agent ---
-            with (
-                jt.tracer.start_as_current_span("choose-recipient")
-                if jt.telemetry_enabled()
-                else nullcontext()
-            ):
-                try:
-                    selected_agent = await rec_chooser.choose_recipient(request.message, conv)
-                except Exception as e:
-                    yield format_sse_message(
-                        {"error": f"Error retrieving agent: {e}"},
-                        SseEventType.UNKNOWN
-                    )
-                    return 
-
-                # Determine the selected agent
-                if selected_agent.agent_name not in agent_catalog.agents:
-                    agent = fallback_agent
-                    sel_agent_name = fallback_agent.name
-                else:
-                    agent = agent_catalog.agents[selected_agent.agent_name]
-                    sel_agent_name = agent.name
-
-            # --- Orchestrator Response: Agent Chosen ---
-            # Send agent chosen event
-            yield format_sse_message(
-                {"task": "agent_chosen", "agent_name": sel_agent_name},
-                SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
-            )
-
-            # --- Update History User ---
-            # Add user message to conversation history
-            with (
-                jt.tracer.start_as_current_span("update-history-user")
-                if jt.telemetry_enabled()
-                else nullcontext()
-            ):
-                try:
-                    await conv_manager.add_user_message(conv, request.message, sel_agent_name)
-                    # Send intermediate event for user message added to history
-                    yield format_sse_message(
-                        {"task": "user_message_added", "message": "User message added to history."},
-                        SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
-                    )
-                except Exception as e:
-                    # Format error event using helper function
-                    yield format_sse_message(
-                        {"error": f"Error adding user message to history: {e}"},
-                        SseEventType.UNKNOWN
-                    )
-                    return
-
-            # --- Agent Response (Streaming Partial) and (Final Response) ---
-            with (
-                jt.tracer.start_as_current_span("agent-streaming-partial-response")
-                if jt.telemetry_enabled()
-                else nullcontext()
-            ):
-                try:
-                    # Initialize agent_response to be an empty string, will be populated from final output
-                    agent_response = ""
-                    async for raw_sse_line in agent.invoke_sse(conv, authorization):
-                        if raw_sse_line:
-                            yield f"{raw_sse_line}"
-                    # Parse and retrieve final response output for adding to conversation history
-                    line_for_parsing = raw_sse_line.strip()
-                    if line_for_parsing.startswith("event: final-response"):
-                        # Extract the data part from the line
-                        data_start_index = line_for_parsing.find("data: ")
-                        if data_start_index != -1:
-                            event_data_str = line_for_parsing[data_start_index + len("data: "):].strip()
-                            try:
-                                parsed_data = json.loads(event_data_str)
-                                if "output_raw" in parsed_data:
-                                    agent_response = parsed_data["output_raw"]
-                            except json.JSONDecodeError:
-                                print(f"Warning: Could not parse final-response data as JSON: {event_data_str}")
-                        else:
-                            print(f"Warning: 'final-response' event missing 'data:' part: {line_for_parsing}")
-                    await asyncio.sleep(0.001)
-
-                except Exception as e:
-                    print(f"Error during agent streaming: {e}")
-                    yield f"event: {SseEventType.UNKNOWN}\ndata: {json.dumps({'error': f'Error during agent streaming: {e}'})}\n\n"
-
-            # --- Update History Assistant ---
-            with (
-                jt.tracer.start_as_current_span("update-history-assistant")
-                if jt.telemetry_enabled()
-                else nullcontext()
-            ):
-                try:
-                    await conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
-                    # Send intermediate event for assistant message added to history
-                    yield format_sse_message(
-                        {"task": "agent_message_added", "message": "Agent response added to history."},
-                        SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
-                    )
-                except Exception as e:
-                    yield format_sse_message(
-                        {"error": f"Error adding assistant response to history: {e}"},
-                        SseEventType.UNKNOWN
-                    )
-                    return # Critical error, stop streaming
-
     # Return StreamingResponse with the event_generator and correct media type
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(sse_event_response(conv, request, authorization), media_type="text/event-stream")
