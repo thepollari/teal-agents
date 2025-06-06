@@ -153,23 +153,29 @@ async def sse_event_response(
             try:
                 # Initialize agent_response to be an empty string, will be populated from final raw output
                 agent_response = ""
-                async for raw_sse_line in agent.invoke_sse(conv, authorization):
-                    # Yield the agent response stream directly
-                    if raw_sse_line:
-                        yield f"{raw_sse_line}"
-                    # Check for final response, and if so parse the output raw data
-                    if raw_sse_line.startswith("event:"):
-                        last_event_type = raw_sse_line[len("event:"):].strip()
-                    elif raw_sse_line.startswith("data:"):
-                        if last_event_type == "final-response":
-                            json_data_str = raw_sse_line[len("data: "):].strip()
-                            try:
-                                data = json.loads(json_data_str)
-                                agent_response = data.get("output_raw", "")
-                            except json.JSONDecodeError:
-                                print(f"Error decoding JSON: {json_data_str}")
-                        await asyncio.sleep(1.001)
-
+                async for content in agent.invoke_sse(conv, authorization):
+                    try:
+                        # Check if extra data and process extra data, as done in ws
+                        extra_data: ExtraData = ExtraData.new_from_json(content)
+                        context_directives = parse_context_directives(extra_data)
+                        await conv_manager.process_context_directives(conv, context_directives)
+                    except Exception as e:
+                        print(e)
+                        # Yield the agent response stream directly
+                        if content:
+                            yield f"{content}"
+                        # Check for final response, and if so parse the output raw data
+                        if content.startswith("event:"):
+                            last_event_type = content[len("event:"):].strip()
+                        elif content.startswith("data:"):
+                            if last_event_type == "final-response":
+                                json_data_str = content[len("data: "):].strip()
+                                try:
+                                    data = json.loads(json_data_str)
+                                    agent_response = data.get("output_raw", "")
+                                except json.JSONDecodeError:
+                                    print(f"Error decoding JSON: {json_data_str}")
+                        await asyncio.sleep(0.001)
             except Exception as e:
                 sse_error = SseError(
                     error=f"Error during agent streaming: {e}",
@@ -179,7 +185,7 @@ async def sse_event_response(
                     SseEventType.UNKNOWN
                 )
                 return
-                
+
         # --- Update History Agent ---
         with (
             jt.tracer.start_as_current_span("update-history-assistant")
