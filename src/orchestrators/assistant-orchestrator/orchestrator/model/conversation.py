@@ -22,22 +22,6 @@ class AgentMessage(BaseModel):
     content: str
     sender: str
 
-class SseMessage(BaseModel):
-    task: str
-    message: str
-
-class SseError(BaseModel):
-    error: str
-
-class SseAgent(BaseModel):
-    task: str
-    agent_name: str
-
-class SseEventType(Enum):
-    ORCH_INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"
-    ORCH_FINAL_RESPONSE = "orchestrator-final-response"
-    UNKNOWN = "unknown"
-
 class Conversation(BaseModel):
     conversation_id: str
     user_id: str
@@ -59,7 +43,7 @@ class Conversation(BaseModel):
         return self.user_context[item_key]
 
     def update_context_item(self, item_key: str, item_value: str | None) -> ContextItem:
-        if item_key not in self.user_context:
+        if item_key not in self.user_Žontext:
             raise ValueError(f"Context item does not exist - {item_key}")
         if item_value is None:
             return self.delete_context_item(item_key)
@@ -78,3 +62,18 @@ class Conversation(BaseModel):
             return self.update_context_item(key, value)
         except ValueError:
             return self.add_context_item(key, value, ContextType.TRANSIENT)
+
+class SseMessage(BaseModel):
+    task: str
+    message: str
+
+class SseFinalMessage(BaseModel):
+    conversation: Conversation
+
+class SseError(BaseModel):
+    error: str
+
+class SseEventType(Enum):
+    INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"
+    FINAL_RESPONSE = "orchestrator-final-response"
+    UNKNOWN = "orchestrator-unknown"

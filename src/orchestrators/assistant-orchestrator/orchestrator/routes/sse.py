@@ -10,7 +10,7 @@ from ska_utils import get_telemetry
 from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.requests import ConversationMessageRequest
-from model.conversation import SseEventType, SseMessage, SseError, SseAgent
+from model.conversation import SseEventType, SseMessage, SseFinalMessage, SseError
 from collections import namedtuple
 from functools import lru_cache
 from typing import Any
@@ -107,13 +107,13 @@ async def sse_event_response(
 
         # --- Orchestrator Response: Agent Chosen ---
         # Send agent chosen event
-        sse_agent = SseAgent(
+        sse_agent = SseMessage(
             task="agent_chosen",
-            agent_name=sel_agent_name
+            message=f"{sel_agent_name} was selected by agent chooser."
         )
         yield format_sse_message(
             sse_agent.model_dump(),
-            SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+            SseEventType.INTERMEDIATE_TASK_RESPONSE
         )
 
         # --- Update History User ---
@@ -132,7 +132,7 @@ async def sse_event_response(
                 )
                 yield format_sse_message(
                     sse_message.model_dump(),
-                    SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+                    SseEventType.INTERMEDIATE_TASK_RESPONSE
                 )
             except Exception as e:
                 sse_error = SseError(
@@ -168,7 +168,7 @@ async def sse_event_response(
                                 agent_response = data.get("output_raw", "")
                             except json.JSONDecodeError:
                                 print(f"Error decoding JSON: {json_data_str}")
-                        await asyncio.sleep(0.001)
+                        await asyncio.sleep(1.001)
 
             except Exception as e:
                 sse_error = SseError(
@@ -195,7 +195,7 @@ async def sse_event_response(
                 )
                 yield format_sse_message(
                     sse_message.model_dump(),
-                    SseEventType.ORCH_INTERMEDIATE_TASK_RESPONSE
+                    SseEventType.INTERMEDIATE_TASK_RESPONSE
                 )
             except Exception as e:
                 sse_error = SseError(
@@ -206,6 +206,32 @@ async def sse_event_response(
                     SseEventType.UNKNOWN
                 )
                 return
+            
+        # --- Orchestrator Final Response ---
+        with (
+            jt.tracer.start_as_current_span("update-history-assistant")
+            if jt.telemetry_enabled()
+            else nullcontext()
+        ):
+            try:
+                # Send the final response from the orchestrator
+                conversation_result = await conv_manager.get_last_response(conv)
+                final_response = SseFinalMessage(
+                    task="orchestrator_final_response",
+                    conversation=conversation_result
+                )
+                yield format_sse_message(
+                    final_response.model_dump(),
+                    SseEventType.FINAL_RESPONSE
+                )
+            except Exception as e:
+                sse_error = SseError(
+                    error=f"Orchestrator failed to finalize conversation: {e}",
+                )
+                yield format_sse_message(
+                    sse_error.model_dump(),
+                    SseEventType.UNKNOWN
+                )
 
 @router.post(
     "/conversations/{conversation_id}/sse",
