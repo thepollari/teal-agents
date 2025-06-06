@@ -11,7 +11,7 @@ from ska_utils import get_telemetry
 
 from agents import Conversation
 from context_directive import parse_context_directives
-from ao_types import ExtraData
+from jose_types import ExtraData
 from model.conversation import SseError, SseEventType, SseFinalMessage, SseMessage
 from model.requests import ConversationMessageRequest
 
@@ -136,6 +136,7 @@ async def sse_event_response(
                         context_directives = parse_context_directives(extra_data)
                         await conv_manager.process_context_directives(conv, context_directives)
                     except Exception as e:
+                        print(e)
                         # Yield the agent response stream directly
                         if content:
                             yield f"{content}"

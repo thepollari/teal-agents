@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from ska_utils import get_telemetry
 
 from context_directive import parse_context_directives
-from ao_types import ExtraData
+from jose_types import ExtraData
 from model.requests import ConversationMessageRequest
 
 from .deps import (

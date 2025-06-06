@@ -2,7 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from ao_types import ExtraData
+from jose_types import ExtraData
 from model import ContextType
 
 

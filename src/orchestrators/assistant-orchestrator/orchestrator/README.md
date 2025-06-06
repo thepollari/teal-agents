@@ -90,12 +90,12 @@ When starting it, you must ensure that it binds to all network interfaces so
 that it can be accessed by the Kong running in a container. Additionally, 
 you'll need to have it listen on port 8100.
 ```bash
-$ uv run -- fastapi dev --host=0.0.0.0 --port=8100 ao.py
+$ uv run -- fastapi dev --host=0.0.0.0 --port=8100 jose.py
 ```
 or
 ```bash
 $ source .venv/bin/activate
-$ fastapi dev --host=0.0.0.0 --port=8100 ao.py
+$ fastapi dev --host=0.0.0.0 --port=8100 jose.py
 ```
 ![Output](/assets/ao-output.png)
 
