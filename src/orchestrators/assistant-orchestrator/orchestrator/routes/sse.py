@@ -136,7 +136,6 @@ async def sse_event_response(
                         context_directives = parse_context_directives(extra_data)
                         await conv_manager.process_context_directives(conv, context_directives)
                     except Exception as e:
-                        print(e)
                         # Yield the agent response stream directly
                         if content:
                             yield f"{content}"
@@ -235,7 +234,7 @@ async def add_and_stream_conversation_sse_message_by_id(
 @router.post(
     "/conversations/{conversation_id}/messages/sse",
     tags=["Conversations SSE"],
-    description="Setup a conversation . Returns new session ID and agent response.",
+    description="Add user message to session cache. Returns user and conversation id.",
 )
 async def add_conversation_sse_message_by_id(
     user_id: str,
@@ -247,7 +246,7 @@ async def add_conversation_sse_message_by_id(
     {0}
 
     This endpoint initializes a session cache for the specified conversation.
-    After calling this endpoint, you can use the GET endpoint with the conversation ID and user ID
+    After calling this endpoint, you can use the GET endpoint with the conversation id
     to retrieve the conversation data.
     """
     try:
