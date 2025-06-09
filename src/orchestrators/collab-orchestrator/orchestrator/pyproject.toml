@@ -18,6 +18,8 @@ dependencies = [
     "httpx-sse>=0.4.0",
     "aiohttp>=3.12.6",
     "ska-utils",
+    "redis>=5.2.1",
+    "redis[asyncio]>=4.6",
 ]
 
 [project.urls]
