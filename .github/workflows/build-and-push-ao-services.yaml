@@ -68,6 +68,7 @@ jobs:
         id: bump_version
         working-directory: ./src/orchestrators/assistant-orchestrator/services
         run: |
+          git pull
           git checkout ${{ github.ref_name }}
           uv run hatch version dev
           git config --global user.name "Teal Agents Bot"
