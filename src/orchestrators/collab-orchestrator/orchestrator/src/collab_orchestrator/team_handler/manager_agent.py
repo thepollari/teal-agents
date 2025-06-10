@@ -1,6 +1,5 @@
 from enum import Enum
 
-import aiohttp
 from pydantic import BaseModel
 
 from collab_orchestrator.agents import BaseAgent, InvokableAgent
@@ -77,6 +76,5 @@ class ManagerAgent(InvokableAgent):
             agent_list=team_task_agents,
             conversation=conversation,
         )
-        async with aiohttp.ClientSession() as session:
-            response = await self.invoke(session, request)
+        response = await self.invoke(request)
         return ManagerOutput(**response["output_pydantic"])

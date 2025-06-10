@@ -219,95 +219,11 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        /* New styles for plan actions */
-        .plan-actions {
-            margin-top: 10px;
-        }
-        .plan-actions button {
-            margin-right: 10px;
-        }
-        /* Updated styles for plan editing */
-        .goal-text-input, .agent-text-input {
-            width: 100%;
-            padding: 8px;
-            font-family: inherit;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin: 5px 0;
-        }
-        .goal-text-input {
-            min-height: 100px;
-            resize: vertical;
-        }
-        .agent-text-input {
-            height: 36px;
-        }
-        /* Toggle switch for mode */
-        .mode-switch-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            justify-content: flex-end;
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 28px;
-            margin: 0 10px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #4285f4;
-        }
-        input:checked + .slider:before {
-            transform: translateX(32px);
-        }
-        .mode-label {
-            font-size: 14px;
-            color: #555;
-        }
     </style>
 </head>
 <body>
 <div class="main-container">
-    <div class="chat-header">
-        <span>Chat</span>
-        <div class="mode-switch-container">
-            <span class="mode-label">Real-time Updates</span>
-            <label class="switch">
-                <input type="checkbox" id="modeToggle">
-                <span class="slider"></span>
-            </label>
-            <span class="mode-label">Complete Responses</span>
-        </div>
-    </div>
+    <div class="chat-header">Chat</div>
     <div id="mainChat">
         <div class="loading-overlay">
             <div class="spinner"></div>
@@ -325,21 +241,12 @@
 
 <script>
     let eventSource;
-    // Map request_id to agent info and DOM elements for responses
-    let agentSections = {};
+    // Map request_id to agent info and DOM elements for partial-responses
+    let partials = {};
     // Store plan's request_id for final-response matching
     let planRequestId = null;
     // Track the first event type and request_id for main chat final-response
     let firstMainEvent = null; // { type: 'plan'|'manager-response', request_id: string }
-    let currentSessionId;
-    let currentPlanData;
-    let editing = false;
-    let planReceived = false;
-    let waitingForHumanApproval = false;
-    let planButtonsAdded = false;
-    let planTimerId = null;
-    // Track whether we're in real-time mode (true) or complete response mode (false)
-    let realTimeMode = false;
 
     // Initialize marked for Markdown rendering
     marked.setOptions({
@@ -355,15 +262,6 @@
             sendMessage();
         }
     });
-
-    // Initialize mode based on toggle state
-    document.getElementById('modeToggle').addEventListener('change', function() {
-        realTimeMode = !this.checked;
-        console.log(`Mode set to: ${realTimeMode ? 'Real-time Updates' : 'Complete Responses'}`);
-    });
-
-    // Set initial mode
-    realTimeMode = !document.getElementById('modeToggle').checked;
 
     function showLoadingIndicator() {
         const loadingOverlay = document.querySelector('.loading-overlay');
@@ -386,16 +284,13 @@
     }
 
     function flushAllPartialBuffers() {
-        for (const requestId in agentSections) {
-            const section = agentSections[requestId];
+        for (const requestId in partials) {
+            const section = partials[requestId];
             if (!section || !section.buffer) continue;
-
             section.content.innerHTML += section.buffer;
             section.buffer = '';
-
             const partialSpan = section.content.querySelector('.partialSpan');
             if (partialSpan) partialSpan.remove();
-
             section.content.scrollTop = section.content.scrollHeight;
         }
     }
@@ -433,13 +328,11 @@
         const header = document.createElement('div');
         header.className = 'agent-header';
         header.innerHTML = `Request sent to <strong>${agentName}</strong>.`;
-
         // Create content container
         const content = document.createElement('div');
         content.className = 'agent-content';
         content.style.display = 'none';
         content.innerHTML = `<div><strong>Message:</strong> ${taskGoal}</div>`;
-
         // Toggle expand/collapse
         header.addEventListener('click', function() {
             this.classList.toggle('active');
@@ -449,30 +342,21 @@
                 content.style.display = 'block';
             }
         });
-
         workingChat.appendChild(header);
         workingChat.appendChild(content);
         workingChat.scrollTop = workingChat.scrollHeight;
     }
 
-    function getOrCreateAgentSection(requestId, agentName) {
-        // If we already have a section for this request, return it
-        if (agentSections[requestId]) {
-            return agentSections[requestId];
-        }
-
+    function createPartialResponseSection(requestId, agentName) {
         const workingChat = document.getElementById('workingChat');
-
         // Create collapsible header
         const header = document.createElement('div');
         header.className = 'agent-header';
         header.innerHTML = `Message received from <strong>${agentName}</strong>`;
-
         // Create content container
         const content = document.createElement('div');
         content.className = 'agent-content';
         content.style.display = 'none';
-
         // Toggle expand/collapse
         header.addEventListener('click', function() {
             this.classList.toggle('active');
@@ -482,29 +366,24 @@
                 content.style.display = 'block';
             }
         });
-
         workingChat.appendChild(header);
         workingChat.appendChild(content);
         workingChat.scrollTop = workingChat.scrollHeight;
-
-        // Store for future updates
-        agentSections[requestId] = {
+        // Store for future partials
+        partials[requestId] = {
             header,
             content,
             buffer: '',
             agentName
         };
-
-        return agentSections[requestId];
     }
 
-    function appendPartialResponse(requestId, agentName, contentText) {
-        // Only process in real-time mode
-        if (!realTimeMode) return;
-
-        const section = getOrCreateAgentSection(requestId, agentName);
-        section.buffer += contentText;
-
+    function appendPartialResponse(requestId, agentName, content) {
+        if (!partials[requestId]) {
+            createPartialResponseSection(requestId, agentName);
+        }
+        const section = partials[requestId];
+        section.buffer += content;
         // Show buffer in a .partialSpan
         let partialSpan = section.content.querySelector('.partialSpan');
         if (!partialSpan) {
@@ -512,36 +391,12 @@
             partialSpan.className = 'partialSpan';
             section.content.appendChild(partialSpan);
         }
-
         partialSpan.textContent = section.buffer;
-        section.content.scrollTop = section.content.scrollHeight;
-    }
-
-    function displayCompleteResponse(requestId, agentName, contentText) {
-        const section = getOrCreateAgentSection(requestId, agentName);
-
-        // If we have partial content and we're in real-time mode,
-        // flush the buffer and append the complete content
-        if (realTimeMode && section.buffer) {
-            section.content.innerHTML = contentText;
-            section.buffer = '';
-        } else {
-            // Otherwise just set the content directly
-            section.content.innerHTML = contentText;
-        }
-
         section.content.scrollTop = section.content.scrollHeight;
     }
 
     function displayPlan(planData) {
         flushAllPartialBuffers();
-        currentPlanData = planData;
-        planReceived = true;
-        waitingForHumanApproval = true; // Enable HITL pause
-        if (realTimeMode) {
-            flushAllPartialBuffers();
-        }
-
         // Save plan's request_id for final-response matching
         planRequestId = planData.request_id;
 
@@ -576,14 +431,12 @@
             step.step_tasks.forEach(task => {
                 const taskItem = document.createElement('div');
                 taskItem.className = 'task-item';
-                taskItem.setAttribute('data-task-id', task.task_id);
-                // Changed: Make goal and agent spans explicitly editable
                 taskItem.innerHTML = `
                     <div><strong>Task ID:</strong> ${task.task_id}</div>
-                    <div><strong>Goal:</strong> <span class="goal-text">${task.task_goal}</span></div>
-                    <div><strong>Agent:</strong> <span class="agent-text">${task.task_agent}</span></div>
+                    <div><strong>Goal:</strong> ${task.task_goal}</div>
+                    <div><strong>Agent:</strong> ${task.task_agent}</div>
                     ${task.prerequisite_tasks.length > 0 ?
-                      `<div><strong>Prerequisites:</strong> <span class="prereq-text">${task.prerequisite_tasks.join(', ')}</span></div>` : ''}
+                    `<div><strong>Prerequisites:</strong> ${task.prerequisite_tasks.join(', ')}</div>` : ''}
                 `;
                 stepContent.appendChild(taskItem);
             });
@@ -617,109 +470,6 @@
         workingChat.appendChild(planHeader);
         workingChat.appendChild(planContent);
         workingChat.scrollTop = workingChat.scrollHeight;
-
-        // Add HITL buttons after displaying plan
-        if (planTimerId) {
-            clearTimeout(planTimerId);
-        }
-        planTimerId = setTimeout(() => {
-            if (waitingForHumanApproval && !planButtonsAdded) {
-                addPlanActionButtons();
-            }
-        }, 500);
-
-        hideLoadingIndicator();
-    }
-
-    function addPlanActionButtons() {
-        if (planButtonsAdded) return;
-
-        const workingChat = document.getElementById('workingChat');
-        const actionDiv = document.createElement('div');
-        actionDiv.className = 'plan-actions';
-
-        const approveBtn = document.createElement('button');
-        approveBtn.textContent = 'Approve Plan';
-        approveBtn.addEventListener('click', function() {
-            submitPlanDecision('approve');
-        });
-
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Edit Plan';
-        editBtn.addEventListener('click', function() {
-            if (!editing) {
-                enablePlanEditing();
-                this.textContent = 'Submit Changes';
-                editing = true;
-            } else {
-                submitPlanDecision('edit');
-            }
-        });
-
-        const cancelBtn = document.createElement('button');
-        cancelBtn.textContent = 'Cancel Plan';
-        cancelBtn.addEventListener('click', function() {
-            submitPlanDecision('cancel');
-        });
-
-        actionDiv.appendChild(approveBtn);
-        actionDiv.appendChild(editBtn);
-        actionDiv.appendChild(cancelBtn);
-        workingChat.appendChild(actionDiv);
-        planButtonsAdded = true;
-    }
-
-    function submitPlanDecision(decision) {
-        if (!currentSessionId) {
-            console.error('No active session to submit decision for.');
-            return;
-        }
-
-        const url = `http://localhost:8000/CollaborationOrchestrator/0.1/sse/${currentSessionId}/${decision}`;
-        const options = { method: 'POST' };
-
-        if (decision === 'edit') {
-            const editedPlan = gatherEditedPlan();
-            options.headers = { 'Content-Type': 'application/json' };
-            options.body = JSON.stringify(editedPlan);
-        }
-
-        fetch(url, options)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to submit plan decision');
-                }
-                document.querySelectorAll('.plan-actions button').forEach(btn => {
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50');
-                });
-                showLoadingIndicator();
-            })
-            .catch(error => {
-                console.error('Error submitting plan decision:', error);
-            });
-    }
-
-    function gatherEditedPlan() {
-        if (!currentPlanData) return null;
-        const newPlan = { steps: [] };
-        currentPlanData.steps.forEach(step => {
-            const newStep = { step_number: step.step_number, step_tasks: [] };
-            step.step_tasks.forEach(task => {
-                const taskElem = document.querySelector(`[data-task-id="${task.task_id}"]`);
-                if (!taskElem) return;
-                const goalElem = taskElem.querySelector('.goal-text');
-                const agentElem = taskElem.querySelector('.agent-text');
-                newStep.step_tasks.push({
-                    task_id: task.task_id,
-                    task_goal: goalElem && goalElem.value !== undefined ? goalElem.value : goalElem.textContent,
-                    task_agent: agentElem && agentElem.value !== undefined ? agentElem.value : agentElem.textContent,
-                    prerequisite_tasks: task.prerequisite_tasks ? [...task.prerequisite_tasks] : []
-                });
-            });
-            newPlan.steps.push(newStep);
-        });
-        return newPlan;
     }
 
     // New: create a static, non-expandable box for manager messages
@@ -730,53 +480,13 @@
         box.innerHTML = message;
         workingChat.appendChild(box);
         workingChat.scrollTop = workingChat.scrollHeight;
-
         // Store for possible future updates (if needed)
-        agentSections[requestId] = {
+        partials[requestId] = {
             header: box,
-            content: box, // for compatibility with both approaches
+            content: box, // for compatibility, though not used
             buffer: '',
             agentName: 'Manager'
         };
-    }
-
-    function enablePlanEditing() {
-        document.querySelectorAll('.goal-text').forEach(span => {
-            const text = span.textContent;
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.className = 'goal-text-input goal-text';
-
-            const lines = text.split('\n').length;
-            const estimatedRows = Math.max(3, lines, Math.ceil(text.length / 40));
-            textarea.rows = estimatedRows;
-
-            textarea.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-
-            span.parentNode.replaceChild(textarea, span);
-
-            // Ensure textarea resizes properly
-            setTimeout(() => {
-                textarea.style.height = 'auto';
-                textarea.style.height = (textarea.scrollHeight) + 'px';
-            }, 0);
-        });
-
-        document.querySelectorAll('.agent-text').forEach(span => {
-            const text = span.textContent;
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = text;
-            input.className = 'agent-text-input agent-text';
-            span.parentNode.replaceChild(input, span);
-        });
-
-        // Disable approve button during editing
-        const approveButton = document.querySelector('.plan-actions button:first-child');
-        if (approveButton) approveButton.disabled = true;
     }
 
     function sendMessage() {
@@ -785,8 +495,10 @@
         if (!userMessage) return;
         messageInput.value = '';
 
+        // Add user message to mainChat with bold indication and extra line breaks
         appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/>');
 
+        // Disable input until response is complete
         disableUserInput();
         showLoadingIndicator();
 
@@ -795,19 +507,9 @@
         }
 
         // Clear state for new conversation
-        agentSections = {};
+        partials = {};
         planRequestId = null;
         firstMainEvent = null;
-        // --- Added: Reset HITL flags ---
-        planReceived = false;
-        waitingForHumanApproval = false;
-        planButtonsAdded = false;
-        if (planTimerId) {
-            clearTimeout(planTimerId);
-            planTimerId = null;
-        }
-        // --- End Added ---
-
         const workingChat = document.getElementById('workingChat');
         workingChat.innerHTML = '';
 
@@ -831,19 +533,19 @@
             .then(response => response.json())
             .then(data => {
                 const sessionId = data.session_id;
-                currentSessionId = sessionId; // Store the session ID in the currentSessionId variable
                 eventSource = new EventSource('http://localhost:8000/CollaborationOrchestrator/0.1/browser/' + sessionId);
                 setupEventHandlers(eventSource);
             })
             .catch(error => {
-                console.error(error);
-                appendToMainChat('[Error] Failed to connect to server.');
+                console.log(error);
                 enableUserInput();
                 hideLoadingIndicator();
             });
     }
 
     function setupEventHandlers(source) {
+        // Remove all old event handlers, add new ones for new event types
+
         // Helper to set firstMainEvent if not already set
         function setFirstMainEvent(type, request_id) {
             if (!firstMainEvent) {
@@ -855,23 +557,11 @@
             const data = JSON.parse(event.data);
             setFirstMainEvent('plan', data.request_id);
             displayPlan(data);
-            // Don't hide the loading indicator when plan is received
-            // Plan display calls hideLoadingIndicator, so we'll show it again
-            showLoadingIndicator();
         });
 
         source.addEventListener('manager-response', (event) => {
             const data = JSON.parse(event.data);
             setFirstMainEvent('manager-response', data.request_id);
-
-            // If we get a manager response right after plan, HITL is not waiting for approval
-            if (planReceived && waitingForHumanApproval) {
-                waitingForHumanApproval = false;
-                if (planTimerId) {
-                    clearTimeout(planTimerId);
-                    planTimerId = null;
-                }
-            }
 
             // Only handle specific next_action values
             if (data.next_action === 'assign_new_task') {
@@ -891,19 +581,9 @@
 
         source.addEventListener('agent-request', (event) => {
             const data = JSON.parse(event.data);
-            // --- Added: Reset HITL if waiting for human approval ---
-            if (planReceived && waitingForHumanApproval) {
-                waitingForHumanApproval = false;
-                if (planTimerId) {
-                    clearTimeout(planTimerId);
-                    planTimerId = null;
-                }
-            }
-            // --- End Added ---
             createAgentRequestSection(data.agent_name, data.request_id, data.task_goal);
         });
 
-        // Handle partial responses if in real-time mode
         source.addEventListener('partial-response', (event) => {
             const data = JSON.parse(event.data);
             appendPartialResponse(data.request_id, data.source, data.output_partial || '');
@@ -911,23 +591,10 @@
 
         source.addEventListener('final-response', (event) => {
             const data = JSON.parse(event.data);
-
-            // If this is a response from an agent (not the main final response)
-            if (data.source && data.source !== 'planner' &&
-                (!firstMainEvent || data.request_id !== firstMainEvent.request_id)) {
-                // Display the complete response
-                displayCompleteResponse(data.request_id, data.source, data.output_raw || '');
-            }
-
-            // Only display in main chat if request_id matches the first main event's request_id
+            // Only display if request_id matches the first main event's request_id
             if (firstMainEvent && data.request_id === firstMainEvent.request_id) {
-                // In real-time mode, we need to flush any partial buffers
-                if (realTimeMode) {
-                    flushAllPartialBuffers();
-                }
-
+                flushAllPartialBuffers();
                 appendToMainChat(marked.parse(data.output_raw || ''));
-
                 // Add static box for Planner if first event was a plan
                 if (firstMainEvent.type === 'plan') {
                     createManagerMessageBox(
@@ -935,34 +602,18 @@
                         'Planner is providing result'
                     );
                 }
-
                 source.close();
-                // Only hide loading indicator and enable input after the final response
-                // is displayed in the main chat
                 enableUserInput();
                 hideLoadingIndicator();
-                // --- Added: Reset HITL flags after final response ---
-                planReceived = false;
-                waitingForHumanApproval = false;
-                planButtonsAdded = false;
-                // --- End Added ---
             }
         });
 
         source.onerror = () => {
-            if (realTimeMode) {
-                flushAllPartialBuffers();
-            }
-
+            flushAllPartialBuffers();
             appendToMainChat('[Error] Connection lost.');
             source.close();
             enableUserInput();
             hideLoadingIndicator();
-            // --- Added: Reset HITL flags on error ---
-            planReceived = false;
-            waitingForHumanApproval = false;
-            planButtonsAdded = false;
-            // --- End Added ---
         };
     }
 </script>
