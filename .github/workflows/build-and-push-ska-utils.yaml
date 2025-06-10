@@ -86,6 +86,7 @@ jobs:
         id: bump_version
         working-directory: ./shared/ska_utils
         run: |
+          git pull
           git checkout ${{ github.ref_name }}
           uv run hatch version dev
           git config --global user.name "Teal Agents Bot"
