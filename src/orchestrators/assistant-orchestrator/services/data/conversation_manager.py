@@ -1,7 +1,9 @@
+import heapq
 import time
 import uuid
-from contextlib import nullcontext, contextmanager
-import heapq
+from contextlib import contextmanager, nullcontext
+from typing import Union
+
 from ska_utils import get_telemetry
 
 from data.chat_history_manager import ChatHistoryManager
@@ -14,7 +16,6 @@ from model import (
     MessageType,
     UserMessage,
 )
-from typing import List, Union
 
 
 def _chat_history_item_to_message(
@@ -91,21 +92,14 @@ class ConversationManager:
         if is_resumed:
             # Retrieve previous session ID
             with create_span("retrieve-last-session-id"):
-                previous_session = self._get_last_chat_history_id(
-                    orchestrator_name,
-                    user_id
-                )
+                previous_session = self._get_last_chat_history_id(orchestrator_name, user_id)
 
             with create_span("retrieve-session-history"):
-                messages = self._load_messages(
-                    orchestrator_name,
-                    user_id,
-                    previous_session
-                )
+                messages = self._load_messages(orchestrator_name, user_id, previous_session)
         else:
             previous_session = None
             messages = []
-       
+
         with create_span("add-chat-history-session"):
             self.chat_history_manager.add_chat_history_session(
                 orchestrator_name,
@@ -125,12 +119,10 @@ class ConversationManager:
     def _load_messages(
         self, orchestrator_name: str, user_id: str, previous_session: str | None
     ) -> list[Union["UserMessage", "AgentMessage"]]:
-        messages: list[Union["UserMessage", "AgentMessage"]] = []
+        messages: list[UserMessage | AgentMessage] = []
         if previous_session:
-            histories: List[List["ChatHistoryItem"]] = self._load_chat_history(
-                orchestrator_name,
-                user_id,
-                previous_session
+            histories: list[list[ChatHistoryItem]] = self._load_chat_history(
+                orchestrator_name, user_id, previous_session
             )
 
             # Sort each history if it's not already sorted
@@ -139,7 +131,7 @@ class ConversationManager:
             ]
 
             # Efficiently merge the sorted histories using heapq.merge
-            all_items: List["ChatHistoryItem"] = list(
+            all_items: list[ChatHistoryItem] = list(
                 heapq.merge(*sorted_histories, key=lambda x: x.timestamp)
             )
             for item in all_items:
