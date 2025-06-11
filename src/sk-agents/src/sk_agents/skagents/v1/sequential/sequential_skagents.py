@@ -156,7 +156,9 @@ class SequentialSkagents(BaseHandler):
                 )
             except Exception as e:
                 raise AgentInvokeException(
-                    f"Error while invoking task {task.name}: {str(e)}"
+                    f"Error invoking {self.name}:{self.version} "
+                    f"for Session-id {session_id}, Request-id {request_id}, "
+                    f"Task description {task.description}. Error: {str(e)}"
                 ) from e
 
         # Process and stream back final task results
@@ -181,7 +183,10 @@ class SequentialSkagents(BaseHandler):
                     request_id=request_id,
                     output_partial=content,
                 )
-        logger.info(f"Token count after invoking Agent: {total_tokens}")
+        logger.info(
+            f"{self.name}:{self.version} responded with {total_tokens} tokens. "
+            f"Session-id {session_id}, Request-id {request_id}"
+        )
         # Build the final response with InvokeResponse
         final_response = "".join(final_response)
         response = InvokeResponse(
@@ -233,9 +238,14 @@ class SequentialSkagents(BaseHandler):
                 task_no += 1
             except Exception as e:
                 raise AgentInvokeException(
-                    f"Error while invoking task {task.name}: {str(e)}"
+                    f"Error invoking {self.name}:{self.version} "
+                    f"for Session-id {session_id}, Request-id {request_id}, "
+                    f"Task description {task.description}. Error: {str(e)}"
                 ) from e
-        logger.info(f"Token count after invoking Agent: {total_tokens}")
+        logger.info(
+            f"{self.name}:{self.version} responded with {total_tokens} tokens. "
+            f"Session-id {session_id}, Request-id {request_id}"
+        )
         last_message = chat_history.messages[-1].content
         response = InvokeResponse(
             session_id=session_id,
