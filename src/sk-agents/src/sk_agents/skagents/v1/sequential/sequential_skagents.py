@@ -134,9 +134,11 @@ class SequentialSkagents(BaseHandler):
         request_id = str(uuid.uuid4().hex)
 
         # Process and stream back intermediate tasks results
-        for task in self.tasks[:-1]:  
+        for task in self.tasks[:-1]:
             try:
-                i_response: InvokeResponse = await task.invoke(history=chat_history, inputs=task_inputs)
+                i_response: InvokeResponse = await task.invoke(
+                    history=chat_history, inputs=task_inputs
+                )
                 i_response.session_id = session_id
                 i_response.source = f"{self.name}:{self.version}"
                 i_response.request_id = request_id
