@@ -16,10 +16,24 @@ from sk_agents.extra_data_collector import (
 )
 
 
+class ConfigSkill(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str
+    name: str
+    description: str
+    tags: list[str]
+    examples: list[str] | None = None
+    input_modes: list[str] | None = None
+    output_modes: list[str] | None = None
+
+
 class ConfigMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    description: str | None = None
+    description: str
+    skills: list[ConfigSkill]
+    documentation_url: str | None = None
 
 
 class BaseConfig(BaseModel):
@@ -73,6 +87,8 @@ class HistoryMultiModalMessage(BaseModel):
 
 
 class BaseMultiModalInput(KernelBaseModel):
+    session_id: str | None = None
+
     chat_history: list[HistoryMultiModalMessage] | None = None
 
 
@@ -113,6 +129,10 @@ T = TypeVar("T")
 class InvokeResponse(BaseModel, Generic[T]):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
+    session_id: str | None = None
+    source: str | None = None
+    request_id: str | None = None
+
     token_usage: TokenUsage
     extra_data: ExtraData | None = None
     output_raw: str | None = None
@@ -126,6 +146,10 @@ class IntermediateTaskResponse(BaseModel):
 
 
 class PartialResponse(BaseModel):
+    session_id: str | None = None
+    source: str | None = None
+    request_id: str | None = None
+
     output_partial: str
 
 

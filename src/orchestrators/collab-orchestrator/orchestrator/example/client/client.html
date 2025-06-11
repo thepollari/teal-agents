@@ -144,6 +144,9 @@
         .agent-header.active::before {
             content: "-";
         }
+        .agent-header-static::before {
+            content: "";
+        }
         .agent-content {
             display: none;
             padding: 10px;
@@ -216,11 +219,95 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        /* New styles for plan actions */
+        .plan-actions {
+            margin-top: 10px;
+        }
+        .plan-actions button {
+            margin-right: 10px;
+        }
+        /* Updated styles for plan editing */
+        .goal-text-input, .agent-text-input {
+            width: 100%;
+            padding: 8px;
+            font-family: inherit;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .goal-text-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .agent-text-input {
+            height: 36px;
+        }
+        /* Toggle switch for mode */
+        .mode-switch-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            justify-content: flex-end;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 28px;
+            margin: 0 10px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4285f4;
+        }
+        input:checked + .slider:before {
+            transform: translateX(32px);
+        }
+        .mode-label {
+            font-size: 14px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
 <div class="main-container">
-    <div class="chat-header">Chat</div>
+    <div class="chat-header">
+        <span>Chat</span>
+        <div class="mode-switch-container">
+            <span class="mode-label">Real-time Updates</span>
+            <label class="switch">
+                <input type="checkbox" id="modeToggle">
+                <span class="slider"></span>
+            </label>
+            <span class="mode-label">Complete Responses</span>
+        </div>
+    </div>
     <div id="mainChat">
         <div class="loading-overlay">
             <div class="spinner"></div>
@@ -238,8 +325,21 @@
 
 <script>
     let eventSource;
-    // Task tracking - map task_id to agent info and DOM elements
-    let tasks = {};
+    // Map request_id to agent info and DOM elements for responses
+    let agentSections = {};
+    // Store plan's request_id for final-response matching
+    let planRequestId = null;
+    // Track the first event type and request_id for main chat final-response
+    let firstMainEvent = null; // { type: 'plan'|'manager-response', request_id: string }
+    let currentSessionId;
+    let currentPlanData;
+    let editing = false;
+    let planReceived = false;
+    let waitingForHumanApproval = false;
+    let planButtonsAdded = false;
+    let planTimerId = null;
+    // Track whether we're in real-time mode (true) or complete response mode (false)
+    let realTimeMode = false;
 
     // Initialize marked for Markdown rendering
     marked.setOptions({
@@ -255,6 +355,15 @@
             sendMessage();
         }
     });
+
+    // Initialize mode based on toggle state
+    document.getElementById('modeToggle').addEventListener('change', function() {
+        realTimeMode = !this.checked;
+        console.log(`Mode set to: ${realTimeMode ? 'Real-time Updates' : 'Complete Responses'}`);
+    });
+
+    // Set initial mode
+    realTimeMode = !document.getElementById('modeToggle').checked;
 
     function showLoadingIndicator() {
         const loadingOverlay = document.querySelector('.loading-overlay');
@@ -276,24 +385,18 @@
         document.getElementById('sendButton').disabled = false;
     }
 
-    function flushPartialBuffer(taskId) {
-        const task = tasks[taskId];
-        if (!task || !task.partialBuffer) return;
-
-        task.content.innerHTML += task.partialBuffer;
-        task.partialBuffer = '';
-
-        const partialSpan = task.content.querySelector('.partialSpan');
-        if (partialSpan) {
-            partialSpan.parentNode.removeChild(partialSpan);
-        }
-
-        task.content.scrollTop = task.content.scrollHeight;
-    }
-
     function flushAllPartialBuffers() {
-        for (const taskId in tasks) {
-            flushPartialBuffer(taskId);
+        for (const requestId in agentSections) {
+            const section = agentSections[requestId];
+            if (!section || !section.buffer) continue;
+
+            section.content.innerHTML += section.buffer;
+            section.buffer = '';
+
+            const partialSpan = section.content.querySelector('.partialSpan');
+            if (partialSpan) partialSpan.remove();
+
+            section.content.scrollTop = section.content.scrollHeight;
         }
     }
 
@@ -324,24 +427,53 @@
         mainChat.scrollTop = mainChat.scrollHeight;
     }
 
-    function createAgentSection(taskId, agentName, taskGoal) {
-        // Flush any existing buffers for this task if it exists
-        if (tasks[taskId]) {
-            flushPartialBuffer(taskId);
+    function createAgentRequestSection(agentName, requestId, taskGoal) {
+        const workingChat = document.getElementById('workingChat');
+        // Create expandable header
+        const header = document.createElement('div');
+        header.className = 'agent-header';
+        header.innerHTML = `Request sent to <strong>${agentName}</strong>.`;
+
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'agent-content';
+        content.style.display = 'none';
+        content.innerHTML = `<div><strong>Message:</strong> ${taskGoal}</div>`;
+
+        // Toggle expand/collapse
+        header.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+        });
+
+        workingChat.appendChild(header);
+        workingChat.appendChild(content);
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    function getOrCreateAgentSection(requestId, agentName) {
+        // If we already have a section for this request, return it
+        if (agentSections[requestId]) {
+            return agentSections[requestId];
         }
 
         const workingChat = document.getElementById('workingChat');
 
-        // Create header element
+        // Create collapsible header
         const header = document.createElement('div');
         header.className = 'agent-header';
-        header.innerHTML = `Request to <strong>${agentName}</strong>: ${taskGoal}`;
+        header.innerHTML = `Message received from <strong>${agentName}</strong>`;
 
         // Create content container
         const content = document.createElement('div');
         content.className = 'agent-content';
+        content.style.display = 'none';
 
-        // Add click event to toggle
+        // Toggle expand/collapse
         header.addEventListener('click', function() {
             this.classList.toggle('active');
             if (content.style.display === 'block') {
@@ -355,55 +487,70 @@
         workingChat.appendChild(content);
         workingChat.scrollTop = workingChat.scrollHeight;
 
-        // Store task information
-        tasks[taskId] = {
-            header: header,
-            content: content,
-            partialBuffer: '',
-            agentName: agentName
+        // Store for future updates
+        agentSections[requestId] = {
+            header,
+            content,
+            buffer: '',
+            agentName
         };
+
+        return agentSections[requestId];
     }
 
-    function createManagerResultSection(result) {
-        flushAllPartialBuffers();
+    function appendPartialResponse(requestId, agentName, contentText) {
+        // Only process in real-time mode
+        if (!realTimeMode) return;
 
-        const workingChat = document.getElementById('workingChat');
+        const section = getOrCreateAgentSection(requestId, agentName);
+        section.buffer += contentText;
 
-        // Create header element
-        const header = document.createElement('div');
-        header.className = 'agent-header active';
-        header.innerHTML = `<strong>Orchestrator</strong> is providing result`;
+        // Show buffer in a .partialSpan
+        let partialSpan = section.content.querySelector('.partialSpan');
+        if (!partialSpan) {
+            partialSpan = document.createElement('span');
+            partialSpan.className = 'partialSpan';
+            section.content.appendChild(partialSpan);
+        }
 
-        // Create content container
-        const content = document.createElement('div');
-        content.className = 'agent-content';
-        content.style.display = 'block';
-        content.textContent = result;
+        partialSpan.textContent = section.buffer;
+        section.content.scrollTop = section.content.scrollHeight;
+    }
 
-        // Add click event to toggle
-        header.addEventListener('click', function() {
-            this.classList.toggle('active');
-            if (content.style.display === 'block') {
-                content.style.display = 'none';
-            } else {
-                content.style.display = 'block';
-            }
-        });
+    function displayCompleteResponse(requestId, agentName, contentText) {
+        const section = getOrCreateAgentSection(requestId, agentName);
 
-        workingChat.appendChild(header);
-        workingChat.appendChild(content);
-        workingChat.scrollTop = workingChat.scrollHeight;
+        // If we have partial content and we're in real-time mode,
+        // flush the buffer and append the complete content
+        if (realTimeMode && section.buffer) {
+            section.content.innerHTML = contentText;
+            section.buffer = '';
+        } else {
+            // Otherwise just set the content directly
+            section.content.innerHTML = contentText;
+        }
+
+        section.content.scrollTop = section.content.scrollHeight;
     }
 
     function displayPlan(planData) {
         flushAllPartialBuffers();
+        currentPlanData = planData;
+        planReceived = true;
+        waitingForHumanApproval = true; // Enable HITL pause
+        if (realTimeMode) {
+            flushAllPartialBuffers();
+        }
+
+        // Save plan's request_id for final-response matching
+        planRequestId = planData.request_id;
 
         const workingChat = document.getElementById('workingChat');
 
         // Create header element for the plan
         const planHeader = document.createElement('div');
         planHeader.className = 'agent-header active';
-        planHeader.innerHTML = `<strong>Orchestrator</strong> developed the following plan`;
+        planHeader.innerHTML = `<strong>Planner</strong> developed the following plan`;
 
         // Create content container for the plan
         const planContent = document.createElement('div');
@@ -429,12 +576,14 @@
             step.step_tasks.forEach(task => {
                 const taskItem = document.createElement('div');
                 taskItem.className = 'task-item';
+                taskItem.setAttribute('data-task-id', task.task_id);
+                // Changed: Make goal and agent spans explicitly editable
                 taskItem.innerHTML = `
                     <div><strong>Task ID:</strong> ${task.task_id}</div>
-                    <div><strong>Goal:</strong> ${task.task_goal}</div>
-                    <div><strong>Agent:</strong> ${task.task_agent}</div>
+                    <div><strong>Goal:</strong> <span class="goal-text">${task.task_goal}</span></div>
+                    <div><strong>Agent:</strong> <span class="agent-text">${task.task_agent}</span></div>
                     ${task.prerequisite_tasks.length > 0 ?
-                    `<div><strong>Prerequisites:</strong> ${task.prerequisite_tasks.join(', ')}</div>` : ''}
+                      `<div><strong>Prerequisites:</strong> <span class="prereq-text">${task.prerequisite_tasks.join(', ')}</span></div>` : ''}
                 `;
                 stepContent.appendChild(taskItem);
             });
@@ -468,24 +617,166 @@
         workingChat.appendChild(planHeader);
         workingChat.appendChild(planContent);
         workingChat.scrollTop = workingChat.scrollHeight;
+
+        // Add HITL buttons after displaying plan
+        if (planTimerId) {
+            clearTimeout(planTimerId);
+        }
+        planTimerId = setTimeout(() => {
+            if (waitingForHumanApproval && !planButtonsAdded) {
+                addPlanActionButtons();
+            }
+        }, 500);
+
+        hideLoadingIndicator();
     }
 
-    function appendPartialContent(taskId, content) {
-        if (!tasks[taskId]) return;
+    function addPlanActionButtons() {
+        if (planButtonsAdded) return;
 
-        tasks[taskId].partialBuffer += content;
+        const workingChat = document.getElementById('workingChat');
+        const actionDiv = document.createElement('div');
+        actionDiv.className = 'plan-actions';
 
-        let partialSpan = tasks[taskId].content.querySelector('.partialSpan');
-        if (!partialSpan) {
-            partialSpan = document.createElement('span');
-            partialSpan.className = 'partialSpan';
-            tasks[taskId].content.appendChild(partialSpan);
+        const approveBtn = document.createElement('button');
+        approveBtn.textContent = 'Approve Plan';
+        approveBtn.addEventListener('click', function() {
+            submitPlanDecision('approve');
+        });
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit Plan';
+        editBtn.addEventListener('click', function() {
+            if (!editing) {
+                enablePlanEditing();
+                this.textContent = 'Submit Changes';
+                editing = true;
+            } else {
+                submitPlanDecision('edit');
+            }
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel Plan';
+        cancelBtn.addEventListener('click', function() {
+            submitPlanDecision('cancel');
+        });
+
+        actionDiv.appendChild(approveBtn);
+        actionDiv.appendChild(editBtn);
+        actionDiv.appendChild(cancelBtn);
+        workingChat.appendChild(actionDiv);
+        planButtonsAdded = true;
+    }
+
+    function submitPlanDecision(decision) {
+        if (!currentSessionId) {
+            console.error('No active session to submit decision for.');
+            return;
         }
 
-        partialSpan.textContent = tasks[taskId].partialBuffer;
+        const url = `http://localhost:8000/CollaborationOrchestrator/0.1/sse/${currentSessionId}/${decision}`;
+        const options = { method: 'POST' };
 
-        // Auto-scroll the content container
-        tasks[taskId].content.scrollTop = tasks[taskId].content.scrollHeight;
+        if (decision === 'edit') {
+            const editedPlan = gatherEditedPlan();
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify(editedPlan);
+        }
+
+        fetch(url, options)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to submit plan decision');
+                }
+                document.querySelectorAll('.plan-actions button').forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50');
+                });
+                showLoadingIndicator();
+            })
+            .catch(error => {
+                console.error('Error submitting plan decision:', error);
+            });
+    }
+
+    function gatherEditedPlan() {
+        if (!currentPlanData) return null;
+        const newPlan = { steps: [] };
+        currentPlanData.steps.forEach(step => {
+            const newStep = { step_number: step.step_number, step_tasks: [] };
+            step.step_tasks.forEach(task => {
+                const taskElem = document.querySelector(`[data-task-id="${task.task_id}"]`);
+                if (!taskElem) return;
+                const goalElem = taskElem.querySelector('.goal-text');
+                const agentElem = taskElem.querySelector('.agent-text');
+                newStep.step_tasks.push({
+                    task_id: task.task_id,
+                    task_goal: goalElem && goalElem.value !== undefined ? goalElem.value : goalElem.textContent,
+                    task_agent: agentElem && agentElem.value !== undefined ? agentElem.value : agentElem.textContent,
+                    prerequisite_tasks: task.prerequisite_tasks ? [...task.prerequisite_tasks] : []
+                });
+            });
+            newPlan.steps.push(newStep);
+        });
+        return newPlan;
+    }
+
+    // New: create a static, non-expandable box for manager messages
+    function createManagerMessageBox(requestId, message) {
+        const workingChat = document.getElementById('workingChat');
+        const box = document.createElement('div');
+        box.className = 'agent-header agent-header-static';
+        box.innerHTML = message;
+        workingChat.appendChild(box);
+        workingChat.scrollTop = workingChat.scrollHeight;
+
+        // Store for possible future updates (if needed)
+        agentSections[requestId] = {
+            header: box,
+            content: box, // for compatibility with both approaches
+            buffer: '',
+            agentName: 'Manager'
+        };
+    }
+
+    function enablePlanEditing() {
+        document.querySelectorAll('.goal-text').forEach(span => {
+            const text = span.textContent;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.className = 'goal-text-input goal-text';
+
+            const lines = text.split('\n').length;
+            const estimatedRows = Math.max(3, lines, Math.ceil(text.length / 40));
+            textarea.rows = estimatedRows;
+
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            span.parentNode.replaceChild(textarea, span);
+
+            // Ensure textarea resizes properly
+            setTimeout(() => {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }, 0);
+        });
+
+        document.querySelectorAll('.agent-text').forEach(span => {
+            const text = span.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = text;
+            input.className = 'agent-text-input agent-text';
+            span.parentNode.replaceChild(input, span);
+        });
+
+        // Disable approve button during editing
+        const approveButton = document.querySelector('.plan-actions button:first-child');
+        if (approveButton) approveButton.disabled = true;
     }
 
     function sendMessage() {
@@ -494,10 +785,8 @@
         if (!userMessage) return;
         messageInput.value = '';
 
-        // Add user message to mainChat with bold indication and extra line breaks
         appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/>');
 
-        // Disable input until response is complete
         disableUserInput();
         showLoadingIndicator();
 
@@ -505,93 +794,175 @@
             eventSource.close();
         }
 
-        // Clear tasks for a new conversation
-        tasks = {};
+        // Clear state for new conversation
+        agentSections = {};
+        planRequestId = null;
+        firstMainEvent = null;
+        // --- Added: Reset HITL flags ---
+        planReceived = false;
+        waitingForHumanApproval = false;
+        planButtonsAdded = false;
+        if (planTimerId) {
+            clearTimeout(planTimerId);
+            planTimerId = null;
+        }
+        // --- End Added ---
+
         const workingChat = document.getElementById('workingChat');
         workingChat.innerHTML = '';
 
-        fetch('http://localhost:8000/CollaborationOrchestrator/0.1/sse', {
+        fetch('http://localhost:8000/CollaborationOrchestrator/0.1/browser', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_history: [
-                    { role: 'user', content: userMessage }
+                    {
+                        role: 'user',
+                        items: [
+                            {
+                                content_type: 'text',
+                                content: userMessage
+                            }
+                        ]
+                    }
                 ]
             })
         })
             .then(response => response.json())
             .then(data => {
                 const sessionId = data.session_id;
-                eventSource = new EventSource('http://localhost:8000/CollaborationOrchestrator/0.1/sse/' + sessionId);
+                currentSessionId = sessionId; // Store the session ID in the currentSessionId variable
+                eventSource = new EventSource('http://localhost:8000/CollaborationOrchestrator/0.1/browser/' + sessionId);
                 setupEventHandlers(eventSource);
             })
             .catch(error => {
-                console.log(error);
+                console.error(error);
+                appendToMainChat('[Error] Failed to connect to server.');
                 enableUserInput();
                 hideLoadingIndicator();
             });
     }
 
     function setupEventHandlers(source) {
-        source.addEventListener('PLAN', (event) => {
+        // Helper to set firstMainEvent if not already set
+        function setFirstMainEvent(type, request_id) {
+            if (!firstMainEvent) {
+                firstMainEvent = { type, request_id };
+            }
+        }
+
+        source.addEventListener('plan', (event) => {
             const data = JSON.parse(event.data);
+            setFirstMainEvent('plan', data.request_id);
             displayPlan(data);
+            // Don't hide the loading indicator when plan is received
+            // Plan display calls hideLoadingIndicator, so we'll show it again
+            showLoadingIndicator();
         });
 
-        source.addEventListener('MANAGER_RESPONSE', (event) => {
-            flushAllPartialBuffers();
+        source.addEventListener('manager-response', (event) => {
             const data = JSON.parse(event.data);
-            if (data.next_action === 'abort') {
-                appendToMainChat('[ABORT] ' + data.action_detail.abort_reason);
-                hideLoadingIndicator();
+            setFirstMainEvent('manager-response', data.request_id);
+
+            // If we get a manager response right after plan, HITL is not waiting for approval
+            if (planReceived && waitingForHumanApproval) {
+                waitingForHumanApproval = false;
+                if (planTimerId) {
+                    clearTimeout(planTimerId);
+                    planTimerId = null;
+                }
+            }
+
+            // Only handle specific next_action values
+            if (data.next_action === 'assign_new_task') {
+                const agentName = data.action_detail && data.action_detail.agent_name ? data.action_detail.agent_name : 'Unknown';
+                createManagerMessageBox(
+                    data.request_id,
+                    `Manager is assigning task to <strong>${agentName}</strong>`
+                );
             } else if (data.next_action === 'provide_result') {
-                // Move the result to the workingChat instead of mainChat
-                createManagerResultSection(data.action_detail.result);
+                createManagerMessageBox(
+                    data.request_id,
+                    'Manager is providing result'
+                );
+            }
+            // else: ignore this manager-response event
+        });
+
+        source.addEventListener('agent-request', (event) => {
+            const data = JSON.parse(event.data);
+            // --- Added: Reset HITL if waiting for human approval ---
+            if (planReceived && waitingForHumanApproval) {
+                waitingForHumanApproval = false;
+                if (planTimerId) {
+                    clearTimeout(planTimerId);
+                    planTimerId = null;
+                }
+            }
+            // --- End Added ---
+            createAgentRequestSection(data.agent_name, data.request_id, data.task_goal);
+        });
+
+        // Handle partial responses if in real-time mode
+        source.addEventListener('partial-response', (event) => {
+            const data = JSON.parse(event.data);
+            appendPartialResponse(data.request_id, data.source, data.output_partial || '');
+        });
+
+        source.addEventListener('final-response', (event) => {
+            const data = JSON.parse(event.data);
+
+            // If this is a response from an agent (not the main final response)
+            if (data.source && data.source !== 'planner' &&
+                (!firstMainEvent || data.request_id !== firstMainEvent.request_id)) {
+                // Display the complete response
+                displayCompleteResponse(data.request_id, data.source, data.output_raw || '');
+            }
+
+            // Only display in main chat if request_id matches the first main event's request_id
+            if (firstMainEvent && data.request_id === firstMainEvent.request_id) {
+                // In real-time mode, we need to flush any partial buffers
+                if (realTimeMode) {
+                    flushAllPartialBuffers();
+                }
+
+                appendToMainChat(marked.parse(data.output_raw || ''));
+
+                // Add static box for Planner if first event was a plan
+                if (firstMainEvent.type === 'plan') {
+                    createManagerMessageBox(
+                        'planner-final-result-' + data.request_id,
+                        'Planner is providing result'
+                    );
+                }
+
+                source.close();
+                // Only hide loading indicator and enable input after the final response
+                // is displayed in the main chat
+                enableUserInput();
+                hideLoadingIndicator();
+                // --- Added: Reset HITL flags after final response ---
+                planReceived = false;
+                waitingForHumanApproval = false;
+                planButtonsAdded = false;
+                // --- End Added ---
             }
         });
 
-        source.addEventListener('AGENT_REQUEST', (event) => {
-            const data = JSON.parse(event.data);
-            // Create collapsible section for this agent using task_id
-            createAgentSection(data.task_id, data.agent_name, data.task_goal);
-        });
-
-        source.addEventListener('PARTIAL_AGENT_RESPONSE', (event) => {
-            const data = JSON.parse(event.data);
-            // Append to the correct task's content by task_id
-            appendPartialContent(data.task_id, data.partial_result);
-        });
-
-        source.addEventListener('AGENT_RESPONSE', (event) => {
-            const data = JSON.parse(event.data);
-            // Flush the buffer for this specific task
-            flushPartialBuffer(data.task_id);
-        });
-
-        source.addEventListener('ERROR', (event) => {
-            flushAllPartialBuffers();
-            const data = JSON.parse(event.data);
-            appendToMainChat('<span class="user-message">Assistant:</span><br/> ' + data.abort_reason);
-            source.close();
-            enableUserInput();
-            hideLoadingIndicator();
-        });
-
-        source.addEventListener('FINAL', (event) => {
-            flushAllPartialBuffers();
-            const data = JSON.parse(event.data);
-            appendToMainChat('<span class="user-message">Assistant:</span><br/> ' + data.result);
-            source.close();
-            enableUserInput();
-            hideLoadingIndicator();
-        });
-
         source.onerror = () => {
-            flushAllPartialBuffers();
+            if (realTimeMode) {
+                flushAllPartialBuffers();
+            }
+
             appendToMainChat('[Error] Connection lost.');
             source.close();
             enableUserInput();
             hideLoadingIndicator();
+            // --- Added: Reset HITL flags on error ---
+            planReceived = false;
+            waitingForHumanApproval = false;
+            planButtonsAdded = false;
+            // --- End Added ---
         };
     }
 </script>

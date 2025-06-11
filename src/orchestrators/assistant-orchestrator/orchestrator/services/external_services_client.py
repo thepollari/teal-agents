@@ -1,7 +1,6 @@
 import json
 
 import aiohttp
-import requests
 from opentelemetry.propagate import inject
 from pydantic import BaseModel
 
@@ -61,7 +60,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.post(
                     url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/conversation-history",
                     headers=self.headers,
-                    data=conv_request.model_dump_json(),
+                    json=conv_request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
@@ -84,7 +83,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.get(
                     url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/conversation-history/{session_id}",
                     headers=self.headers,
-                    data=conv_request.model_dump_json(),
+                    json=conv_request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
@@ -122,7 +121,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.post(
                     url=url,
                     headers=self.headers,
-                    data=request.model_dump_json(),
+                    json=request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
@@ -142,7 +141,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.post(
                     url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/tickets/verify",
                     headers=self.headers,
-                    data=ticket_request.model_dump_json(),
+                    json=ticket_request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
@@ -159,17 +158,20 @@ class ExternalServicesClient(ServicesClient):
         context_request = AddContextRequest(item_key=item_key, item_value=item_value)
 
         inject(self.headers)
-        try:
-            response = requests.post(
-                url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/users/{user_id}/context",
-                headers=self.headers,
-                data=context_request.model_dump_json(),
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            raise Exception(f"ERROR: {json.loads(e.response.text)['detail']}") from e
-        response = response.json()
-        return GeneralResponse(**response)
+
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.post(
+                    url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/users/{user_id}/context",
+                    headers=self.headers,
+                    json=context_request.model_dump(),
+                ) as response:
+                    response.raise_for_status()
+                    response_data = await response.json()
+            except aiohttp.ClientError as e:
+                raise Exception(f"HTTP Client Error: {str(e)}") from e
+
+        return GeneralResponse(**response_data)
 
     async def update_context_item(
         self, user_id: str, item_key: str, item_value: str | None
@@ -182,7 +184,7 @@ class ExternalServicesClient(ServicesClient):
                 async with session.put(
                     url=f"{self.endpoint}/services/v1/{self.orchestrator_name}/users/{user_id}/context/{item_key}",
                     headers=self.headers,
-                    data=context_request.model_dump_json(),
+                    json=context_request.model_dump(),
                 ) as response:
                     if response.status != 200:
                         error_detail = await response.text()
@@ -205,9 +207,8 @@ class ExternalServicesClient(ServicesClient):
                 async with session.delete(url) as response:
                     response.raise_for_status()
                     response_data = await response.json()
-            except aiohttp.ClientResponseError as e:
-                error_detail = await e.response.text()
-                raise Exception(f"ERROR: {json.loads(error_detail)['detail']}") from e
+            except aiohttp.ClientError as e:
+                raise Exception(f"HTTP Client Error: {str(e)}") from e
         return GeneralResponse(**response_data)
 
     async def get_context_items(self, user_id: str) -> dict[str, str | None]:
@@ -219,7 +220,6 @@ class ExternalServicesClient(ServicesClient):
                 ) as response:
                     response.raise_for_status()
                     response_data = await response.json()
-            except aiohttp.ClientResponseError as e:
-                error_detail = await e.response.text()
-                raise Exception(f"ERROR: {json.loads(error_detail)['detail']}") from e
+            except aiohttp.ClientError as e:
+                raise Exception(f"HTTP Client Error: {str(e)}") from e
         return response_data

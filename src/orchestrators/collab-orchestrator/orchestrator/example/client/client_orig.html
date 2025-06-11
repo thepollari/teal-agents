@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat SSE</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            display: flex;
+            height: calc(100vh - 40px);
+        }
+        .main-container, .working-container {
+            display: flex;
+            flex-direction: column;
+        }
+        .main-container {
+            width: 66%;
+            margin-right: 20px;
+        }
+        .working-container {
+            width: 33%;
+        }
+        .chat-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        #mainChat, #workingChat {
+            flex: 1;
+            border: 2px solid #444;
+            background-color: #f5f5f5;
+            padding: 15px;
+            font-family: monospace;
+            border-radius: 8px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        #mainChat {
+            margin-bottom: 20px;
+            white-space: normal;
+            position: relative;
+        }
+        #workingChat {
+            white-space: pre-wrap;
+        }
+        /* Markdown styles */
+        #mainChat code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        #mainChat pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        #mainChat pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        #mainChat blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 10px;
+            color: #555;
+            margin-left: 0;
+        }
+        #mainChat h1, #mainChat h2, #mainChat h3, #mainChat h4 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+        #mainChat p {
+            margin-bottom: 1em;
+        }
+        #mainChat ul, #mainChat ol {
+            padding-left: 20px;
+        }
+        .input-container {
+            display: flex;
+            align-items: flex-start;
+            height: 100px;
+        }
+        #userMessage {
+            width: calc(100% - 100px);
+            height: 80px;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        strong {
+            color: #1a73e8;
+        }
+        .user-message {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .agent-header {
+            cursor: pointer;
+            padding: 10px 10px 10px 30px;
+            background-color: #e3e8f0;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            position: relative;
+        }
+        .agent-header:hover {
+            background-color: #d0d7e6;
+        }
+        .agent-header::before {
+            content: "+";
+            position: absolute;
+            left: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        .agent-header.active::before {
+            content: "-";
+        }
+        .agent-header-static::before {
+            content: "";
+        }
+        .agent-content {
+            display: none;
+            padding: 10px;
+            border-left: 3px solid #4285f4;
+            margin-left: 10px;
+            margin-bottom: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .agent-header.active {
+            background-color: #d0d7e6;
+        }
+        /* Nested plan styles */
+        .plan-container {
+            margin-left: 20px;
+        }
+        .step-header {
+            cursor: pointer;
+            padding: 8px 8px 8px 25px;
+            background-color: #e8f0e3;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            position: relative;
+        }
+        .step-header::before {
+            content: "+";
+            position: absolute;
+            left: 10px;
+            font-weight: bold;
+            color: #34a853;
+        }
+        .step-header.active::before {
+            content: "-";
+        }
+        .step-content {
+            display: none;
+            padding: 10px;
+            border-left: 2px solid #34a853;
+            margin-left: 10px;
+            margin-bottom: 10px;
+        }
+        .task-item {
+            padding: 5px;
+            border-left: 2px solid #fbbc05;
+            margin-bottom: 5px;
+        }
+        /* Loading indicator styles */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 8px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(66, 133, 244, 0.2);
+            border-radius: 50%;
+            border-top-color: #4285f4;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <div class="chat-header">Chat</div>
+    <div id="mainChat">
+        <div class="loading-overlay">
+            <div class="spinner"></div>
+        </div>
+    </div>
+    <div class="input-container">
+        <textarea id="userMessage" placeholder="Type message..."></textarea>
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+<div class="working-container">
+    <div class="chat-header">Agent Discussion</div>
+    <div id="workingChat"></div>
+</div>
+
+<script>
+    let eventSource;
+    // Map request_id to agent info and DOM elements for partial-responses
+    let partials = {};
+    // Store plan's request_id for final-response matching
+    let planRequestId = null;
+    // Track the first event type and request_id for main chat final-response
+    let firstMainEvent = null; // { type: 'plan'|'manager-response', request_id: string }
+
+    // Initialize marked for Markdown rendering
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: false
+    });
+
+    // Add event listener for textarea submit on Enter
+    document.getElementById('userMessage').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function showLoadingIndicator() {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        loadingOverlay.style.display = 'flex';
+    }
+
+    function hideLoadingIndicator() {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        loadingOverlay.style.display = 'none';
+    }
+
+    function disableUserInput() {
+        document.getElementById('userMessage').disabled = true;
+        document.getElementById('sendButton').disabled = true;
+    }
+
+    function enableUserInput() {
+        document.getElementById('userMessage').disabled = false;
+        document.getElementById('sendButton').disabled = false;
+    }
+
+    function flushAllPartialBuffers() {
+        for (const requestId in partials) {
+            const section = partials[requestId];
+            if (!section || !section.buffer) continue;
+            section.content.innerHTML += section.buffer;
+            section.buffer = '';
+            const partialSpan = section.content.querySelector('.partialSpan');
+            if (partialSpan) partialSpan.remove();
+            section.content.scrollTop = section.content.scrollHeight;
+        }
+    }
+
+    function appendToMainChat(message) {
+        const mainChat = document.getElementById('mainChat');
+
+        // Check if the message is a user message
+        if (message.includes('<span class="user-message">User:</span>')) {
+            // Don't parse user messages as markdown
+            mainChat.innerHTML += message + '<br/>';
+        } else {
+            // For system messages, parse markdown content
+            // Extract the message type prefix (like [ABORT], [FINAL], etc.)
+            const prefixMatch = message.match(/^\[([A-Z]+)\]\s/);
+            let prefix = '';
+            let content = message;
+
+            if (prefixMatch) {
+                prefix = prefixMatch[0];
+                content = message.substring(prefix.length);
+            }
+
+            // Parse markdown for the content
+            const parsedContent = marked.parse(content);
+            mainChat.innerHTML += prefix + parsedContent + '<br/>';
+        }
+
+        mainChat.scrollTop = mainChat.scrollHeight;
+    }
+
+    function createAgentRequestSection(agentName, requestId, taskGoal) {
+        const workingChat = document.getElementById('workingChat');
+        // Create expandable header
+        const header = document.createElement('div');
+        header.className = 'agent-header';
+        header.innerHTML = `Request sent to <strong>${agentName}</strong>.`;
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'agent-content';
+        content.style.display = 'none';
+        content.innerHTML = `<div><strong>Message:</strong> ${taskGoal}</div>`;
+        // Toggle expand/collapse
+        header.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+        });
+        workingChat.appendChild(header);
+        workingChat.appendChild(content);
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    function createPartialResponseSection(requestId, agentName) {
+        const workingChat = document.getElementById('workingChat');
+        // Create collapsible header
+        const header = document.createElement('div');
+        header.className = 'agent-header';
+        header.innerHTML = `Message received from <strong>${agentName}</strong>`;
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'agent-content';
+        content.style.display = 'none';
+        // Toggle expand/collapse
+        header.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+            } else {
+                content.style.display = 'block';
+            }
+        });
+        workingChat.appendChild(header);
+        workingChat.appendChild(content);
+        workingChat.scrollTop = workingChat.scrollHeight;
+        // Store for future partials
+        partials[requestId] = {
+            header,
+            content,
+            buffer: '',
+            agentName
+        };
+    }
+
+    function appendPartialResponse(requestId, agentName, content) {
+        if (!partials[requestId]) {
+            createPartialResponseSection(requestId, agentName);
+        }
+        const section = partials[requestId];
+        section.buffer += content;
+        // Show buffer in a .partialSpan
+        let partialSpan = section.content.querySelector('.partialSpan');
+        if (!partialSpan) {
+            partialSpan = document.createElement('span');
+            partialSpan.className = 'partialSpan';
+            section.content.appendChild(partialSpan);
+        }
+        partialSpan.textContent = section.buffer;
+        section.content.scrollTop = section.content.scrollHeight;
+    }
+
+    function displayPlan(planData) {
+        flushAllPartialBuffers();
+        // Save plan's request_id for final-response matching
+        planRequestId = planData.request_id;
+
+        const workingChat = document.getElementById('workingChat');
+
+        // Create header element for the plan
+        const planHeader = document.createElement('div');
+        planHeader.className = 'agent-header active';
+        planHeader.innerHTML = `<strong>Planner</strong> developed the following plan`;
+
+        // Create content container for the plan
+        const planContent = document.createElement('div');
+        planContent.className = 'agent-content';
+        planContent.style.display = 'block';
+
+        // Create plan container
+        const planContainer = document.createElement('div');
+        planContainer.className = 'plan-container';
+
+        // Add steps to the plan
+        planData.steps.forEach(step => {
+            // Create step header
+            const stepHeader = document.createElement('div');
+            stepHeader.className = 'step-header';
+            stepHeader.innerHTML = `Step ${step.step_number}`;
+
+            // Create step content
+            const stepContent = document.createElement('div');
+            stepContent.className = 'step-content';
+
+            // Add tasks to the step
+            step.step_tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item';
+                taskItem.innerHTML = `
+                    <div><strong>Task ID:</strong> ${task.task_id}</div>
+                    <div><strong>Goal:</strong> ${task.task_goal}</div>
+                    <div><strong>Agent:</strong> ${task.task_agent}</div>
+                    ${task.prerequisite_tasks.length > 0 ?
+                    `<div><strong>Prerequisites:</strong> ${task.prerequisite_tasks.join(', ')}</div>` : ''}
+                `;
+                stepContent.appendChild(taskItem);
+            });
+
+            // Add toggle functionality to step header
+            stepHeader.addEventListener('click', function() {
+                this.classList.toggle('active');
+                if (stepContent.style.display === 'block') {
+                    stepContent.style.display = 'none';
+                } else {
+                    stepContent.style.display = 'block';
+                }
+            });
+
+            planContainer.appendChild(stepHeader);
+            planContainer.appendChild(stepContent);
+        });
+
+        planContent.appendChild(planContainer);
+
+        // Add toggle functionality to plan header
+        planHeader.addEventListener('click', function() {
+            this.classList.toggle('active');
+            if (planContent.style.display === 'block') {
+                planContent.style.display = 'none';
+            } else {
+                planContent.style.display = 'block';
+            }
+        });
+
+        workingChat.appendChild(planHeader);
+        workingChat.appendChild(planContent);
+        workingChat.scrollTop = workingChat.scrollHeight;
+    }
+
+    // New: create a static, non-expandable box for manager messages
+    function createManagerMessageBox(requestId, message) {
+        const workingChat = document.getElementById('workingChat');
+        const box = document.createElement('div');
+        box.className = 'agent-header agent-header-static';
+        box.innerHTML = message;
+        workingChat.appendChild(box);
+        workingChat.scrollTop = workingChat.scrollHeight;
+        // Store for possible future updates (if needed)
+        partials[requestId] = {
+            header: box,
+            content: box, // for compatibility, though not used
+            buffer: '',
+            agentName: 'Manager'
+        };
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById('userMessage');
+        const userMessage = messageInput.value.trim();
+        if (!userMessage) return;
+        messageInput.value = '';
+
+        // Add user message to mainChat with bold indication and extra line breaks
+        appendToMainChat('<span class="user-message">User:</span> ' + userMessage + '<br/>');
+
+        // Disable input until response is complete
+        disableUserInput();
+        showLoadingIndicator();
+
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        // Clear state for new conversation
+        partials = {};
+        planRequestId = null;
+        firstMainEvent = null;
+        const workingChat = document.getElementById('workingChat');
+        workingChat.innerHTML = '';
+
+        fetch('http://localhost:8000/CollaborationOrchestrator/0.1/browser', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_history: [
+                    {
+                        role: 'user',
+                        items: [
+                            {
+                                content_type: 'text',
+                                content: userMessage
+                            }
+                        ]
+                    }
+                ]
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                const sessionId = data.session_id;
+                eventSource = new EventSource('http://localhost:8000/CollaborationOrchestrator/0.1/browser/' + sessionId);
+                setupEventHandlers(eventSource);
+            })
+            .catch(error => {
+                console.log(error);
+                enableUserInput();
+                hideLoadingIndicator();
+            });
+    }
+
+    function setupEventHandlers(source) {
+        // Remove all old event handlers, add new ones for new event types
+
+        // Helper to set firstMainEvent if not already set
+        function setFirstMainEvent(type, request_id) {
+            if (!firstMainEvent) {
+                firstMainEvent = { type, request_id };
+            }
+        }
+
+        source.addEventListener('plan', (event) => {
+            const data = JSON.parse(event.data);
+            setFirstMainEvent('plan', data.request_id);
+            displayPlan(data);
+        });
+
+        source.addEventListener('manager-response', (event) => {
+            const data = JSON.parse(event.data);
+            setFirstMainEvent('manager-response', data.request_id);
+
+            // Only handle specific next_action values
+            if (data.next_action === 'assign_new_task') {
+                const agentName = data.action_detail && data.action_detail.agent_name ? data.action_detail.agent_name : 'Unknown';
+                createManagerMessageBox(
+                    data.request_id,
+                    `Manager is assigning task to <strong>${agentName}</strong>`
+                );
+            } else if (data.next_action === 'provide_result') {
+                createManagerMessageBox(
+                    data.request_id,
+                    'Manager is providing result'
+                );
+            }
+            // else: ignore this manager-response event
+        });
+
+        source.addEventListener('agent-request', (event) => {
+            const data = JSON.parse(event.data);
+            createAgentRequestSection(data.agent_name, data.request_id, data.task_goal);
+        });
+
+        source.addEventListener('partial-response', (event) => {
+            const data = JSON.parse(event.data);
+            appendPartialResponse(data.request_id, data.source, data.output_partial || '');
+        });
+
+        source.addEventListener('final-response', (event) => {
+            const data = JSON.parse(event.data);
+            // Only display if request_id matches the first main event's request_id
+            if (firstMainEvent && data.request_id === firstMainEvent.request_id) {
+                flushAllPartialBuffers();
+                appendToMainChat(marked.parse(data.output_raw || ''));
+                // Add static box for Planner if first event was a plan
+                if (firstMainEvent.type === 'plan') {
+                    createManagerMessageBox(
+                        'planner-final-result-' + data.request_id,
+                        'Planner is providing result'
+                    );
+                }
+                source.close();
+                enableUserInput();
+                hideLoadingIndicator();
+            }
+        });
+
+        source.onerror = () => {
+            flushAllPartialBuffers();
+            appendToMainChat('[Error] Connection lost.');
+            source.close();
+            enableUserInput();
+            hideLoadingIndicator();
+        };
+    }
+</script>
+</body>
+</html>

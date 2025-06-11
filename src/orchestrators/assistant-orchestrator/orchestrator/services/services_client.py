@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from model import Conversation
 
 
-class MessageType(Enum):
+class MessageType(str, Enum):
     USER = "user"
     AGENT = "agent"
 
