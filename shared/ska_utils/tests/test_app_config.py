@@ -67,3 +67,21 @@ def test_parse_ta_env_store_invalid_json():
         app_config = AppConfig()
         with pytest.raises(json.JSONDecodeError):
             app_config._parse_ta_env_store()
+
+def test_reload_from_environment_without_configs():
+    AppConfig.reset()
+    new_instance = AppConfig.__new__(AppConfig)
+    new_instance._reload_from_environment()
+
+def test_reload_from_environment_valid_json():
+    with patch.dict(os.environ, {"TA_ENV_STORE": '{"KEY1": "value1", "KEY2": "value2"}'}):
+        app_config = AppConfig()
+        app_config._reload_from_environment()
+        assert os.getenv("KEY1") == "value1"
+        assert os.getenv("KEY2") == "value2"
+
+def test_reload_from_environment_invalid_json():
+    with patch.dict(os.environ, {"TA_ENV_STORE": '{"KEY1": "value1", "KEY2": value2}'}):
+        app_config = AppConfig()
+        with pytest.raises(json.JSONDecodeError):
+            app_config._reload_from_environment()
