@@ -52,7 +52,7 @@ class AppConfig(metaclass=Singleton):
 
     def __init__(self):
         if AppConfig.configs is None:
-            raise ValueError("AppConfig.configs is not initialized")     
+            raise ValueError("AppConfig.configs is not initialized")
         #create a logger
         self.logger = logging.getLogger(__name__)
         #Configure logging levels
@@ -87,7 +87,7 @@ class AppConfig(metaclass=Singleton):
         except json.JSONDecodeError as e:
             self.logger.info(f"Error reloading from environment - {e}")
             raise
-        
+
     def get(self, key):
         return self.props[key]
 
