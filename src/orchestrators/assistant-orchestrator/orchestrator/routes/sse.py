@@ -1,5 +1,6 @@
 import asyncio
 import json
+
 from collections import namedtuple
 from contextlib import nullcontext
 from typing import Any
@@ -14,6 +15,7 @@ from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.conversation import SseError, SseEventType, SseFinalMessage, SseMessage
 from model.requests import ConversationMessageRequest
+from session import SessionData, AbstractSessionManager, InMemorySessionManager
 
 from .deps import (
     get_agent_catalog,
@@ -36,10 +38,7 @@ cache_user_context = get_user_context_cache()
 router = APIRouter()
 header_scheme = APIKeyHeader(name="authorization", auto_error=False)
 
-# Initialize your session_cache and define SessionData tuple structure
-SessionData = namedtuple("SessionData", ["conversation", "request", "authorization"])
-session_cache: dict[str, SessionData] = {}
-
+session_manager: AbstractSessionManager = InMemorySessionManager()
 
 # Helper function to format SSE messages
 def format_sse_message(data: dict[str, Any], event_type: SseEventType) -> str:
@@ -213,8 +212,6 @@ async def add_and_stream_conversation_sse_message_by_id(
     authorization: str = Depends(header_scheme),
 ):
     """
-    {0}
-
     This endpoint initializes a session cache for the specified conversation and streams back
     the response from agents based on user and conversation id.
     """
@@ -244,23 +241,31 @@ async def add_conversation_sse_message_by_id(
     authorization: str = Depends(header_scheme),
 ):
     """
-    {0}
-
     This endpoint initializes a session cache for the specified conversation.
     After calling this endpoint, you can use the GET endpoint with the conversation id
     to retrieve the conversation data.
     """
     try:
         conv = await conv_manager.get_conversation(user_id, conversation_id)
-        session_cache[conversation_id] = SessionData(
-            conversation=conv, request=request, authorization=authorization
+        
+        # Create a SessionData namedtuple
+        session_data_to_store = SessionData(
+            conversation=conv, 
+            request=request, 
+            authorization=authorization
         )
+        
+        # Use the session_manager to add the session data
+        await session_manager.add_session(conversation_id, session_data_to_store)
+        
     except Exception as e:
         raise HTTPException(
             status_code=404,
             detail=f"Unable to get conversation with conversation_id: {conversation_id} --- {e}",
         ) from e
+    
     return {"conversation_id": conv.conversation_id, "user_id": conv.user_id}
+
 
 
 @router.get(
@@ -270,8 +275,6 @@ async def add_conversation_sse_message_by_id(
 )
 async def stream_conversation_sse_message_by_id(conversation_id: str):
     """
-    {0}
-
     Stream conversation messages using Server-Sent Events (SSE).
 
     This endpoint allows clients to receive real-time updates for a conversation
@@ -285,7 +288,7 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
 
     # --- Initialize Session Data based on conversation_id ---
     try:
-        session_data = session_cache.get(conversation_id)
+        session_data = await session_manager.get_session(conversation_id)
         if not session_data:
             raise HTTPException(
                 status_code=404,
@@ -294,7 +297,7 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
         conv = session_data.conversation
         request = session_data.request
         authorization = session_data.authorization
-        del session_cache[conversation_id]
+        await session_manager.delete_session(conversation_id)
     except Exception as e:
         raise HTTPException(
             status_code=404,
