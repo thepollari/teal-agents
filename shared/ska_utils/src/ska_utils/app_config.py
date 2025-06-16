@@ -1,12 +1,13 @@
 import json
 import logging
 import os
-logging.basicConfig(format='%(asctime)s %(levelnames)s %(message)s')
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from ska_utils.singleton import Singleton
+
+logging.basicConfig(format='%(asctime)s %(levelnames)s %(message)s')
 
 
 class Config(BaseModel):
