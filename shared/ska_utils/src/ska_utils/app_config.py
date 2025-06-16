@@ -52,8 +52,7 @@ class AppConfig(metaclass=Singleton):
 
     def __init__(self):
         if AppConfig.configs is None:
-            raise ValueError("AppConfig.configs is not initialized")
-        
+            raise ValueError("AppConfig.configs is not initialized")     
         #create a logger
         self.logger = logging.getLogger(__name__)
         #Configure logging levels
@@ -78,8 +77,7 @@ class AppConfig(metaclass=Singleton):
             self._parse_ta_env_store()
             self.props = {}
             if AppConfig.configs is None:
-                AppConfig.configs = []
-            
+                AppConfig.configs = []        
             for config in AppConfig.configs:
                 self.props[config.env_name] = os.getenv(
                     config.env_name,
@@ -90,8 +88,6 @@ class AppConfig(metaclass=Singleton):
             self.logger.info(f"Error reloading from environment - {e}")
             raise
         
-        
-
     def get(self, key):
         return self.props[key]
 
