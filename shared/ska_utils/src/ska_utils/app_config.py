@@ -77,7 +77,7 @@ class AppConfig(metaclass=Singleton):
             self._parse_ta_env_store()
             self.props = {}
             if AppConfig.configs is None:
-                AppConfig.configs = []        
+                AppConfig.configs = []
             for config in AppConfig.configs:
                 self.props[config.env_name] = os.getenv(
                     config.env_name,
