@@ -197,6 +197,7 @@ async def sse_event_response(
                 sse_error = SseError(
                     error=f"Orchestrator failed to finalize conversation: {e}",
                 )
+                print(conversation_result)
                 yield format_sse_message(sse_error.model_dump(), SseEventType.UNKNOWN)
 
 

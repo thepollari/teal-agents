@@ -3,7 +3,7 @@ from enum import Enum
 from pydantic import BaseModel
 
 
-class ContextType(Enum):
+class ContextType(str, Enum):
     TRANSIENT = "transient"
     PERSISTENT = "persistent"
 
@@ -44,7 +44,7 @@ class Conversation(BaseModel):
         return self.user_context[item_key]
 
     def update_context_item(self, item_key: str, item_value: str | None) -> ContextItem:
-        if item_key not in self.user_Žontext:
+        if item_key not in self.user_context:
             raise ValueError(f"Context item does not exist - {item_key}")
         if item_value is None:
             return self.delete_context_item(item_key)
