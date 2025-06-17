@@ -1,6 +1,6 @@
-from .logger import logger
 import json
 import os
+from .logger import logger
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
