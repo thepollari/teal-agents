@@ -5,9 +5,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from ska_utils.singleton import Singleton
-
 from .logger import logger
-
 
 
 class Config(BaseModel):
