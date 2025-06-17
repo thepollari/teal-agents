@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -6,7 +7,7 @@ from pydantic import BaseModel
 
 from ska_utils.singleton import Singleton
 
-from .logger import logger
+logging.basicConfig(format='%(asctime)s %(levelnames)s %(message)s')
 
 
 class Config(BaseModel):
@@ -52,6 +53,10 @@ class AppConfig(metaclass=Singleton):
     def __init__(self):
         if AppConfig.configs is None:
             raise ValueError("AppConfig.configs is not initialized")
+        #create a logger
+        self.logger = logging.getLogger(__name__)
+        #Configure logging levels
+        self.logger.setLevel(logging.INFO)
 
         load_dotenv()
         self._reload_from_environment()
@@ -64,7 +69,7 @@ class AppConfig(metaclass=Singleton):
                 for key, value in env_dict.items():
                     os.environ[key] = value
             except json.JSONDecodeError as e:
-                logger.exception(f"Error parsing TA_ENV_STORE environment variable - {e}")
+                self.logger.exception(f"Error parsing TA_ENV_STORE environment variable - {e}")
                 raise
 
     def _reload_from_environment(self):
@@ -80,7 +85,7 @@ class AppConfig(metaclass=Singleton):
                 )
             self.__validate_required_keys()
         except json.JSONDecodeError as e:
-            logger.exception(f"Error reloading from environment - {e}")
+            self.logger.exception(f"Error reloading from environment - {e}")
             raise
 
     def get(self, key):
@@ -89,5 +94,5 @@ class AppConfig(metaclass=Singleton):
     def __validate_required_keys(self):
         for config in AppConfig.configs:
             if config.is_required and self.props[config.env_name] is None:
-                logger.exception(f"Missing required configuration key: {config.env_name}")
+                self.logger.exception(f"Missing required configuration key: {config.env_name}")
                 raise ValueError(f"Missing required configuration key: {config.env_name}")
