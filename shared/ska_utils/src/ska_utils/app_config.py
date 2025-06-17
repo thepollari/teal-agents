@@ -1,6 +1,5 @@
-import json
-#import logging
 from .logger import logger
+import json
 import os
 
 from dotenv import load_dotenv
