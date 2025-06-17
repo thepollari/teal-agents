@@ -8,8 +8,6 @@ from pydantic import BaseModel
 
 from ska_utils.singleton import Singleton
 
-#logging.basicConfig(format='%(asctime)s %(levelnames)s %(message)s')
-
 
 class Config(BaseModel):
     env_name: str
@@ -54,10 +52,6 @@ class AppConfig(metaclass=Singleton):
     def __init__(self):
         if AppConfig.configs is None:
             raise ValueError("AppConfig.configs is not initialized")
-        #create a logger
-        #logger = logging.getLogger(__name__)
-        #Configure logging levels
-        #logger.setLevel(logging.ERROR)
 
         load_dotenv()
         self._reload_from_environment()
