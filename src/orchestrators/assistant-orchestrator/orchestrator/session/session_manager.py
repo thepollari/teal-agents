@@ -1,14 +1,15 @@
 import abc
-from typing import Optional
+
 from pydantic import BaseModel
+
 from model.requests import ConversationMessageRequest
 
 
 class SessionData(BaseModel):
     conversation_id: str
     user_id: str
-    request: ConversationMessageRequest 
-    authorization: Optional[str] = None
+    request: ConversationMessageRequest
+    authorization: str | None = None
 
 
 class AbstractSessionManager(abc.ABC):
