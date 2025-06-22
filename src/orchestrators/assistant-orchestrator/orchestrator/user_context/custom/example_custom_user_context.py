@@ -1,5 +1,4 @@
 import json
-import requests
 
 import redis
 from ska_utils import AppConfig
@@ -24,7 +23,6 @@ class ExampleCustomUserContext(UserContextCache):
             db=int(self.app_config.get(TA_REDIS_DB.env_name)),
         )
         self.ttl = int(self.app_config.get(TA_REDIS_TTL.env_name))
-        self.api_key = self.app_config.get(TA_USER_INFORMATION_SOURCE_KEY.env_name)
         self.user_information_api_key = self.app_config.get(TA_USER_INFORMATION_SOURCE_KEY.env_name)
 
     def get_user_context_from_cache(self, user_id: str) -> ContextCacheResponse:
@@ -44,17 +42,5 @@ class ExampleCustomUserContext(UserContextCache):
             return ContextCacheResponse(user_context=None)
 
     def fetch_user_information(self, user_id: str) -> dict:
-        user_information = {"isid":user_id}
-        headers = {
-            "X-Merck-APIKey": self.api_key
-        }
-        params = {
-            "$select": "displayName,country,companyName,department,jobTitle,mail,officeLocation,postalCode,state,city,employeeHireDate,employeeOrgData"
-        }
-        endpoint = f"https://iapi-test.merck.com/microsoft-graph/v1/users/{user_id}@merck.com"
-        context_response = requests.get(endpoint, headers=headers, params=params).json()
-        if "error" in context_response.keys():
-            print(f"User information not available. Error message: {str(context_response)}")
-            return user_information
-        user_information.update(context_response)
-        return user_information
+        api_key_for_user_information_source = self.user_information_api_key
+        return {"user_id": user_id}
