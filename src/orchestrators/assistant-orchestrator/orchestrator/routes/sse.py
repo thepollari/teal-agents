@@ -15,7 +15,7 @@ from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.conversation import SseError, SseEventType, SseFinalMessage, SseMessage
 from model.requests import ConversationMessageRequest
-from session import SessionData, AbstractSessionManager, InMemorySessionManager
+from session import SessionData
 
 from .deps import (
     get_agent_catalog,
@@ -25,10 +25,12 @@ from .deps import (
     get_fallback_agent,
     get_rec_chooser,
     get_user_context_cache,
+    get_session_manager,
 )
 
 conv_manager = get_conv_manager()
 conn_manager = get_conn_manager()
+session_manager = get_session_manager()
 rec_chooser = get_rec_chooser()
 config = get_config()
 agent_catalog = get_agent_catalog()
@@ -37,8 +39,6 @@ cache_user_context = get_user_context_cache()
 
 router = APIRouter()
 header_scheme = APIKeyHeader(name="authorization", auto_error=False)
-
-session_manager: AbstractSessionManager = InMemorySessionManager()
 
 # Helper function to format SSE messages
 def format_sse_message(data: dict[str, Any], event_type: SseEventType) -> str:
@@ -79,6 +79,7 @@ async def sse_event_response(
                     error=f"Error retrieving agent: {e}",
                 )
                 yield format_sse_message(sse_error.model_dump(), SseEventType.UNKNOWN)
+                raise e
                 return
 
             # Determine the selected agent
@@ -92,9 +93,9 @@ async def sse_event_response(
         # --- Orchestrator Response: Agent Chosen ---
         # Send agent chosen event
         sse_agent = SseMessage(
-            task="agent_chosen", message=f"{sel_agent_name} was selected by agent chooser."
+            task="orchestrator_agent_chosen", message=f"{sel_agent_name} was selected by agent chooser."
         )
-        yield format_sse_message(sse_agent.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE)
+        yield format_sse_message(sse_agent.model_dump(), SseEventType.AGENT_SELECTOR_RESPONSE)
 
         # --- Update History User ---
         # Add user message to conversation history
@@ -107,7 +108,7 @@ async def sse_event_response(
                 await conv_manager.add_user_message(conv, request.message, sel_agent_name)
                 # Send intermediate event for user message added to history
                 sse_message = SseMessage(
-                    task="user_message_added", message="User message added to history."
+                    task="orchestrator_user_message_added", message="User message added to history."
                 )
                 yield format_sse_message(
                     sse_message.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE
@@ -167,7 +168,7 @@ async def sse_event_response(
                 # Send intermediate event for agent message added to history
                 await conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
                 sse_message = SseMessage(
-                    task="agent_message_added", message="Agent response added to history"
+                    task="orchestrator_agent_message_added", message="Agent response added to history"
                 )
                 yield format_sse_message(
                     sse_message.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE
@@ -222,7 +223,6 @@ async def add_and_stream_conversation_sse_message_by_id(
             detail=f"Unable to get conversation with conversation_id: {conversation_id} --- {e}",
         ) from e
 
-    # Return StreamingResponse with the event_generator and correct media type
     return StreamingResponse(
         sse_event_response(conv, request, authorization), media_type="text/event-stream"
     )
@@ -245,25 +245,24 @@ async def add_conversation_sse_message_by_id(
     to retrieve the conversation data.
     """
     try:
-        conv = await conv_manager.get_conversation(user_id, conversation_id)
-        
-        # Create a SessionData namedtuple
-        session_data_to_store = SessionData(
-            conversation=conv, 
+        # Create a SessionData
+        stored_session_data = SessionData(
+            conversation_id=conversation_id,
+            user_id=user_id,
             request=request, 
             authorization=authorization
         )
         
         # Use the session_manager to add the session data
-        await session_manager.add_session(conversation_id, session_data_to_store)
+        await session_manager.add_session(conversation_id, stored_session_data)
         
     except Exception as e:
         raise HTTPException(
             status_code=404,
-            detail=f"Unable to get conversation with conversation_id: {conversation_id} --- {e}",
+            detail=f"Unable to setup session with conversation_id: {conversation_id} --- {e}",
         ) from e
     
-    return {"conversation_id": conv.conversation_id, "user_id": conv.user_id}
+    return conversation_id
 
 
 
@@ -293,17 +292,18 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
                 status_code=404,
                 detail=f"Session data not found or expired for conversation_id: {conversation_id}",
             )
-        conv = session_data.conversation
-        request = session_data.request
+        conv = await conv_manager.get_conversation(session_data.user_id, session_data.conversation_id)
+        request = ConversationMessageRequest.model_validate(session_data.request)
         authorization = session_data.authorization
         await session_manager.delete_session(conversation_id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=404,
-            detail=f"Unable to find session cache for conversation_id: {conversation_id}",
-        ) from e
+            status_code=404, # Or a more appropriate status code like 500 for internal errors
+            detail=f"Unable to process session data for conversation_id: {conversation_id}. Error: {type(e).__name__}",
+        )
 
-    # Return StreamingResponse with the event_generator and correct media type
     return StreamingResponse(
         sse_event_response(conv, request, authorization), media_type="text/event-stream"
     )

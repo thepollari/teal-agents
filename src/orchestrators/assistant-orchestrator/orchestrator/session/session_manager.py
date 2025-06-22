@@ -2,7 +2,7 @@ import abc
 from collections import namedtuple
 from typing import Optional
 
-SessionData = namedtuple("SessionData", ["conversation", "request", "authorization"])
+SessionData = namedtuple("SessionData", ["conversation_id", "user_id", "request", "authorization"])
 
 class AbstractSessionManager(abc.ABC):
     """

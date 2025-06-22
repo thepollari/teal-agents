@@ -79,6 +79,7 @@ class SseError(BaseModel):
 
 
 class SseEventType(Enum):
-    INTERMEDIATE_TASK_RESPONSE = "orchestrator-task-response"
-    FINAL_RESPONSE = "orchestrator-final-response"
-    UNKNOWN = "orchestrator-unknown"
+    AGENT_SELECTOR_RESPONSE = "agent-selector-response"
+    INTERMEDIATE_TASK_RESPONSE = "intermediate-task-response"
+    FINAL_RESPONSE = "final-response"
+    UNKNOWN = "unknown"
