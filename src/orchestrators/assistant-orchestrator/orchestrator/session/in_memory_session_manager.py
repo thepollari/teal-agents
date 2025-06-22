@@ -1,22 +1,24 @@
 import logging
-from typing import Optional
+
 from .session_manager import AbstractSessionManager, SessionData
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 class InMemorySessionManager(AbstractSessionManager):
     """
     An in-memory implementation of the AbstractSessionManager where
     session data is stored in a Python dictionary.
-    This is for development and testing, but not for production 
+    This is for development and testing, but not for production
     environments requiring persistence or scaling.
     """
 
     def __init__(self):
         self._session_cache: dict[str, SessionData] = {}
         logger.info("InMemorySessionManager initialized.")
-
 
     async def add_session(self, session_id: str, data: SessionData) -> None:
         """
@@ -29,7 +31,7 @@ class InMemorySessionManager(AbstractSessionManager):
         self._session_cache[session_id] = data
         logger.info(f"Session '{session_id}' added/updated in memory.")
 
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+    async def get_session(self, session_id: str) -> SessionData | None:
         """
         Retrieves session data from the in-memory cache.
 

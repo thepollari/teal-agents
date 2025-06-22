@@ -1,14 +1,17 @@
-import abc
 import json
 import logging
+
 import redis
-from collections import namedtuple
-from typing import Optional
-from .session_manager import AbstractSessionManager, SessionData
+
 from agents import BaseModel
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from .session_manager import AbstractSessionManager, SessionData
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 class RedisSessionManager(AbstractSessionManager):
     """
@@ -16,7 +19,7 @@ class RedisSessionManager(AbstractSessionManager):
     Session data is serialized to JSON before being stored in Redis.
     """
 
-    def __init__(self, host: str, port: int, db: int = 0, ttl: Optional[int] = None):
+    def __init__(self, host: str, port: int, db: int = 0, ttl: int | None = None):
         """
         Initializes the RedisSessionManager.
 
@@ -26,22 +29,23 @@ class RedisSessionManager(AbstractSessionManager):
             db (int): The Redis database number to use (default is 0).
             ttl (Optional[int]): Time-to-live in seconds for session keys.
         """
-        self.redis_client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True
-        )
+        self.redis_client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
         self.ttl = ttl
-        logger.info(f"RedisSessionManager initialized with host={host}, port={port}, db={db}, ttl={ttl}.")
-    
+        logger.info(
+            f"RedisSessionManager initialized with host={host}, port={port}, db={db}, ttl={ttl}."
+        )
+
     async def add_session(self, session_id: str, data: SessionData) -> None:
         try:
             session_data_as_dict = {
                 "conversation_id": data.conversation_id,
                 "user_id": data.user_id,
-                "request": data.request.model_dump() if isinstance(data.request, BaseModel) else data.request,
-                "authorization": data.authorization.model_dump() if isinstance(data.authorization, BaseModel) else data.authorization
+                "request": data.request.model_dump()
+                if isinstance(data.request, BaseModel)
+                else data.request,
+                "authorization": data.authorization.model_dump()
+                if isinstance(data.authorization, BaseModel)
+                else data.authorization,
             }
             final_json_string = json.dumps(session_data_as_dict)
 
@@ -53,8 +57,7 @@ class RedisSessionManager(AbstractSessionManager):
             logger.error(f"Error adding session '{session_id}' to Redis: {e}")
             raise
 
-
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+    async def get_session(self, session_id: str) -> SessionData | None:
         try:
             json_string_from_redis = self.redis_client.get(session_id)
             print(json_string_from_redis)
@@ -70,7 +73,7 @@ class RedisSessionManager(AbstractSessionManager):
                     conversation_id=conversation_obj,
                     user_id=user_obj,
                     request=request_obj,
-                    authorization=authorization_obj
+                    authorization=authorization_obj,
                 )
                 logger.info(f"Session '{session_id}' retrieved from Redis.")
                 return session_data

@@ -1,7 +1,5 @@
 import asyncio
 import json
-
-from collections import namedtuple
 from contextlib import nullcontext
 from typing import Any
 
@@ -24,8 +22,8 @@ from .deps import (
     get_conv_manager,
     get_fallback_agent,
     get_rec_chooser,
-    get_user_context_cache,
     get_session_manager,
+    get_user_context_cache,
 )
 
 conv_manager = get_conv_manager()
@@ -39,6 +37,7 @@ cache_user_context = get_user_context_cache()
 
 router = APIRouter()
 header_scheme = APIKeyHeader(name="authorization", auto_error=False)
+
 
 # Helper function to format SSE messages
 def format_sse_message(data: dict[str, Any], event_type: SseEventType) -> str:
@@ -93,7 +92,8 @@ async def sse_event_response(
         # --- Orchestrator Response: Agent Chosen ---
         # Send agent chosen event
         sse_agent = SseMessage(
-            task="orchestrator_agent_chosen", message=f"{sel_agent_name} was selected by agent chooser."
+            task="orchestrator_agent_chosen",
+            message=f"{sel_agent_name} was selected by agent chooser.",
         )
         yield format_sse_message(sse_agent.model_dump(), SseEventType.AGENT_SELECTOR_RESPONSE)
 
@@ -135,7 +135,7 @@ async def sse_event_response(
                         extra_data: ExtraData = ExtraData.new_from_json(content)
                         context_directives = parse_context_directives(extra_data)
                         await conv_manager.process_context_directives(conv, context_directives)
-                    except Exception as e:
+                    except Exception:
                         # Yield the agent response stream directly
                         if content:
                             yield f"{content}"
@@ -168,7 +168,8 @@ async def sse_event_response(
                 # Send intermediate event for agent message added to history
                 await conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
                 sse_message = SseMessage(
-                    task="orchestrator_agent_message_added", message="Agent response added to history"
+                    task="orchestrator_agent_message_added",
+                    message="Agent response added to history",
                 )
                 yield format_sse_message(
                     sse_message.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE
@@ -249,21 +250,20 @@ async def add_conversation_sse_message_by_id(
         stored_session_data = SessionData(
             conversation_id=conversation_id,
             user_id=user_id,
-            request=request, 
-            authorization=authorization
+            request=request,
+            authorization=authorization,
         )
-        
+
         # Use the session_manager to add the session data
         await session_manager.add_session(conversation_id, stored_session_data)
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=404,
             detail=f"Unable to setup session with conversation_id: {conversation_id} --- {e}",
         ) from e
-    
-    return stored_session_data
 
+    return stored_session_data
 
 
 @router.get(
@@ -292,17 +292,23 @@ async def stream_conversation_sse_message_by_id(conversation_id: str):
                 status_code=404,
                 detail=f"Session data not found or expired for conversation_id: {conversation_id}",
             )
-        conv = await conv_manager.get_conversation(session_data.user_id, session_data.conversation_id)
+        conv = await conv_manager.get_conversation(
+            session_data.user_id, session_data.conversation_id
+        )
         request = ConversationMessageRequest.model_validate(session_data.request)
         authorization = session_data.authorization
         await session_manager.delete_session(conversation_id)
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=404, # Or a more appropriate status code like 500 for internal errors
-            detail=f"Unable to process session data for conversation_id: {conversation_id}. Error: {type(e).__name__}",
-        )
+            status_code=404,
+            detail=(
+                f"Unable to process session data for conversation_id: {conversation_id}."
+                f"Error: {type(e).__name__}",
+            ),
+        ) from e
 
     return StreamingResponse(
         sse_event_response(conv, request, authorization), media_type="text/event-stream"

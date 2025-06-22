@@ -20,7 +20,9 @@ TA_REDIS_PORT = Config(env_name="TA_REDIS_PORT", is_required=False, default_valu
 TA_REDIS_DB = Config(env_name="TA_REDIS_DB", is_required=False, default_value=None)
 TA_REDIS_SESSION_DB = Config(env_name="TA_REDIS_SESSION_DB", is_required=False, default_value=None)
 TA_REDIS_TTL = Config(env_name="TA_REDIS_TTL", is_required=False, default_value=None)
-TA_REDIS_SESSION_TTL = Config(env_name="TA_REDIS_SESSION_TTL", is_required=False, default_value=None)
+TA_REDIS_SESSION_TTL = Config(
+    env_name="TA_REDIS_SESSION_TTL", is_required=False, default_value=None
+)
 TA_SESSION_TYPE = Config(env_name="TA_SESSION_TYPE", is_required=True, default_value="internal")
 TA_CUSTOM_USER_CONTEXT_ENABLED = Config(
     env_name="TA_CUSTOM_USER_CONTEXT_ENABLED", is_required=True, default_value=None

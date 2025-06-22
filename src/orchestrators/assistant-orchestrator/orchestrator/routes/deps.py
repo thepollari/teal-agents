@@ -7,19 +7,19 @@ from configs import (
     TA_AGW_HOST,
     TA_AGW_KEY,
     TA_AGW_SECURE,
-    TA_SERVICE_CONFIG,
-    TA_SESSION_TYPE,
-    TA_REDIS_SESSION_DB,
     TA_REDIS_HOST,
     TA_REDIS_PORT,
+    TA_REDIS_SESSION_DB,
     TA_REDIS_SESSION_TTL,
+    TA_SERVICE_CONFIG,
+    TA_SESSION_TYPE,
 )
 from connection_manager import ConnectionManager
 from conversation_manager import ConversationManager
 from jose_types import Config
 from recipient_chooser import RecipientChooser
-from user_context import CustomUserContextHelper, UserContextCache
 from session import AbstractSessionManager, InMemorySessionManager, RedisSessionManager
+from user_context import CustomUserContextHelper, UserContextCache
 
 AppConfig.add_configs(CONFIGS)
 
@@ -83,7 +83,7 @@ def initialize() -> None:
             app_config.get(TA_REDIS_PORT.env_name),
             app_config.get(TA_REDIS_SESSION_DB.env_name),
             app_config.get(TA_REDIS_SESSION_TTL.env_name),
-        ) 
+        )
     else:
         _session_manager = InMemorySessionManager()
     _rec_chooser = RecipientChooser(recipient_chooser_agent)
@@ -150,4 +150,3 @@ def get_user_context_cache() -> UserContextCache | None:
     if _user_context is None:
         initialize()
     return _user_context
-

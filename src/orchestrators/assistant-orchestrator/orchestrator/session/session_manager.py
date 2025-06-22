@@ -1,14 +1,15 @@
 import abc
-from collections import namedtuple
 from typing import Optional
-from model.requests import ConversationMessageRequest
 from pydantic import BaseModel
+from model.requests import ConversationMessageRequest
+
 
 class SessionData(BaseModel):
     conversation_id: str
     user_id: str
-    request: ConversationMessageRequest # Type this as your Pydantic request model
-    authorization: str
+    request: ConversationMessageRequest 
+    authorization: Optional[str] = None
+
 
 class AbstractSessionManager(abc.ABC):
     """
@@ -27,7 +28,7 @@ class AbstractSessionManager(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def get_session(self, session_id: str) -> Optional[SessionData]:
+    async def get_session(self, session_id: str) -> SessionData | None:
         """
         Asynchronously retrieves session data for a given session ID.
 
