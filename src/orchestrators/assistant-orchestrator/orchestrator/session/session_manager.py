@@ -1,8 +1,14 @@
 import abc
 from collections import namedtuple
 from typing import Optional
+from model.requests import ConversationMessageRequest
+from pydantic import BaseModel
 
-SessionData = namedtuple("SessionData", ["conversation_id", "user_id", "request", "authorization"])
+class SessionData(BaseModel):
+    conversation_id: str
+    user_id: str
+    request: ConversationMessageRequest # Type this as your Pydantic request model
+    authorization: str
 
 class AbstractSessionManager(abc.ABC):
     """

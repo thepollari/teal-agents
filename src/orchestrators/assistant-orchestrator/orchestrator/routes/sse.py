@@ -262,7 +262,7 @@ async def add_conversation_sse_message_by_id(
             detail=f"Unable to setup session with conversation_id: {conversation_id} --- {e}",
         ) from e
     
-    return conversation_id
+    return stored_session_data
 
 
 
