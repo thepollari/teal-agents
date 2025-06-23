@@ -1,10 +1,8 @@
 import json
 import logging
-
 import redis
 
 from agents import BaseModel
-
 from .session_manager import AbstractSessionManager, SessionData
 
 logging.basicConfig(
