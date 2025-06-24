@@ -106,13 +106,6 @@ async def sse_event_response(
         ):
             try:
                 await conv_manager.add_user_message(conv, request.message, sel_agent_name)
-                # Send intermediate event for user message added to history
-                sse_message = SseMessage(
-                    task="orchestrator_user_message_added", message="User message added to history."
-                )
-                yield format_sse_message(
-                    sse_message.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE
-                )
             except Exception as e:
                 sse_error = SseError(
                     error=f"Error adding user message to history: {e}",
@@ -167,13 +160,6 @@ async def sse_event_response(
             try:
                 # Send intermediate event for agent message added to history
                 await conv_manager.add_agent_message(conv, agent_response, sel_agent_name)
-                sse_message = SseMessage(
-                    task="orchestrator_agent_message_added",
-                    message="Agent response added to history",
-                )
-                yield format_sse_message(
-                    sse_message.model_dump(), SseEventType.INTERMEDIATE_TASK_RESPONSE
-                )
             except Exception as e:
                 sse_error = SseError(
                     error=f"Error adding agent response to history:{e}",
@@ -183,7 +169,7 @@ async def sse_event_response(
 
         # --- Orchestrator Final Response ---
         with (
-            jt.tracer.start_as_current_span("update-history-assistant")
+            jt.tracer.start_as_current_span("orchestrator-final-response")
             if jt.telemetry_enabled()
             else nullcontext()
         ):
@@ -193,7 +179,9 @@ async def sse_event_response(
                 final_response = SseFinalMessage(
                     task="orchestrator_final_response", conversation=conversation_result
                 )
-                yield format_sse_message(final_response.model_dump(), SseEventType.FINAL_RESPONSE)
+                yield format_sse_message(
+                    final_response.model_dump(), SseEventType.ORCH_FINAL_RESPONSE
+                )
             except Exception as e:
                 sse_error = SseError(
                     error=f"Orchestrator failed to finalize conversation: {e}",
