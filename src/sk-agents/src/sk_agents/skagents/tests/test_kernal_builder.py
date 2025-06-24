@@ -137,7 +137,7 @@ def test_create_base_kernel_success():
 def test_create_base_kernel_failure(caplog):
     # Arrange
     mock_builder = MagicMock()
-    mock_builder.get_chat_completion_for_model.side_effect = Exception("fail to get chat completion")
+    mock_builder.get_chat_completion_for_model.side_effect=Exception("fail to get chat completion")
     builder = KernelBuilder(
         chat_completion_builder=mock_builder,
         remote_plugin_loader=MagicMock(),
@@ -205,4 +205,3 @@ def test_load_remote_plugins_failure(caplog):
     # Assert
     assert result is None or result is kernel
     assert "Could not load remote plugings." in caplog.text
-    
