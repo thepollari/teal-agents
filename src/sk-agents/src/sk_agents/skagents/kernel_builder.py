@@ -72,7 +72,7 @@ class KernelBuilder:
             self.remote_plugin_loader.load_remote_plugins(kernel, remote_plugins)
             return kernel
         except Exception:
-             self.logger.warning(f"Could not load remote plugings.")
+             self.logger.warning("Could not load remote plugings.")
 
 
     @staticmethod

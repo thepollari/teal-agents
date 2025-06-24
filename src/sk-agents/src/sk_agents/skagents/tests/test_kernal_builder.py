@@ -1,10 +1,9 @@
 import pytest
+from unittest.mock import MagicMock, patch
 
-from semantic_kernel.kernel import Kernel
-from sk_agents.ska_types import ModelType
-from sk_agents.skagents.kernel_builder import KernelBuilder
 from ska_utils import AppConfig
-from unittest.mock import Mock, patch, MagicMock
+from semantic_kernel.kernel import Kernel
+from sk_agents.skagents.kernel_builder import KernelBuilder
 
 
 @patch.object(KernelBuilder, "_create_base_kernel")
@@ -133,13 +132,12 @@ def test_create_base_kernel_success():
         service_id="test-service",
         model_name="test-model"
     )
-    assert mock_chat_completion in kernel.services.values() or True 
+    assert mock_chat_completion in kernel.services.values() or True
 
 def test_create_base_kernel_failure(caplog):
     # Arrange
     mock_builder = MagicMock()
     mock_builder.get_chat_completion_for_model.side_effect = Exception("fail to get chat completion")
-
     builder = KernelBuilder(
         chat_completion_builder=mock_builder,
         remote_plugin_loader=MagicMock(),
