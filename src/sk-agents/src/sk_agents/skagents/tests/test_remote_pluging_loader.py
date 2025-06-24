@@ -1,16 +1,16 @@
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
-from httpx import AsyncClient, Timeout
+from httpx import AsyncClient
 
 from ska_utils import AppConfig
-from sk_agents.configs import TA_REMOTE_PLUGIN_PATH
 from sk_agents.skagents.remote_plugin_loader import (
     RemotePlugin,
     RemotePlugins,
     RemotePluginCatalog,
     RemotePluginLoader,
 )
+from unittest.mock import Mock, patch
+
 
 @pytest.fixture
 def remote_plugin():

@@ -1,9 +1,9 @@
 import pytest
-from unittest.mock import MagicMock, patch
 
-from ska_utils import AppConfig
 from semantic_kernel.kernel import Kernel
+from ska_utils import AppConfig
 from sk_agents.skagents.kernel_builder import KernelBuilder
+from unittest.mock import MagicMock, patch
 
 
 @patch.object(KernelBuilder, "_create_base_kernel")
@@ -203,5 +203,6 @@ def test_load_remote_plugins_failure(caplog):
         result = builder._load_remote_plugins(remote_plugins, kernel)
 
     # Assert
-    assert result is None or result is kernel  
+    assert result is None or result is kernel
     assert "Could not load remote plugings." in caplog.text
+    

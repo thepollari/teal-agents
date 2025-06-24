@@ -1,5 +1,5 @@
-import logging
 import httpx
+import logging
 
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_file_as
