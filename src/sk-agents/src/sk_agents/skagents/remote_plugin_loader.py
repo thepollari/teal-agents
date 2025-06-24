@@ -1,9 +1,8 @@
-import httpx
 import logging
 
+import httpx
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_file_as
-
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.openapi_plugin.openapi_function_execution_parameters import (
     OpenAPIFunctionExecutionParameters,
