@@ -1,9 +1,10 @@
-import pytest
+from unittest.mock import MagicMock, patch
 
+import pytest
 from semantic_kernel.kernel import Kernel
 from ska_utils import AppConfig
+
 from sk_agents.skagents.kernel_builder import KernelBuilder
-from unittest.mock import MagicMock, patch
 
 
 @patch.object(KernelBuilder, "_create_base_kernel")

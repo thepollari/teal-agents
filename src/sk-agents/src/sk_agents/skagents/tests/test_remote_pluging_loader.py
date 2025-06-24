@@ -1,15 +1,15 @@
+from unittest.mock import Mock, patch
+
 import pytest
-
 from httpx import AsyncClient
-
 from ska_utils import AppConfig
+
 from sk_agents.skagents.remote_plugin_loader import (
     RemotePlugin,
-    RemotePlugins,
     RemotePluginCatalog,
     RemotePluginLoader,
+    RemotePlugins,
 )
-from unittest.mock import Mock, patch
 
 
 @pytest.fixture

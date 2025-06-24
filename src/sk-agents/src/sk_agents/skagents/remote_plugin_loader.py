@@ -7,8 +7,8 @@ from semantic_kernel import Kernel
 from semantic_kernel.connectors.openapi_plugin.openapi_function_execution_parameters import (
     OpenAPIFunctionExecutionParameters,
 )
-
 from ska_utils import AppConfig
+
 from sk_agents.configs import TA_REMOTE_PLUGIN_PATH
 
 
