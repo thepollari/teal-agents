@@ -40,8 +40,9 @@ class RemotePluginCatalog:
     def get_remote_plugin(self, plugin_name: str) -> RemotePlugin | None:
         try:
             return self.catalog.get(plugin_name)
-        except Exception:
-            self.logger.warning(f"could not get remote pluging {plugin_name}.")
+        except Exception as e:
+            self.logger.exception(f"could not get remote pluging {plugin_name}. - {e}")
+            raise
 
 
 class RemotePluginLoader:

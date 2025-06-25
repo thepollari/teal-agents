@@ -17,8 +17,9 @@ def remote_plugin():
     return RemotePlugin(
         plugin_name="test_plugin",
         openapi_json_path="path/to/openapi.json",
-        server_url="http://localhost"
+        server_url="http://localhost",
     )
+
 
 @pytest.fixture
 def app_config():
@@ -26,15 +27,18 @@ def app_config():
     mock_config.get.return_value = "dummy_plugin_path.yaml"
     return mock_config
 
+
 def test_get_plugin_found(remote_plugin):
     catalog = RemotePlugins(remote_plugins=[remote_plugin])
     result = catalog.get("test_plugin")
     assert result == remote_plugin
 
+
 def test_get_plugin_not_found(remote_plugin):
     catalog = RemotePlugins(remote_plugins=[remote_plugin])
     result = catalog.get("unknown_plugin")
     assert result is None
+
 
 @patch("sk_agents.skagents.remote_plugin_loader.parse_yaml_file_as")
 def test_catalog_initialization_with_path(mock_parse_yaml, app_config):
@@ -43,11 +47,13 @@ def test_catalog_initialization_with_path(mock_parse_yaml, app_config):
     catalog = RemotePluginCatalog(app_config)
     assert catalog.catalog == mock_catalog
 
+
 def test_catalog_initialization_without_path():
     mock_config = Mock(spec=AppConfig)
     mock_config.get.return_value = None
     catalog = RemotePluginCatalog(mock_config)
     assert catalog.catalog is None
+
 
 @patch("sk_agents.skagents.remote_plugin_loader.parse_yaml_file_as")
 def test_get_remote_plugin_success(mock_parse_yaml, remote_plugin):
@@ -60,6 +66,7 @@ def test_get_remote_plugin_success(mock_parse_yaml, remote_plugin):
 
     result = catalog_wrapper.get_remote_plugin("test_plugin")
     assert result == remote_plugin
+
 
 @patch("sk_agents.skagents.remote_plugin_loader.parse_yaml_file_as")
 def test_get_remote_plugin_exception(mock_parse_yaml):
@@ -74,10 +81,13 @@ def test_get_remote_plugin_exception(mock_parse_yaml):
     mock_app_config.get.return_value = "dummy_plugin_path.yaml"
     catalog_wrapper = RemotePluginCatalog(mock_app_config)
 
-    with patch.object(catalog_wrapper.logger, "warning") as mock_warn:
-        result = catalog_wrapper.get_remote_plugin("test_plugin")
-        assert result is None
-        mock_warn.assert_called_once_with("could not get remote pluging test_plugin.")
+    with patch.object(catalog_wrapper.logger, "exception") as mock_warn:
+        with pytest.raises(Exception, match="simulated failure"):
+            result = catalog_wrapper.get_remote_plugin("test_plugin")
+            assert result is None
+        mock_warn.assert_called_once_with("could not get remote pluging " \
+        "test_plugin. - simulated failure")
+
 
 @patch("sk_agents.skagents.remote_plugin_loader.httpx.AsyncClient")
 @patch("sk_agents.skagents.remote_plugin_loader.Kernel")
@@ -102,6 +112,7 @@ def test_load_remote_plugin_success(mock_kernel_class, mock_async_client_class, 
     assert call_kwargs["openapi_document_path"] == remote_plugin.openapi_json_path
     assert isinstance(call_kwargs["execution_settings"].http_client, AsyncClient)
     assert call_kwargs["execution_settings"].server_url_override == remote_plugin.server_url
+
 
 @patch("sk_agents.skagents.remote_plugin_loader.Kernel")
 def test_load_remote_plugin_not_found(mock_kernel):

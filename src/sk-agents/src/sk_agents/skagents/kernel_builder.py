@@ -37,15 +37,16 @@ class KernelBuilder:
             kernel = self._create_base_kernel(model_name, service_id)
             kernel = self._parse_plugins(plugins, kernel, authorization, extra_data_collector)
             return self._load_remote_plugins(remote_plugins, kernel)
-        except Exception:
-            self.logger.warning(f"Could build kernel with service ID {service_id}.")
-
+        except Exception as e:
+            self.logger.exception(f"Could build kernel with service ID {service_id}. - {e}")
+            raise
 
     def get_model_type_for_name(self, model_name: str) -> ModelType:
         try:
             return self.chat_completion_builder.get_model_type_for_name(model_name)
-        except Exception:
-            self.logger.warning(f"Could not get model type for {model_name}.")
+        except Exception as e:
+            self.logger.exception(f"Could not get model type for {model_name}. - {e}")
+            raise
 
     def model_supports_structured_output(self, model_name: str) -> bool:
         return self.chat_completion_builder.model_supports_structured_output(model_name)
@@ -61,9 +62,9 @@ class KernelBuilder:
             kernel.add_service(chat_completion)
 
             return kernel
-        except Exception:
-            self.logger.warning(f"Could not create base kernel with service id {service_id}.")
-            #raise Exception (f"Could not create base kernel with service id {service_id}.")
+        except Exception as e:
+            self.logger.exception(f"Could not create base kernel with service id {service_id}.-{e}")
+            raise
 
     def _load_remote_plugins(self, remote_plugins: list[str], kernel: Kernel) -> Kernel:
         if remote_plugins is None or len(remote_plugins) < 1:
@@ -71,9 +72,9 @@ class KernelBuilder:
         try:
             self.remote_plugin_loader.load_remote_plugins(kernel, remote_plugins)
             return kernel
-        except Exception:
-             self.logger.warning("Could not load remote plugings.")
-
+        except Exception as e:
+            self.logger.exception(f"Could not load remote plugings. -{e}")
+            raise
 
     @staticmethod
     def _parse_plugins(

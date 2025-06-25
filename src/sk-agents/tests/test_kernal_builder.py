@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from semantic_kernel.kernel import Kernel
@@ -30,7 +30,7 @@ def test_build_kernel_success(mock_load, mock_parse, mock_create):
         plugins=["pluginA"],
         remote_plugins=["remotePluginA"],
         authorization="Bearer token",
-        extra_data_collector=None
+        extra_data_collector=None,
     )
 
     # Assert
@@ -38,6 +38,7 @@ def test_build_kernel_success(mock_load, mock_parse, mock_create):
     mock_create.assert_called_once_with("gpt-4", "openai")
     mock_parse.assert_called_once()
     mock_load.assert_called_once()
+
 
 @patch.object(KernelBuilder, "_create_base_kernel", side_effect=Exception("base kernel failed"))
 def test_build_kernel_failure(mock_create_base_kernel, caplog):
@@ -50,15 +51,11 @@ def test_build_kernel_failure(mock_create_base_kernel, caplog):
 
     # Act
     with caplog.at_level("WARNING"):
-        result = builder.build_kernel(
-            model_name="test-model",
-            service_id="test-service",
-            plugins=[],
-            remote_plugins=[]
-        )
-
+        with pytest.raises(Exception, match="base kernel failed"):
+            builder.build_kernel(
+                model_name="test-model", service_id="test-service", plugins=[], remote_plugins=[]
+            )
     # Assert
-    assert result is None
     assert "Could build kernel with service ID test-service." in caplog.text
 
 
@@ -75,6 +72,7 @@ def test_get_model_type_for_name_success():
     assert result == "mock-type"
     mock_builder.get_model_type_for_name.assert_called_once_with("test-model")
 
+
 def test_get_model_type_for_name_failure(caplog):
     # Arrange
     mock_builder = MagicMock()
@@ -83,11 +81,12 @@ def test_get_model_type_for_name_failure(caplog):
 
     # Act
     with caplog.at_level("WARNING"):
-        result = kernel_builder.get_model_type_for_name("bad-model")
+        with pytest.raises(Exception, match="lookup error"):
+            kernel_builder.get_model_type_for_name("bad-model")
 
     # Assert
-    assert result is None
     assert "Could not get model type for bad-model." in caplog.text
+
 
 def test_model_supports_structured_output_success():
     # Arrange
@@ -102,6 +101,7 @@ def test_model_supports_structured_output_success():
     assert result is True
     mock_builder.model_supports_structured_output.assert_called_once_with("some-model")
 
+
 def test_model_supports_structured_output_failure():
     # Arrange
     mock_builder = MagicMock()
@@ -112,6 +112,7 @@ def test_model_supports_structured_output_failure():
     with pytest.raises(Exception, match="Failure"):
         kernel_builder.model_supports_structured_output("bad-model")
 
+
 def test_create_base_kernel_success():
     # Arrange
     mock_chat_completion = MagicMock()
@@ -121,7 +122,7 @@ def test_create_base_kernel_success():
     builder = KernelBuilder(
         chat_completion_builder=mock_builder,
         remote_plugin_loader=MagicMock(),
-        app_config=MagicMock()
+        app_config=MagicMock(),
     )
 
     # Act
@@ -130,79 +131,169 @@ def test_create_base_kernel_success():
     # Assert
     assert isinstance(kernel, Kernel)
     mock_builder.get_chat_completion_for_model.assert_called_once_with(
-        service_id="test-service",
-        model_name="test-model"
+        service_id="test-service", model_name="test-model"
     )
     assert mock_chat_completion in kernel.services.values() or True
+
 
 def test_create_base_kernel_failure(caplog):
     # Arrange
     mock_builder = MagicMock()
-    mock_builder.get_chat_completion_for_model.side_effect=Exception("fail to get chat completion")
+    mock_builder.get_chat_completion_for_model.side_effect = Exception(
+        "fail to get chat completion"
+    )
     builder = KernelBuilder(
         chat_completion_builder=mock_builder,
         remote_plugin_loader=MagicMock(),
-        app_config=MagicMock()
+        app_config=MagicMock(),
     )
 
     # Act
-    with caplog.at_level("WARNING"):
-        kernel = builder._create_base_kernel("bad-model", "bad-service")
+    with pytest.raises(Exception, match="fail to get chat completion"):
+        with caplog.at_level("WARNING"):
+            kernel = builder._create_base_kernel("bad-model", "bad-service")
 
-    # Assert
-    assert kernel is None
+        # Assert
+        assert kernel is None
     assert "Could not create base kernel with service id bad-service." in caplog.text
 
-def test_load_remote_plugins_success():
-    # Arrange
-    mock_remote_loader = MagicMock()
-    builder = KernelBuilder(
+
+def test_parse_plugins_empty_list():
+    kernel = Kernel()
+    result = KernelBuilder._parse_plugins([], kernel)
+    assert result is kernel
+
+
+def test_parse_plugins_none():
+    kernel = Kernel()
+    result = KernelBuilder._parse_plugins(None, kernel)
+    assert result is kernel
+
+
+def test_parse_plugins_with_valid_plugin():
+    kernel = Kernel()
+
+    # Create a mock plugin instance with real-looking attributes
+    mock_plugin_instance = MagicMock()
+    mock_plugin_instance.name = "mock_plugin"
+    mock_plugin_instance.description = "A mock plugin for testing"
+    mock_plugin_instance.get_functions.return_value = {}
+
+    mock_plugin_class = MagicMock(return_value=mock_plugin_instance)
+
+    plugin_dict = {"mock_plugin": mock_plugin_class}
+
+    with patch("sk_agents.skagents.kernel_builder.get_plugin_loader") as mock_loader:
+        mock_loader.return_value.get_plugins.return_value = plugin_dict
+
+        result = KernelBuilder._parse_plugins(
+            plugin_names=["mock_plugin"],
+            kernel=kernel,
+            authorization="token",
+            extra_data_collector=MagicMock(),
+        )
+
+        assert result is kernel
+        assert "mock_plugin" in result.plugins
+        mock_plugin_class.assert_called_once_with("token", ANY)
+
+
+def test_parse_plugins_with_multiple_plugins():
+    kernel = Kernel()
+
+    # Create realistic plugin instances
+    plugin_instance_1 = MagicMock()
+    plugin_instance_1.name = "plugin1"
+    plugin_instance_1.description = "First plugin"
+    plugin_instance_1.get_functions.return_value = {}
+
+    plugin_instance_2 = MagicMock()
+    plugin_instance_2.name = "plugin2"
+    plugin_instance_2.description = "Second plugin"
+    plugin_instance_2.get_functions.return_value = {}
+
+    # Create mock constructors
+    plugin_class_1 = MagicMock(return_value=plugin_instance_1)
+    plugin_class_2 = MagicMock(return_value=plugin_instance_2)
+
+    plugin_dict = {
+        "plugin1": plugin_class_1,
+        "plugin2": plugin_class_2,
+    }
+
+    with patch("sk_agents.skagents.kernel_builder.get_plugin_loader") as mock_loader:
+        mock_loader.return_value.get_plugins.return_value = plugin_dict
+
+        result = KernelBuilder._parse_plugins(plugin_names=["plugin1", "plugin2"], kernel=kernel)
+
+        assert "plugin1" in result.plugins
+        assert "plugin2" in result.plugins
+        plugin_class_1.assert_called_once()
+        plugin_class_2.assert_called_once()
+
+
+def test_parse_plugins_plugin_loader_failure():
+    kernel = MagicMock()
+
+    with patch("sk_agents.skagents.kernel_builder.get_plugin_loader") as mock_loader:
+        # Simulate get_plugins raising an exception
+        mock_loader.return_value.get_plugins.side_effect = RuntimeError("Failed to load plugins")
+
+        with pytest.raises(RuntimeError, match="Failed to load plugins"):
+            KernelBuilder._parse_plugins(
+                plugin_names=["some_plugin"],
+                kernel=kernel,
+                authorization="token",
+                extra_data_collector=MagicMock(),
+            )
+
+
+def test_load_remote_plugins_with_none_or_empty():
+    kb = KernelBuilder(
         chat_completion_builder=MagicMock(),
-        remote_plugin_loader=mock_remote_loader,
-        app_config=MagicMock()
+        remote_plugin_loader=MagicMock(),
+        app_config=MagicMock(),
+    )
+    kernel = Kernel()
+
+    # None input returns kernel unchanged
+    result = kb._load_remote_plugins(None, kernel)
+    assert result is kernel
+
+    # Empty list input returns kernel unchanged
+    result = kb._load_remote_plugins([], kernel)
+    assert result is kernel
+
+
+def test_load_remote_plugins_success():
+    remote_loader = MagicMock()
+    kb = KernelBuilder(
+        chat_completion_builder=MagicMock(),
+        remote_plugin_loader=remote_loader,
+        app_config=MagicMock(),
     )
     kernel = Kernel()
     remote_plugins = ["plugin1", "plugin2"]
 
-    # Act
-    result = builder._load_remote_plugins(remote_plugins, kernel)
+    result = kb._load_remote_plugins(remote_plugins, kernel)
 
-    # Assert
-    mock_remote_loader.load_remote_plugins.assert_called_once_with(kernel, remote_plugins)
+    # The loader's load_remote_plugins method should be called once with correct args
+    remote_loader.load_remote_plugins.assert_called_once_with(kernel, remote_plugins)
+    # Kernel should be returned unchanged
     assert result is kernel
 
-def test_load_remote_plugins_no_plugins():
-    builder = KernelBuilder(
+
+def test_load_remote_plugins_failure():
+    remote_loader = MagicMock()
+    remote_loader.load_remote_plugins.side_effect = RuntimeError("Loading failed")
+
+    kb = KernelBuilder(
         chat_completion_builder=MagicMock(),
-        remote_plugin_loader=MagicMock(),
-        app_config=MagicMock()
-    )
-    kernel = Kernel()
-    # Act with empty list
-    result = builder._load_remote_plugins([], kernel)
-    assert result is kernel
-
-    # Act with None
-    result_none = builder._load_remote_plugins(None, kernel)
-    assert result_none is kernel
-
-def test_load_remote_plugins_failure(caplog):
-    # Arrange
-    mock_remote_loader = MagicMock()
-    mock_remote_loader.load_remote_plugins.side_effect = Exception("failed to load")
-
-    builder = KernelBuilder(
-        chat_completion_builder=MagicMock(),
-        remote_plugin_loader=mock_remote_loader,
-        app_config=MagicMock()
+        remote_plugin_loader=remote_loader,
+        app_config=MagicMock(),
     )
     kernel = Kernel()
     remote_plugins = ["plugin1"]
 
-    # Act
-    with caplog.at_level("WARNING"):
-        result = builder._load_remote_plugins(remote_plugins, kernel)
-
-    # Assert
-    assert result is None or result is kernel
-    assert "Could not load remote plugings." in caplog.text
+    with pytest.raises(RuntimeError, match="Loading failed"):
+        kb._load_remote_plugins(remote_plugins, kernel)
