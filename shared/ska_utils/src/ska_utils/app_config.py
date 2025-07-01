@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from ska_utils.singleton import Singleton
 
-logging.basicConfig(format='%(asctime)s %(levelnames)s %(message)s')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level= logging.INFO)
 
 
 class Config(BaseModel):
