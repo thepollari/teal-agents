@@ -32,6 +32,18 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+  co:
+    image: co:latest
+    build:
+      context: ..
+      no_cache: true
+    ports:
+      - "8100:8000"
+    env_file: "../co.env"
+    volumes:
+      - ../conf:/app/src/orchestrators/collab-orchestrator/orchestrator/conf
+    profiles:
+      - "with-co"
   manager-agent:
     image: teal-agents:latest
     ports:
