@@ -13,8 +13,8 @@ from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.conversation import SseError, SseEventType, SseFinalMessage, SseMessage
 from model.requests import ConversationMessageRequest
-from session import SessionData
 
+# from session import SessionData
 from .deps import (
     get_agent_catalog,
     get_config,
@@ -217,87 +217,89 @@ async def add_and_stream_conversation_sse_message_by_id(
     )
 
 
-@router.post(
-    "/conversations/{conversation_id}/messages/sse",
-    tags=["Conversations SSE"],
-    description="Add user message to session cache. Returns user and conversation id.",
-)
-async def add_conversation_sse_message_by_id(
-    user_id: str,
-    conversation_id: str,
-    request: ConversationMessageRequest,
-    authorization: str = Depends(header_scheme),
-):
-    """
-    This endpoint initializes a session cache for the specified conversation.
-    After calling this endpoint, you can use the GET endpoint with the conversation id
-    to retrieve the conversation data.
-    """
-    try:
-        # Create a SessionData
-        stored_session_data = SessionData(
-            conversation_id=conversation_id,
-            user_id=user_id,
-            request=request,
-            authorization=authorization,
-        )
+# @router.post(
+#     "/conversations/{conversation_id}/messages/sse",
+#     tags=["Conversations SSE"],
+#     description="Add user message to session cache. Returns user and conversation id.",
+# )
+# async def add_conversation_sse_message_by_id(
+#     user_id: str,
+#     conversation_id: str,
+#     request: ConversationMessageRequest,
+#     authorization: str = Depends(header_scheme),
+# ):
+#     """
+#     This endpoint initializes a session cache for the specified conversation.
+#     After calling this endpoint, you can use the GET endpoint with the conversation id
+#     to retrieve the conversation data.
+#     """
+#     try:
+#         # Create a SessionData
+#         stored_session_data = SessionData(
+#             conversation_id=conversation_id,
+#             user_id=user_id,
+#             request=request,
+#             authorization=authorization,
+#         )
 
-        # Use the session_manager to add the session data
-        await session_manager.add_session(conversation_id, stored_session_data)
+#         # Use the session_manager to add the session data
+#         await session_manager.add_session(conversation_id, stored_session_data)
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unable to setup session with conversation_id: {conversation_id} --- {e}",
-        ) from e
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=404,
+#             detail=f"Unable to setup session with conversation_id: {conversation_id} --- {e}",
+#         ) from e
 
-    return stored_session_data
+#     return stored_session_data
 
 
-@router.get(
-    "/conversations/{conversation_id}/messages/sse",
-    tags=["Conversations SSE"],
-    description="Stream back response from agents based on user and conversation id.",
-)
-async def stream_conversation_sse_message_by_id(conversation_id: str):
-    """
-    Stream conversation messages using Server-Sent Events (SSE).
+# @router.get(
+#     "/conversations/{conversation_id}/messages/sse",
+#     tags=["Conversations SSE"],
+#     description="Stream back response from agents based on user and conversation id.",
+# )
+# async def stream_conversation_sse_message_by_id(conversation_id: str):
+#     """
+#     Stream conversation messages using Server-Sent Events (SSE).
 
-    This endpoint allows clients to receive real-time updates for a conversation
-    using the previously established session ID. After initializing the session
-    via the POST endpoint, clients can use this GET endpoint with EventSource
-    or similar SSE-compatible tools to subscribe to the event stream.
+#     This endpoint allows clients to receive real-time updates for a conversation
+#     using the previously established session ID. After initializing the session
+#     via the POST endpoint, clients can use this GET endpoint with EventSource
+#     or similar SSE-compatible tools to subscribe to the event stream.
 
-    The event stream provides updates such as agent selection, intermediate task
-    responses, and the final conversation result.
-    """
+#     The event stream provides updates such as agent selection, intermediate task
+#     responses, and the final conversation result.
+#     """
 
-    # --- Initialize Session Data based on conversation_id ---
-    try:
-        session_data = await session_manager.get_session(conversation_id)
-        if not session_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Session data not found or expired for conversation_id: {conversation_id}",
-            )
-        conv = await conv_manager.get_conversation(
-            session_data.user_id, session_data.conversation_id
-        )
-        request = ConversationMessageRequest.model_validate(session_data.request)
-        authorization = session_data.authorization
-        await session_manager.delete_session(conversation_id)
+#     # --- Initialize Session Data based on conversation_id ---
+#     try:
+#         session_data = await session_manager.get_session(conversation_id)
+#         if not session_data:
+#             raise HTTPException(
+#                 status_code=404,
+#                 detail=(
+#                     f"Session data not found or expired for conversation_id: {conversation_id}"
+#                 ),
+#             )
+#         conv = await conv_manager.get_conversation(
+#             session_data.user_id, session_data.conversation_id
+#         )
+#         request = ConversationMessageRequest.model_validate(session_data.request)
+#         authorization = session_data.authorization
+#         await session_manager.delete_session(conversation_id)
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                f"Unable to process session data for conversation_id: {conversation_id}."
-                f"Error: {type(e).__name__}",
-            ),
-        ) from e
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=404,
+#             detail=(
+#                 f"Unable to process session data for conversation_id: {conversation_id}."
+#                 f"Error: {type(e).__name__}",
+#             ),
+#         ) from e
 
-    return StreamingResponse(
-        sse_event_response(conv, request, authorization), media_type="text/event-stream"
-    )
+#     return StreamingResponse(
+#         sse_event_response(conv, request, authorization), media_type="text/event-stream"
+#     )
