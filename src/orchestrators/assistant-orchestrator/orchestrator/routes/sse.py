@@ -13,8 +13,8 @@ from context_directive import parse_context_directives
 from jose_types import ExtraData
 from model.conversation import SseError, SseEventType, SseFinalMessage, SseMessage
 from model.requests import ConversationMessageRequest
-from session import SessionData
 
+# from session import SessionData
 from .deps import (
     get_agent_catalog,
     get_config,
@@ -278,7 +278,9 @@ async def add_and_stream_conversation_sse_message_by_id(
 #         if not session_data:
 #             raise HTTPException(
 #                 status_code=404,
-#                 detail=f"Session data not found or expired for conversation_id: {conversation_id}",
+#                 detail=(
+#                     f"Session data not found or expired for conversation_id: {conversation_id}"
+#                 ),
 #             )
 #         conv = await conv_manager.get_conversation(
 #             session_data.user_id, session_data.conversation_id
