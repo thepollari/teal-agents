@@ -53,7 +53,7 @@ dependencies-down:
 	@docker compose down
 
 copy-envs:
-	cp co.env.example co.env
+	cp ../co.env.example ../co.env
 	cp manager-agent.env.example manager-agent.env
 	cp planning-agent.env.example planning-agent.env
 	cp search-agent.env.example search-agent.env
@@ -116,7 +116,7 @@ remove-local-db:
 	rm -f ./dynamo/data/shared-local-instance.db
 
 remove-env-files:
-	rm -f co.env
+	rm -f ../co.env
 	rm -f manager-agent.env
 	rm -f planning-agent.env
 	rm -f search-agent.env
