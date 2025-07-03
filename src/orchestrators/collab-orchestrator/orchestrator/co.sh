@@ -31,4 +31,4 @@ echo "Starting Collab Orchestrator"
 cd "${APP_DIR}" || exit
 
 # Run the FastAPI application using uv run.
-uv run -- collab_orchestrator.app --port 8000
+uv run -- fastapi run src/collab_orchestrator/app.py --port 8000
