@@ -1,4 +1,4 @@
-# State Refactoring of Teal Agents - Agent component
+# Phase 1 - State Refactoring of Teal Agents - Agent component
 
 ## Objective
 The Agent component of Teal Agents was originally designed to be completely

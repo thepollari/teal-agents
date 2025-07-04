@@ -20,8 +20,8 @@ This plan is based on the practical implementation approach outlined in `my-list
   ```
 - [ ] Implement `DummyAuthorizer` that always returns 'dummyuser'
 - [ ] Create `AuthorizerFactory` with environment variable configuration:
-  - `TEAL_AUTHORIZER_MODULE` - Module path for authorizer implementation
-  - `TEAL_AUTHORIZER_CLASS` - Class name for authorizer implementation
+  - `TA_AUTHORIZER_MODULE` - Module path for authorizer implementation
+  - `TA_AUTHORIZER_CLASS` - Class name for authorizer implementation
 - [ ] Add thread-safe singleton pattern to factory for performance
 - [ ] Include comprehensive error handling for import failures and misconfigurations
 
@@ -39,8 +39,8 @@ This plan is based on the practical implementation approach outlined in `my-list
   - `delete(task_id: str) -> None`
 - [ ] Implement `InMemoryPersistenceManager` with thread-safe concurrent access using proper locking mechanisms
 - [ ] Create `PersistenceFactory` with environment variable configuration:
-  - `TEAL_PERSISTENCE_MODULE` - Module path for persistence implementation
-  - `TEAL_PERSISTENCE_CLASS` - Class name for persistence implementation
+  - `TA_PERSISTENCE_MODULE` - Module path for persistence implementation
+  - `TA_PERSISTENCE_CLASS` - Class name for persistence implementation
 - [ ] Add proper error handling for persistence failures (should result in 5xx responses)
 - [ ] Include memory management and monitoring for in-memory implementation
 
@@ -229,10 +229,10 @@ This plan is based on the practical implementation approach outlined in `my-list
 ## Environment Variables
 
 New environment variables introduced:
-- `TEAL_AUTHORIZER_MODULE` - Module path for authorization implementation
-- `TEAL_AUTHORIZER_CLASS` - Class name for authorization implementation
-- `TEAL_PERSISTENCE_MODULE` - Module path for persistence implementation
-- `TEAL_PERSISTENCE_CLASS` - Class name for persistence implementation
+- `TA_AUTHORIZER_MODULE` - Module path for authorization implementation
+- `TA_AUTHORIZER_CLASS` - Class name for authorization implementation
+- `TA_PERSISTENCE_MODULE` - Module path for persistence implementation
+- `TA_PERSISTENCE_CLASS` - Class name for persistence implementation
 
 Default values for development:
 - Authorizer: `sk_agents.authorization.dummy_authorizer.DummyAuthorizer`

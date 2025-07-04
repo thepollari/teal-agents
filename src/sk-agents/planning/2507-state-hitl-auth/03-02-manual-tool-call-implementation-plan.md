@@ -6,16 +6,16 @@ The implementation will follow the "de-abstracted" pattern prototyped in `src/sk
 
 ## 1. High-Level Strategy
 
-We will replace the high-level `agent.invoke()` and `agent.invoke_stream()` calls with a manual orchestration of the LLM interaction within our `TealAgentsV1Alpha1Handler`. This provides a clear interception point to inspect tool calls before they are executed.
+We will replace the high-level `agent.invoke()` and `agent.invoke_stream()` calls with a manual orchestration of the LLM interaction within our `Agent`. This provides a clear interception point to inspect tool calls before they are executed.
 
 ## 2. New HITL Placeholder Module
 
 A new placeholder module will be created to establish a clean interception point for future HITL logic.
 
-**File to Create**: `src/sk_agents/hitl/hitl_manager.py`
+**File to Create**: `src/sk_agents/tealagents/v1alpha1/hitl_manager.py`
 
 ```python
-# src/sk_agents/hitl/hitl_manager.py
+# src/sk_agents/tealagents/v1alpha1/hitl_manager.py
 from semantic_kernel.contents.function_call_content import FunctionCallContent
 
 def check_for_intervention(tool_call: FunctionCallContent) -> bool:
@@ -32,7 +32,7 @@ def check_for_intervention(tool_call: FunctionCallContent) -> bool:
 
 ## 3. Refactoring the Agent Handler
 
-The core changes will be in the `TealAgentsV1Alpha1Handler`.
+The core changes will be in the `Agent`.
 
 **File to Modify**: `src/sk_agents/tealagents/v1alpha1/agent.py`
 
@@ -53,7 +53,7 @@ from semantic_kernel.contents.streaming_chat_message_content import StreamingCha
 # Import the new HITL placeholder
 from sk_agents.hitl import hitl_manager
 
-# ... existing class definition for TealAgentsV1Alpha1Handler ...
+# ... existing class definition for Agent ...
 
     # Add this helper method inside the TealAgentsV1Alpha1Handler class
     async def _invoke_function(self, kernel: "Kernel", fc_content: FunctionCallContent) -> FunctionResultContent:

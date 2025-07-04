@@ -1,4 +1,4 @@
-# Refactor for Manual Tool Call
+# Phase 2 - Refactor for Manual Tool Call
 
 Teal Agents currently leverages Semantic Kernel's in-built functionality to
 automatically perform agent tool calls. Unfortunately, the library does not include
