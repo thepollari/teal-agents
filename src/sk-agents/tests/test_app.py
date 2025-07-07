@@ -8,8 +8,10 @@ import pytest
 class MockTA_SERVICE_CONFIG:
     env_name = "TA_SERVICE_CONFIG_FILE"
 
+
 class MockConfigs:
     TA_SERVICE_CONFIG = MockTA_SERVICE_CONFIG()
+
 
 # Mock for sk_agents.ska_types
 class MockBaseConfig:
@@ -19,10 +21,12 @@ class MockBaseConfig:
         self.name = name
         self.service_name = service_name
 
+
 @pytest.fixture
 def mock_initialize_telemetry(mocker):
     """Mocks ska_utils.initialize_telemetry and returns the mock object."""
     return mocker.patch("ska_utils.initialize_telemetry", autospec=True)
+
 
 @pytest.fixture(autouse=True)
 def mock_dependencies(mocker, mock_initialize_telemetry):
@@ -45,17 +49,22 @@ def mock_dependencies(mocker, mock_initialize_telemetry):
     if "sk_agents.app" in sys.modules:
         del sys.modules["sk_agents.app"]
 
+
 @pytest.fixture
 def mock_app_config(mocker):
     """Fixture to get the mocked AppConfig class for further customization."""
     return mocker.patch("ska_utils.AppConfig")
+
 
 @pytest.fixture
 def mock_parse_yaml(mocker):
     """Fixture to get the mocked parse_yaml_file_as function."""
     return mocker.patch("pydantic_yaml.parse_yaml_file_as")
 
-def test_app_v1_initialization_successful(mocker, mock_app_config, mock_parse_yaml, mock_initialize_telemetry): 
+
+def test_app_v1_initialization_successful(
+    mocker, mock_app_config, mock_parse_yaml, mock_initialize_telemetry
+):
     """
     Tests if the application initializes correctly for API version v1,
     calling the appropriate AppV1 runner.
@@ -71,14 +80,12 @@ def test_app_v1_initialization_successful(mocker, mock_app_config, mock_parse_ya
 
     # Setup YAML to return a valid config object
     mock_config_v1 = MockBaseConfig(
-        apiVersion="ska-sdp/v1alpha1",
-        version="1.2.3",
-        service_name="test-service-v1"
+        apiVersion="ska-sdp/v1alpha1", version="1.2.3", service_name="test-service-v1"
     )
     mock_parse_yaml.return_value = mock_config_v1
 
     # Act: Now import the module (this runs the app setup logic)
-    import sk_agents.app
+    import sk_agents.app  # noqa: F401
 
     # Assert: Verify FastAPI was constructed with expected URLs
     mock_fastapi_class.assert_called_once_with(
@@ -89,11 +96,17 @@ def test_app_v1_initialization_successful(mocker, mock_app_config, mock_parse_ya
     mock_fastapi_instance.add_middleware.assert_called_once()
     mock_initialize_telemetry.assert_called_once()
     mock_appv1_run.assert_called_once_with(
-        "test-service-v1", "1.2.3", mock_app_config.return_value, mock_config_v1, mock_fastapi_instance
+        "test-service-v1",
+        "1.2.3",
+        mock_app_config.return_value,
+        mock_config_v1,
+        mock_fastapi_instance,
     )
 
 
-def test_app_v2_initialization_successful(mocker, mock_app_config, mock_parse_yaml, mock_initialize_telemetry):
+def test_app_v2_initialization_successful(
+    mocker, mock_app_config, mock_parse_yaml, mock_initialize_telemetry
+):
     """
     Tests if the application initializes correctly for API version v2,
     calling the appropriate AppV2 runner.
@@ -109,14 +122,12 @@ def test_app_v2_initialization_successful(mocker, mock_app_config, mock_parse_ya
 
     # Provide v2 config object
     mock_config_v2 = MockBaseConfig(
-        apiVersion="ska-sdp/v2alpha1",
-        version="2.0.0",
-        name="test-service-v2"
+        apiVersion="ska-sdp/v2alpha1", version="2.0.0", name="test-service-v2"
     )
     mock_parse_yaml.return_value = mock_config_v2
 
     # Act: Trigger app logic via import
-    import sk_agents.app
+    import sk_agents.app  # noqa: F401
 
     # Assert: Check FastAPI and AppV2 interactions
     mock_fastapi_class.assert_called_once_with(
@@ -127,7 +138,11 @@ def test_app_v2_initialization_successful(mocker, mock_app_config, mock_parse_ya
     mock_fastapi_instance.add_middleware.assert_called_once()
     mock_initialize_telemetry.assert_called_once()
     mock_appv2_run.assert_called_once_with(
-        "test-service-v2", "2.0.0", mock_app_config.return_value, mock_config_v2, mock_fastapi_instance
+        "test-service-v2",
+        "2.0.0",
+        mock_app_config.return_value,
+        mock_config_v2,
+        mock_fastapi_instance,
     )
 
 
@@ -140,7 +155,8 @@ def test_config_file_not_found(mock_app_config):
 
     # Act & Assert
     with pytest.raises(FileNotFoundError, match="Configuration file not found"):
-        import sk_agents.app
+        import sk_agents.app  # noqa: F401
+
 
 def test_yaml_parsing_fails(mock_app_config, mock_parse_yaml):
     """
@@ -152,7 +168,7 @@ def test_yaml_parsing_fails(mock_app_config, mock_parse_yaml):
 
     # Act & Assert
     with pytest.raises(Exception, match="Invalid YAML format"):
-        import sk_agents.app
+        import sk_agents.app  # noqa: F401
 
 
 def test_invalid_api_version_format(mock_app_config, mock_parse_yaml):
@@ -162,9 +178,7 @@ def test_invalid_api_version_format(mock_app_config, mock_parse_yaml):
     # Arrange
     mock_app_config.return_value.get.return_value = "/fake/path/to/config.yaml"
     mock_config_invalid_api = MockBaseConfig(
-        apiVersion="invalid-format",
-        version="1.0.0",
-        service_name="test-service"
+        apiVersion="invalid-format", version="1.0.0", service_name="test-service"
     )
     mock_parse_yaml.return_value = mock_config_invalid_api
 
@@ -172,7 +186,8 @@ def test_invalid_api_version_format(mock_app_config, mock_parse_yaml):
     # CORRECTED: The original ValueError from .split() is re-raised.
     # We now match against the standard Python error message for this operation.
     with pytest.raises(ValueError, match="not enough values to unpack"):
-        import sk_agents.app
+        import sk_agents.app  # noqa: F401
+
 
 def test_missing_service_name_in_config(mock_app_config, mock_parse_yaml):
     """
@@ -182,15 +197,14 @@ def test_missing_service_name_in_config(mock_app_config, mock_parse_yaml):
     mock_app_config.return_value.get.return_value = "/fake/path/to/config.yaml"
     # Simulate a config where 'service_name' (for v1) is None
     mock_config_no_name = MockBaseConfig(
-        apiVersion="ska-sdp/v1alpha1",
-        version="1.0.0",
-        service_name=None
+        apiVersion="ska-sdp/v1alpha1", version="1.0.0", service_name=None
     )
     mock_parse_yaml.return_value = mock_config_no_name
 
     # Act & Assert
     with pytest.raises(ValueError, match="Service name is not defined"):
-        import sk_agents.app
+        import sk_agents.app  # noqa: F401
+
 
 def test_missing_service_version_in_config(mock_app_config, mock_parse_yaml):
     """
@@ -201,11 +215,10 @@ def test_missing_service_version_in_config(mock_app_config, mock_parse_yaml):
     mock_config_missing_version = MockBaseConfig(
         apiVersion="ska-sdp/v2alpha1",  # or v1alpha1
         version="",
-        name="test-service"
+        name="test-service",
     )
     mock_parse_yaml.return_value = mock_config_missing_version
 
     # Act & Assert: expect ValueError
     with pytest.raises(ValueError, match="Service version is not defined"):
-        import sk_agents.app
-
+        import sk_agents.app  # noqa: F401

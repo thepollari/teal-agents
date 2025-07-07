@@ -29,6 +29,7 @@ from sk_agents.utils import docstring_parameter, get_sse_event_for_response
 
 logger = logging.getLogger(__name__)
 
+
 class Routes:
     @staticmethod
     def get_url(name: str, version: str, app_config: AppConfig) -> str:

@@ -13,6 +13,7 @@ from sk_agents.ska_types import (
 
 logger = logging.getLogger(__name__)
 
+
 def docstring_parameter(*sub):
     def dec(obj):
         obj.__doc__ = obj.__doc__.format(*sub)
@@ -51,4 +52,4 @@ def get_sse_event_for_response(
             return f"event: unknown\ndata: {str(response)}\n\n"
     except Exception as e:
         logger.exception("Failed to serialize SSE event for response")
-        return f"event: error\ndata: {{\"error\": \"{str(e)}\"}}\n\n"
+        return f'event: error\ndata: {{"error": "{str(e)}"}}\n\n'

@@ -33,6 +33,7 @@ def test_get_url_raises_value_error_when_base_url_missing():
     with pytest.raises(ValueError, match="Base URL is not provided in the app config."):
         Routes.get_url("my-agent", "1.0", mock_app_config)
 
+
 def test_get_provider_returns_agent_provider():
     # Arrange
     mock_app_config = MagicMock()
@@ -49,6 +50,7 @@ def test_get_provider_returns_agent_provider():
     mock_app_config.get.assert_any_call(TA_PROVIDER_ORG.env_name)
     mock_app_config.get.assert_any_call(TA_PROVIDER_URL.env_name)
 
+
 def test_get_agent_card_success():
     # Arrange
     skill = ConfigSkill(
@@ -58,25 +60,19 @@ def test_get_agent_card_success():
         tags=["tag1"],
         examples=["example1"],
         input_modes=["text"],
-        output_modes=["text"]
+        output_modes=["text"],
     )
     metadata = ConfigMetadata(
-        description="meta description",
-        skills=[skill],
-        documentation_url="http://docs.url"
+        description="meta description", skills=[skill], documentation_url="http://docs.url"
     )
     config = BaseConfig(
-        name="agent_name",
-        version="1.0",
-        metadata=metadata,
-        apiVersion="v1",
-        service_name="svc"
+        name="agent_name", version="1.0", metadata=metadata, apiVersion="v1", service_name="svc"
     )
     app_config = MagicMock()
     app_config.get.side_effect = lambda key: {
         TA_AGENT_BASE_URL.env_name: "http://base.url",
         TA_PROVIDER_ORG.env_name: "org",
-        TA_PROVIDER_URL.env_name: "http://provider.url"
+        TA_PROVIDER_URL.env_name: "http://provider.url",
     }.get(key, None)
 
     # Act
@@ -109,17 +105,14 @@ def test_get_agent_card_success():
 def test_get_agent_card_raises_without_metadata():
     # Arrange
     config = BaseConfig(
-        name="agent_name",
-        version="1.0",
-        metadata=None,
-        apiVersion="v1",
-        service_name="svc"
+        name="agent_name", version="1.0", metadata=None, apiVersion="v1", service_name="svc"
     )
     app_config = MagicMock()
 
     # Act & Assert
     with pytest.raises(ValueError, match="Agent card metadata is not provided in the config."):
         Routes.get_agent_card(config, app_config)
+
 
 def test_get_request_handler_returns_default_request_handler():
     config = BaseConfig(
@@ -150,8 +143,10 @@ def test_get_request_handler_returns_default_request_handler():
         assert handler.agent_executor == mock_executor_instance
 
         # Confirm A2AAgentExecutor was called with correct parameters
-        MockExecutor.assert_called_once_with(config, app_config,
-                                             chat_completion_builder, state_manager)
+        MockExecutor.assert_called_once_with(
+            config, app_config, chat_completion_builder, state_manager
+        )
+
 
 @pytest.fixture
 def base_config():
@@ -162,12 +157,10 @@ def base_config():
         tags=["test", "example"],
         examples=["test input"],
         input_modes=["text"],
-        output_modes=["text"]
+        output_modes=["text"],
     )
     metadata = ConfigMetadata(
-        description="Test metadata",
-        skills=[skill],
-        documentation_url="https://example.com"
+        description="Test metadata", skills=[skill], documentation_url="https://example.com"
     )
     return BaseConfig(
         apiVersion="v1",
@@ -178,9 +171,8 @@ def base_config():
         metadata=metadata,
         input_type="text",
         output_type="text",
-        spec={"example_key": "example_value"}
+        spec={"example_key": "example_value"},
     )
-
 
 
 @pytest.fixture
@@ -212,10 +204,16 @@ def state_manager():
 @patch("sk_agents.routes.A2AStarletteApplication")
 @patch("sk_agents.routes.Routes.get_agent_card")
 @patch("sk_agents.routes.Routes.get_request_handler")
-def test_get_a2a_routes(mock_get_request_handler, mock_get_agent_card, mock_a2a_app,
-                        base_config, app_config, chat_completion_builder,
-                        task_store, state_manager):
-
+def test_get_a2a_routes(
+    mock_get_request_handler,
+    mock_get_agent_card,
+    mock_a2a_app,
+    base_config,
+    app_config,
+    chat_completion_builder,
+    task_store,
+    state_manager,
+):
     # Setup mocks return values
     mock_agent_card = MagicMock()
     mock_get_agent_card.return_value = mock_agent_card
@@ -257,14 +255,18 @@ def test_get_a2a_routes(mock_get_request_handler, mock_get_agent_card, mock_a2a_
     assert "/.well-known/agent.json" in paths  # GET endpoint for agent card
 
 
-
 @patch("sk_agents.routes.A2AStarletteApplication")
 @patch("sk_agents.routes.Routes.get_agent_card")
 @patch("sk_agents.routes.Routes.get_request_handler")
 def test_handle_a2a_invocation(
-    mock_get_request_handler, mock_get_agent_card, mock_a2a_app,
-    base_config, app_config, chat_completion_builder,
-    task_store, state_manager
+    mock_get_request_handler,
+    mock_get_agent_card,
+    mock_a2a_app,
+    base_config,
+    app_config,
+    chat_completion_builder,
+    task_store,
+    state_manager,
 ):
     # Setup mocks
     mock_agent_card = MagicMock()
@@ -301,6 +303,7 @@ def test_handle_a2a_invocation(
     assert response.status_code == 200
     assert response.json() == {"result": "success"}
     mock_a2a_app_instance._handle_requests.assert_awaited_once()
+
 
 @patch("sk_agents.routes.A2AStarletteApplication")
 @patch("sk_agents.routes.Routes.get_agent_card")
@@ -353,4 +356,3 @@ def test_handle_get_agent_card_route(
     assert response.status_code == 200
     assert response.json() == {"agent": "mocked_card"}
     mock_a2a_app_instance._handle_get_agent_card.assert_awaited_once()
-

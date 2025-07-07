@@ -10,7 +10,7 @@ from sk_agents.ska_types import (
     BaseMultiModalInput,
 )
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 class TypeLoader:

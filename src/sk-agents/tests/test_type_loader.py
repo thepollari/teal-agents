@@ -12,12 +12,15 @@ from sk_agents.ska_types import (
 from sk_agents.type_loader import TypeLoader, get_type_loader
 
 
-@pytest.mark.parametrize("type_name,expected_type", [
-    ("BaseInput", BaseInput),
-    ("BaseInputWithUserContext", BaseInputWithUserContext),
-    ("BaseMultiModalInput", BaseMultiModalInput),
-    ("BaseEmbeddedImage", BaseEmbeddedImage),
-])
+@pytest.mark.parametrize(
+    "type_name,expected_type",
+    [
+        ("BaseInput", BaseInput),
+        ("BaseInputWithUserContext", BaseInputWithUserContext),
+        ("BaseMultiModalInput", BaseMultiModalInput),
+        ("BaseEmbeddedImage", BaseEmbeddedImage),
+    ],
+)
 def test_get_standard_type(type_name, expected_type):
     loader = TypeLoader()
     assert loader.get_type(type_name) == expected_type
@@ -33,10 +36,12 @@ def test_get_type_not_found_with_custom_module(mock_loader):
     with pytest.raises(ValueError, match="Output type UnknownType not found"):
         loader.get_type("UnknownType")
 
+
 def test_get_type_with_no_custom_module():
     loader = TypeLoader()  # No module passed, so custom_module will be None
     result = loader.get_type("CustomTypeThatDoesNotExist")
     assert result is None
+
 
 def test_get_type_returns_cached_base_type():
     class CachedType(BaseModel):
@@ -59,6 +64,7 @@ def test_parse_module_name_valid():
 def test_parse_module_name_raises_on_none():
     with pytest.raises(AttributeError):
         TypeLoader._parse_module_name(None)
+
 
 def test_parse_module_name_invalid_type():
     with pytest.raises(AttributeError):

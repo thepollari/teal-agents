@@ -57,9 +57,8 @@ def dummy_response_objects():
     return intermediate, partial, invoke_resp
 
 
-
 def test_initialize_plugin_loader_with_defined_plugin():
-    config = DummyAppConfig({ "TA_PLUGIN_MODULE": "some.plugin" })
+    config = DummyAppConfig({"TA_PLUGIN_MODULE": "some.plugin"})
     with patch("sk_agents.utils.get_plugin_loader") as mock_loader:
         initialize_plugin_loader("fake_path", config)
         mock_loader.assert_called_once_with("some.plugin")
@@ -79,7 +78,7 @@ def test_initialize_plugin_loader_with_custom_plugins_file():
 
 
 def test_initialize_plugin_loader_raises_exception():
-    config = DummyAppConfig({ "TA_PLUGIN_MODULE": "bad.plugin" })
+    config = DummyAppConfig({"TA_PLUGIN_MODULE": "bad.plugin"})
     with patch("sk_agents.utils.get_plugin_loader", side_effect=RuntimeError("fail")):
         with pytest.raises(RuntimeError, match="fail"):
             initialize_plugin_loader("fake_path", config)
@@ -93,6 +92,7 @@ def test_get_sse_event_for_response_unknown_type():
     event = get_sse_event_for_response(WeirdResponse())
     assert "unknown" in event
     assert "weird" in event
+
 
 def test_docstring_parameter_on_function():
     @docstring_parameter("arg1", "arg2")
@@ -128,6 +128,7 @@ def test_get_sse_event_known_responses(dummy_response_objects):
         data_json = response.model_dump_json()
         for key in response.model_fields:
             assert str(getattr(response, key, "")) in data_json or key in data_json
+
 
 def test_get_sse_event_logs_exception(monkeypatch, dummy_response_objects):
     intermediate_resp, _, _ = dummy_response_objects  # Unpack just the IntermediateTaskResponse

@@ -27,7 +27,10 @@ def test_plugin_not_found():
 
 
 def test_invalid_module_path():
-    with patch("sk_agents.plugin_loader.ModuleLoader.load_module", side_effect=FileNotFoundError("Module not found")):
+    with patch(
+        "sk_agents.plugin_loader.ModuleLoader.load_module",
+        side_effect=FileNotFoundError("Module not found"),
+    ):
         with pytest.raises(ImportError, match="Cannot load plugin module 'bad_path'"):
             PluginLoader("bad_path")
 
@@ -51,6 +54,7 @@ def test_get_plugin_loader_singleton(monkeypatch):
         assert isinstance(loader1, PluginLoader)
         assert loader1 is loader2
 
+
 @pytest.mark.parametrize(
     "input_path, expected",
     [
@@ -60,7 +64,7 @@ def test_get_plugin_loader_singleton(monkeypatch):
         ("some/dir.name/weird.plugin.name.py", "weird"),
         ("", ""),  # edge case: empty string
         ("/", ""),  # edge case: root path
-    ]
+    ],
 )
 def test_parse_module_name(input_path, expected):
     assert PluginLoader._parse_module_name(input_path) == expected

@@ -85,8 +85,9 @@ def test_get_remote_plugin_exception(mock_parse_yaml):
         with pytest.raises(Exception, match="simulated failure"):
             result = catalog_wrapper.get_remote_plugin("test_plugin")
             assert result is None
-        mock_warn.assert_called_once_with("could not get remote pluging " \
-        "test_plugin. - simulated failure")
+        mock_warn.assert_called_once_with(
+            "could not get remote pluging test_plugin. - simulated failure"
+        )
 
 
 @patch("sk_agents.skagents.remote_plugin_loader.httpx.AsyncClient")
