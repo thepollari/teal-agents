@@ -1,14 +1,16 @@
 # Abstract base class
-from pydantic import BaseModel
 from abc import ABC, abstractmethod
+
+from pydantic import BaseModel
+
 
 # Dummy data model while AgentTask model implementation is completed.
 class AgentTask(BaseModel):
     task: str
     task_id: str
 
+
 class TaskPersistenceManager(ABC):
-    
     @abstractmethod
     async def create(task: AgentTask) -> None:
         pass

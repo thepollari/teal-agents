@@ -86,5 +86,5 @@ configs: list[Config] = [
     TA_REDIS_SSL,
     TA_REDIS_PWD,
     TA_PERSISTENCE_MODULE,
-    TA_PERSISTENCE_CLASS
+    TA_PERSISTENCE_CLASS,
 ]
