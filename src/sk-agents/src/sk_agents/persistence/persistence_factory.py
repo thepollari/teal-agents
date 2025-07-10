@@ -17,10 +17,10 @@ class PersistenceFactory:
     def _get_custom_persistence_config(self) -> tuple[str, str]:
         custom_persistence_module = self.app_config.get(TA_PERSISTENCE_MODULE.env_name)
         if not custom_persistence_module:
-            raise ValueError("Custom user context module is enabled but not defined")
+            raise ValueError("Custom persistence module is enabled but not defined")
 
         custom_persistence_manager_class = self.app_config.get(TA_PERSISTENCE_CLASS.env_name)
         if not custom_persistence_manager_class:
-            raise ValueError("Custom user context is enabled but not defined")
+            raise ValueError("Custom persistence is enabled but not defined")
 
         return custom_persistence_module, custom_persistence_manager_class

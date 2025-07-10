@@ -62,7 +62,7 @@ class InMemoryPersistenceManager(TaskPersistenceManager):
                 raise
             except Exception as e:
                 raise PersistenceUpdateError(
-                    f"Unexpected error updating task '{task.task_id}': {e}"
+                    message=f"Unexpected error updating task '{task.task_id}': {e}"
                 ) from e
 
     async def delete(self, task_id: str) -> None:
@@ -70,11 +70,11 @@ class InMemoryPersistenceManager(TaskPersistenceManager):
             try:
                 if task_id not in self.in_memory:
                     raise ValueError(f"Task with ID '{task_id}' does not exist for deletion.")
-                del self.in_memory["task_id"]
+                del self.in_memory[task_id]
                 logger.info(f"Task '{task_id}' deleted successfully.")
             except ValueError:
                 raise
             except Exception as e:
                 raise PersistenceDeleteError(
-                    f"Unexpected error deleting task '{task_id}': {e}"
+                    message=f"Unexpected error deleting task '{task_id}': {e}"
                 ) from e

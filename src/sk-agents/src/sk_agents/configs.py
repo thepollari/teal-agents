@@ -56,12 +56,12 @@ TA_REDIS_PWD = Config(env_name="TA_REDIS_PWD", is_required=False, default_value=
 TA_PERSISTENCE_MODULE = Config(
     env_name="TA_PERSISTENCE_MODULE",
     is_required=True,
-    default_value=None,
+    default_value="persistence/in_memory_persistence_manager.py",
 )
 TA_PERSISTENCE_CLASS = Config(
     env_name="TA_PERSISTENCE_CLASS",
     is_required=True,
-    default_value=None,
+    default_value="InMemoryPersistenceManager",
 )
 
 configs: list[Config] = [
