@@ -49,12 +49,12 @@ TA_STATE_MANAGEMENT = Config(
 
 TA_AUTHORIZER_MODULE = Config(
     env_name="TA_AUTHORIZER_MODULE",
-    is_required=False,
+    is_required=True,
     default_value=None,
 )
 TA_AUTHORIZER_CLASS = Config(
     env_name="TA_AUTHORIZER_CLASS",
-    is_required=False,
+    is_required=True,
     default_value=None,
 )
 
