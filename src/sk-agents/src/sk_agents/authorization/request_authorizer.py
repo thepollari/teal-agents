@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class RequestAuthorizer(ABC):
     @abstractmethod
     def authorize_request(self, auth_header: str) -> str:
