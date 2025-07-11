@@ -1,13 +1,6 @@
-# Abstract base class
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
-
-
-# Dummy data model while AgentTask model implementation is completed.
-class AgentTask(BaseModel):
-    task: str
-    task_id: str
+from ..tealagents.models import AgentTask
 
 
 class TaskPersistenceManager(ABC):
