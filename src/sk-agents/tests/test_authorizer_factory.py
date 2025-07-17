@@ -29,7 +29,8 @@ def test_successful_initialization_and_get_authorizer(mock_load_module, mock_app
     }.get(key)
 
     dummy_module = MagicMock()
-    setattr(dummy_module, "DummyAuthorizer", DummyAuthorizer)
+    dummy_module.DummyAuthorizer = DummyAuthorizer
+    #setattr(dummy_module, "DummyAuthorizer", DummyAuthorizer)
     mock_load_module.return_value = dummy_module
 
     factory = AuthorizerFactory(mock_app_config)
@@ -81,7 +82,7 @@ def test_class_not_subclass_of_request_authorizer_raises_type_error(mock_load_mo
     }.get(key)
 
     dummy_module = MagicMock()
-    setattr(dummy_module, "InvalidAuthorizer", InvalidAuthorizer)
+    dummy_module.InvalidAuthorizer = InvalidAuthorizer
     mock_load_module.return_value = dummy_module
 
     with pytest.raises(TypeError, match="is not a subclass of RequestAuthorizer"):
