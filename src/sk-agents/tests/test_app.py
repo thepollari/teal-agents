@@ -122,7 +122,7 @@ def test_app_v2_initialization_successful(
 
     # Provide v2 config object
     mock_config_v2 = MockBaseConfig(
-        apiVersion="skagents/v2alpha1", version="2.0.0", service_name="test-service-v2"
+        apiVersion="skagents/v2alpha1", version="2.0.0", name="test-service-v2"
     )
     mock_parse_yaml.return_value = mock_config_v2
 
@@ -164,7 +164,7 @@ def test_app_v3_initialization_successful(
 
     # Provide v3 config object
     mock_config_v3 = MockBaseConfig(
-        apiVersion="tealagents/v1alpha1", version="2.0.0", service_name="test-service-v3"
+        apiVersion="tealagents/v1alpha1", version="2.0.0", name="test-service-v3"
     )
     mock_parse_yaml.return_value = mock_config_v3
 
@@ -257,7 +257,7 @@ def test_missing_service_version_in_config(mock_app_config, mock_parse_yaml):
     mock_config_missing_version = MockBaseConfig(
         apiVersion="skagents/v2alpha1",  # or v1alpha1
         version="",
-        service_name="test-service",
+        name="test-service",
     )
     mock_parse_yaml.return_value = mock_config_missing_version
 
