@@ -53,11 +53,11 @@ try:
     if root_handler == "tealagents":
         if api_version == "v1alpha1":
             app_version = AppVersion.V3
-            name = config.service_name
+            name = config.name
     elif root_handler == "skagents":
         if api_version == "v2alpha1":
             app_version = AppVersion.V2
-            name = config.service_name
+            name = config.name
         else:
             app_version = AppVersion.V1
             name = config.service_name
