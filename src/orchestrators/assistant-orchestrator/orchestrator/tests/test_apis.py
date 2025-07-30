@@ -20,6 +20,7 @@ sys.modules["deps"] = mock_deps_module
 # Import app and routes: needs to be imported after mock dependencies
 # ruff: noqa: E402
 from jose import app as fastapi_app
+
 # ruff: noqa: E402
 from routes import apis
 
