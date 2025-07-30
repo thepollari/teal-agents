@@ -1,5 +1,4 @@
-# src/orchestrators/assistant-orchestrator/orchestrator/tests/test_apis.py
-
+import sys
 from contextlib import nullcontext
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -15,13 +14,13 @@ mock_deps_module.get_config.return_value = mock_config_instance
 mock_deps_module.initialize = MagicMock()
 
 # Setup sys for mock dependencies
-import sys
-
 sys.modules["routes.deps"] = mock_deps_module
 sys.modules["deps"] = mock_deps_module
 
-# Import app and routes
+# Import app and routes: needs to be imported after mock dependencies
+# ruff: noqa: E402
 from jose import app as fastapi_app
+# ruff: noqa: E402
 from routes import apis
 
 # Mocks for new_conversation endpoint dependencies and telemetry
@@ -186,7 +185,10 @@ def test_add_conversation_message_by_id_endpoint(client: TestClient):
     test_message = "Hello, agent! How are you doing today?"
     expected_agent_response = "Mocked agent response."
 
-    expected_path = f"/{mock_config_instance.service_name}/{mock_config_instance.version}/conversations/{conversation_id}/messages"
+    expected_path = (
+        f"/{mock_config_instance.service_name}/{mock_config_instance.version}/"
+        f"conversations/{conversation_id}/messages"
+    )
 
     request_body = {"message": test_message}
     response = client.post(
@@ -233,7 +235,10 @@ def test_get_conversation_by_id_endpoint(client: TestClient):
     user_id = mock_conversation_object.user_id
     conversation_id = mock_conversation_object.conversation_id
 
-    expected_path = f"/{mock_config_instance.service_name}/{mock_config_instance.version}/conversations/{conversation_id}/messages"
+    expected_path = (
+        f"/{mock_config_instance.service_name}/{mock_config_instance.version}/"
+        f"conversations/{conversation_id}/messages"
+    )
     expected_conversation_data = {}
     expected_response_data = {"conversation": expected_conversation_data}
     response = client.get(expected_path, params={"user_id": user_id})
