@@ -1,10 +1,10 @@
 # src/orchestrators/assistant-orchestrator/orchestrator/tests/test_apis.py
 
-import pytest
-import httpx
-from unittest.mock import MagicMock, AsyncMock, patch
-from fastapi.testclient import TestClient
 from contextlib import nullcontext
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from fastapi.testclient import TestClient
 
 # Mock configs and dependencies
 mock_config_instance = MagicMock()
@@ -16,8 +16,9 @@ mock_deps_module.initialize = MagicMock()
 
 # Setup sys for mock dependencies
 import sys
-sys.modules['routes.deps'] = mock_deps_module
-sys.modules['deps'] = mock_deps_module
+
+sys.modules["routes.deps"] = mock_deps_module
+sys.modules["deps"] = mock_deps_module
 
 # Import app and routes
 from jose import app as fastapi_app
@@ -35,27 +36,37 @@ mock_telemetry_instance.tracer.start_as_current_span.return_value = nullcontext(
 mock_conversation_object = MagicMock()
 mock_conversation_object.conversation_id = "test_conv_id_123"
 mock_conversation_object.user_id = "test_user_id_456"
-mock_conversation_object.history = [] # This list will be mutated
+mock_conversation_object.history = []  # This list will be mutated
 mock_conversation_object.user_context = {}
 mock_conv_manager_instance = MagicMock()
+
 
 # Define side effects for conv_manager methods
 def conv_manager_add_user_message_side_effect(conv_obj, message, agent_name):
     conv_obj.history.append({"content": message, "recipient": agent_name})
 
+
 def conv_manager_add_agent_message_side_effect(conv_obj, message, agent_name):
     conv_obj.history.append({"content": message, "sender": agent_name})
 
+
 def conv_manager_get_last_response_side_effect(conv_obj):
     return conv_obj.history
+
 
 # Configure mocks to return mock_conversation_object instance
 mock_conv_manager_instance.new_conversation = AsyncMock(return_value=mock_conversation_object)
 # Set get_conversation to mock_conversation_object
 mock_conv_manager_instance.get_conversation = AsyncMock(return_value=mock_conversation_object)
-mock_conv_manager_instance.add_user_message = AsyncMock(side_effect=conv_manager_add_user_message_side_effect)
-mock_conv_manager_instance.add_agent_message = AsyncMock(side_effect=conv_manager_add_agent_message_side_effect)
-mock_conv_manager_instance.get_last_response = AsyncMock(side_effect=conv_manager_get_last_response_side_effect)
+mock_conv_manager_instance.add_user_message = AsyncMock(
+    side_effect=conv_manager_add_user_message_side_effect
+)
+mock_conv_manager_instance.add_agent_message = AsyncMock(
+    side_effect=conv_manager_add_agent_message_side_effect
+)
+mock_conv_manager_instance.get_last_response = AsyncMock(
+    side_effect=conv_manager_get_last_response_side_effect
+)
 mock_conv_manager_instance.add_transient_context = AsyncMock()
 
 # --- Mocks for all dependencies ---
@@ -68,14 +79,17 @@ mock_user_context_cache_entry.model_dump.return_value = {"user_context": {"some_
 mock_cache_user_context.get_user_context_from_cache.return_value = mock_user_context_cache_entry
 # Mock rec_chooser
 mock_rec_chooser = MagicMock()
-mock_selected_agent = MagicMock(agent_name="test_agent") # Agent name that will be selected
+mock_selected_agent = MagicMock(agent_name="test_agent")  # Agent name that will be selected
 mock_rec_chooser.choose_recipient = AsyncMock(return_value=mock_selected_agent)
 # Mock agent_catalog
 mock_agent_catalog = MagicMock()
 mock_agent_instance = MagicMock()
 mock_agent_instance.name = "test_agent"
 # Simulate agent.invoke_api response
-mock_agent_instance.invoke_api.return_value = {"output_raw": "Mocked agent response.", "extra_data": None}
+mock_agent_instance.invoke_api.return_value = {
+    "output_raw": "Mocked agent response.",
+    "extra_data": None,
+}
 mock_agent_catalog.agents = {"test_agent": mock_agent_instance}
 # Mock fallback_agent
 mock_fallback_agent = MagicMock()
@@ -88,15 +102,18 @@ def client():
     Fixture that provides a synchronous test client for the FastAPI application.
     Patches module-level dependencies for the duration of the tests.
     """
-    with patch.object(apis, 'get_telemetry', return_value=mock_telemetry_instance), \
-         patch.object(apis, 'conv_manager', new=mock_conv_manager_instance), \
-         patch.object(apis, 'header_scheme', new=mock_header_scheme), \
-         patch.object(apis, 'cache_user_context', new=mock_cache_user_context), \
-         patch.object(apis, 'rec_chooser', new=mock_rec_chooser), \
-         patch.object(apis, 'agent_catalog', new=mock_agent_catalog), \
-         patch.object(apis, 'fallback_agent', new=mock_fallback_agent):
+    with (
+        patch.object(apis, "get_telemetry", return_value=mock_telemetry_instance),
+        patch.object(apis, "conv_manager", new=mock_conv_manager_instance),
+        patch.object(apis, "header_scheme", new=mock_header_scheme),
+        patch.object(apis, "cache_user_context", new=mock_cache_user_context),
+        patch.object(apis, "rec_chooser", new=mock_rec_chooser),
+        patch.object(apis, "agent_catalog", new=mock_agent_catalog),
+        patch.object(apis, "fallback_agent", new=mock_fallback_agent),
+    ):
         with TestClient(fastapi_app) as test_client:
             yield test_client
+
 
 def test_healthcheck_endpoint(client: TestClient):
     """
@@ -105,14 +122,17 @@ def test_healthcheck_endpoint(client: TestClient):
     Args:
         client (TestClient): The synchronous test client.
     """
-    expected_path = f"/{mock_config_instance.service_name}/{mock_config_instance.version}/healthcheck"
+    expected_path = (
+        f"/{mock_config_instance.service_name}/{mock_config_instance.version}/healthcheck"
+    )
 
     # Make a synchronous GET request to the healthcheck endpoint
     response = client.get(expected_path)
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
     expected_response_data = {"status": "healthy"}
-    assert response.json() == expected_response_data, \
+    assert response.json() == expected_response_data, (
         f"Expected response {expected_response_data}, got {response.json()}"
+    )
 
 
 def test_new_conversation_endpoint(client: TestClient):
@@ -138,15 +158,18 @@ def test_new_conversation_endpoint(client: TestClient):
     expected_conversation_id = mock_conversation_object.conversation_id
     expected_user_id = mock_conversation_object.user_id
 
-    expected_path = f"/{mock_config_instance.service_name}/{mock_config_instance.version}/conversations"
+    expected_path = (
+        f"/{mock_config_instance.service_name}/{mock_config_instance.version}/conversations"
+    )
     response = client.post(expected_path, params={"user_id": user_id})
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
     expected_response_data = {
         "conversation_id": expected_conversation_id,
-        "user_id": expected_user_id
+        "user_id": expected_user_id,
     }
-    assert response.json() == expected_response_data, \
+    assert response.json() == expected_response_data, (
         f"Expected response {expected_response_data}, got {response.json()}"
+    )
 
     mock_conv_manager_instance.new_conversation.assert_called_once_with(user_id, False)
 
@@ -170,7 +193,7 @@ def test_add_conversation_message_by_id_endpoint(client: TestClient):
         expected_path,
         params={"user_id": user_id},
         json=request_body,
-        headers={"Authorization": "Bearer dummy_token"}
+        headers={"Authorization": "Bearer dummy_token"},
     )
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
 
@@ -185,10 +208,16 @@ def test_add_conversation_message_by_id_endpoint(client: TestClient):
     assert response_data["conversation"][1]["sender"] == "test_agent"
 
     mock_conv_manager_instance.get_conversation.assert_called_with(user_id, conversation_id)
-    mock_rec_chooser.choose_recipient.assert_called_once_with(test_message, mock_conversation_object)
+    mock_rec_chooser.choose_recipient.assert_called_once_with(
+        test_message, mock_conversation_object
+    )
     mock_agent_instance.invoke_api.assert_called_once()
-    mock_conv_manager_instance.add_user_message.assert_called_once_with(mock_conversation_object, test_message, "test_agent")
-    mock_conv_manager_instance.add_agent_message.assert_called_once_with(mock_conversation_object, expected_agent_response, "test_agent")
+    mock_conv_manager_instance.add_user_message.assert_called_once_with(
+        mock_conversation_object, test_message, "test_agent"
+    )
+    mock_conv_manager_instance.add_agent_message.assert_called_once_with(
+        mock_conversation_object, expected_agent_response, "test_agent"
+    )
     mock_conv_manager_instance.get_last_response.assert_called_once_with(mock_conversation_object)
 
 
@@ -210,7 +239,8 @@ def test_get_conversation_by_id_endpoint(client: TestClient):
     response = client.get(expected_path, params={"user_id": user_id})
 
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
-    assert response.json() == expected_response_data, \
+    assert response.json() == expected_response_data, (
         f"Expected response {expected_response_data}, got {response.json()}"
+    )
 
     mock_conv_manager_instance.get_conversation.assert_any_call(user_id, conversation_id)
