@@ -1,7 +1,6 @@
 from context_directive import ContextDirective, ContextDirectiveOp
 from model import ContextItem, ContextType, Conversation
-
-from services import MessageType, new_client
+from orchestrator.services import MessageType, new_client
 
 
 class ConversationManager:

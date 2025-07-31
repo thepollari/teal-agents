@@ -1,8 +1,7 @@
 import uuid
 
 from model import AgentMessage, ContextItem, Conversation, UserMessage
-
-from services.services_client import (
+from orchestrator.services.services_client import (
     AgentMessageResponse,
     GeneralResponse,
     ItemAddedResponse,
