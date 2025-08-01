@@ -59,3 +59,9 @@ class HitlResponse(BaseModel):
     approval_url: str
     rejection_url: str
     tool_calls: list[dict]  # Serialized FunctionCallContent
+
+class RejectedToolResponse(BaseModel):
+    task_id: str
+    session_id: str
+    request_id: str
+    message: str = "Tool excecution rejected."

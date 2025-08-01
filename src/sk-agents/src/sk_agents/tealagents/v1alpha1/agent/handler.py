@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import uuid
 from collections.abc import AsyncIterable
@@ -25,11 +26,13 @@ from sk_agents.tealagents.models import (
     TealAgentsPartialResponse,
     TealAgentsResponse,
     UserMessage,
+    RejectedToolResponse
 )
 from sk_agents.tealagents.v1alpha1 import hitl_manager
 from sk_agents.tealagents.v1alpha1.agent.config import Config
 from sk_agents.tealagents.v1alpha1.agent_builder import AgentBuilder
 from sk_agents.tealagents.v1alpha1.utils import get_token_usage_for_response, item_to_content
+from sk_agents.tealagents.v1alpha1.sk_agent import SKAgent
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +177,105 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             message_content = ChatMessageContent(role=task_item.role, items=chat_message_items)
             chat_history.add_message(message_content)
         return chat_history
+
+    @staticmethod
+    def _rejected_task_item(task_id:str, request_id:str) -> AgentTaskItem:
+        return AgentTaskItem(
+            task_id=task_id,
+            role="assistant",
+            item=MultiModalItem(
+                content_type=ContentType.TEXT,
+                content="tool execution rejected by user"
+            ),
+            request_id=request_id,
+            updated=datetime.now()
+        )
+    
+    async def resume_task(self, auth_token: str, request_id: str, action_status: dict[str,str], stream: bool
+    ) -> TealAgentsResponse | RejectedToolResponse:
+        user_id = self.authenticate_user(token=auth_token)
+        agent_task:AgentTask = await self.state.load_by_request_id(request_id)
+        session_id = agent_task.session_id
+        task_id = agent_task.task_id
+
+
+
+        TealAgentsV1Alpha1Handler._validate_user_id(user_id, task_id, agent_task)
+        assert agent_task.status == "Paused"
+        
+        if action_status.get("action") == "reject":
+            agent_task.status = "Canceled"
+            agent_task.items.append(
+                TealAgentsV1Alpha1Handler._rejected_task_item(
+                    task_id=agent_task.task_id,
+                    request_id=request_id
+                )
+            )
+            await self.state.update(agent_task)
+            return RejectedToolResponse(
+                task_id=agent_task.task_id,
+                session_id=agent_task.session_id,
+                request_id=request_id
+            )
+        
+        # Retrieve the pending_tool_calls from the last AgentTaskItem ---> What instance type comes from pending tool calls?
+        _pending_tools = [fc for fc in agent_task.items[-1].pending_tool_calls] ## Needs to deserialize it 
+        pending_tools = [
+            FunctionCallContent(
+                function_name=function_call["function_name"],
+                plugin_name=function_call["plugin_name"],
+                arguments=function_call["arguments"]
+            )
+            for function_call in _pending_tools
+            ]
+        # Execute the tool calls using asyncio.gather(), just as the agent would have.
+        # Re-build the agent based on the existing state. 
+        extra_data_collector = ExtraDataCollector()
+        agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
+        chat_history = ChatHistory()
+        TealAgentsV1Alpha1Handler._build_chat_history(agent_task, chat_history) 
+        kernel = agent.agent.kernel
+
+        # Create ToolContent objects from the results.... _invoking_function will return FunctionResultContent
+        results = await asyncio.gather(
+                    *[self._invoke_function(kernel, fc) for fc in pending_tools]
+                )
+        
+        # Add the AgentTaskItem with the pending_tool_calls and a new AgentTaskItem with the ToolContent results to the chat history.
+        for result in results:
+            chat_history.add_message(result.to_chat_message_content()) ## ChatMessageContent.role == tool, items=FunctionCallContent
+
+        
+        agent_task.items.append(
+            AgentTaskItem(
+                task_id=agent_task.task_id,
+                role="assistant",
+                item=MultiModalItem(
+                    content_type=ContentType.TEXT,
+                    content="Tool call output" ## 
+                )
+            )
+        )
+        
+        # Update the AgentTask.status to "Running".
+        agent_task.status = "Running"
+        self.state.update(agent_task)
+        
+        # Invoke the agent again with the updated chat history to get the final response from the LLM.
+        # Use .invoke or invoke_stream method.
+        user_message = UserMessage(
+            session_id=agent_task.sesion_id,
+            task_id=agent_task.task_id,
+            items=agent_task.items,
+            #user_context=??????????
+        )
+        if stream:
+            final_response_stream = self.invoke_stream(auth_token=auth_token, inputs=user_message)
+            return final_response_stream
+
+        final_response_invoke = self.invoke(auth_token=auth_token, inputs=user_message)
+        return final_response_invoke
+        # Return the final TealAgentsResponse to the client.
 
     async def invoke(
         self, auth_token: str, inputs: UserMessage | None = None
