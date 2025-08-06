@@ -439,10 +439,9 @@ async def test_invoke_success(
     assert result.token_usage.prompt_tokens == 100
     assert result.token_usage.total_tokens == 150
 
+
 @pytest.mark.asyncio
-async def test_invoke_intervention_required(
-    teal_agents_handler, mocker, user_message, agent_task
-):
+async def test_invoke_intervention_required(teal_agents_handler, mocker, user_message, agent_task):
     """
     Test the invocation of the agent when intervention is required.
     Mocks all internal and external dependencies.
