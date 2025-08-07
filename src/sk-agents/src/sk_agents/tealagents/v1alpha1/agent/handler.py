@@ -376,105 +376,17 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         # Check user_id match request and state
         TealAgentsV1Alpha1Handler._validate_user_id(user_id, task_id, agent_task)
 
-        # Build agent and chat history
-        extra_data_collector = ExtraDataCollector()
-        agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
         chat_history = ChatHistory()
         TealAgentsV1Alpha1Handler._augment_with_user_context(
             inputs=inputs, chat_history=chat_history
         )
         TealAgentsV1Alpha1Handler._build_chat_history(agent_task, chat_history)
 
-        # Prepare metadata
-        completion_tokens: int = 0
-        prompt_tokens: int = 0
-        total_tokens: int = 0
-
-        try:
-            kernel = agent.agent.kernel
-            arguments = agent.agent.arguments
-            chat_completion_service, settings = kernel.select_ai_service(
-                arguments=arguments, type=ChatCompletionClientBase
-            )
-            assert isinstance(chat_completion_service, ChatCompletionClientBase)
-
-            # Initial call to the LLM
-            response_list = []
-            responses = await chat_completion_service.get_chat_message_contents(
-                chat_history=chat_history,
-                settings=settings,
-                kernel=kernel,
-                arguments=arguments,
-            )
-            for response_chunk in responses:
-                chat_history.add_message(response_chunk)
-                response_list.append(response_chunk)
-
-            function_calls = []
-            final_response = None
-
-            # Separate content and tool calls
-            for response in response_list:
-                # Update token usage
-                call_usage = get_token_usage_for_response(agent.get_model_type(), response)
-                completion_tokens += call_usage.completion_tokens
-                prompt_tokens += call_usage.prompt_tokens
-                total_tokens += call_usage.total_tokens
-
-                # A response may have multiple items, e.g., multiple tool calls
-                fc_in_response = [
-                    item for item in response.items if isinstance(item, FunctionCallContent)
-                ]
-
-                if fc_in_response:
-                    function_calls.extend(fc_in_response)
-                else:
-                    # If no function calls, it's a direct answer
-                    final_response = response
-            token_usage = TokenUsage(
-                completion_tokens=completion_tokens,
-                prompt_tokens=prompt_tokens,
-                total_tokens=total_tokens,
-            )
-            # If tool calls were returned, execute them
-            if function_calls:
-                await self._manage_function_calls(function_calls, chat_history, kernel)
-
-                # Make a recursive call to get the final response from the LLM
-                recursive_response = await self.recursion_invoke(
-                    inputs=chat_history,
-                    session_id=session_id,
-                    task_id=task_id,
-                    request_id=request_id,
-                )
-                return recursive_response
-
-            # No tool calls, return the direct response
-            if final_response is None:
-                logger.exception("No response received from LLM")
-                raise AgentInvokeException("No response received from LLM")
-
-        except hitl_manager.HitlInterventionRequired as hitl_exc:
-            return await self._manage_hitl_exception(
-                agent_task, session_id, task_id, request_id, hitl_exc.function_calls, chat_history
-            )
-
-        except Exception as e:
-            logger.exception(
-                f"Error invoking {self.name}:{self.version}"
-                f"for Session ID {session_id}, Task ID {task_id}, Request ID {request_id}, "
-                f"Error message: {str(e)}",
-                exc_info=True,
-            )
-            raise AgentInvokeException(
-                f"Error invoking {self.name}:{self.version}"
-                f"for Session ID {session_id}, Task ID {task_id}, Request ID {request_id}, "
-                f"Error message: {str(e)}"
-            ) from e
-
-        return await self.prepare_agent_response(
-            agent_task, request_id, final_response, token_usage, extra_data_collector
+        final_response_invoke = await self.recursion_invoke(
+            inputs=chat_history, session_id=session_id, request_id=request_id, task_id=task_id
         )
+
+        return final_response_invoke
 
     async def invoke_stream(
         self, auth_token: str, inputs: UserMessage
@@ -490,120 +402,15 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         # Check user_id match request and state
         TealAgentsV1Alpha1Handler._validate_user_id(user_id, task_id, agent_task)
 
-        # Build agent and chat history
-        extra_data_collector = ExtraDataCollector()
-        agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
         chat_history = ChatHistory()
         TealAgentsV1Alpha1Handler._augment_with_user_context(
             inputs=inputs, chat_history=chat_history
         )
         TealAgentsV1Alpha1Handler._build_chat_history(agent_task, chat_history)
-
-        # Prepare response and metadata
-        final_response = []
-        completion_tokens: int = 0
-        prompt_tokens: int = 0
-        total_tokens: int = 0
-
-        try:
-            kernel = agent.agent.kernel
-            arguments = agent.agent.arguments
-            chat_completion_service, settings = kernel.select_ai_service(
-                arguments=arguments, type=ChatCompletionClientBase
-            )
-            assert isinstance(chat_completion_service, ChatCompletionClientBase)
-
-            all_responses = []
-            # Stream the initial response from the LLM
-            response_list = []
-            responses = await chat_completion_service.get_chat_message_contents(
-                chat_history=chat_history,
-                settings=settings,
-                kernel=kernel,
-                arguments=arguments,
-            )
-            for response_chunk in responses:
-                chat_history.add_message(response_chunk)
-                response_list.append(response_chunk)
-
-            for response in response_list:
-                all_responses.append(response)
-                # Calculate usage metrics
-                call_usage = get_token_usage_for_response(agent.get_model_type(), response)
-                completion_tokens += call_usage.completion_tokens
-                prompt_tokens += call_usage.prompt_tokens
-                total_tokens += call_usage.total_tokens
-
-                if response.content:
-                    try:
-                        # Attempt to parse as ExtraDataPartial
-                        extra_data_partial: ExtraDataPartial = ExtraDataPartial.new_from_json(
-                            response.content
-                        )
-                        extra_data_collector.add_extra_data_items(extra_data_partial.extra_data)
-                    except Exception:
-                        if len(response.content) > 0:
-                            # Handle and return partial response
-                            final_response.append(response.content)
-                            yield TealAgentsPartialResponse(
-                                session_id=session_id,
-                                task_id=task_id,
-                                request_id=request_id,
-                                output_partial=response.content,
-                                source=f"{self.name}:{self.version}",
-                            )
-
-            token_usage = TokenUsage(
-                completion_tokens=completion_tokens,
-                prompt_tokens=prompt_tokens,
-                total_tokens=total_tokens,
-            )
-            # Aggregate the full response to check for tool calls
-            if not all_responses:
-                return
-
-            full_completion: StreamingChatMessageContent = reduce(lambda x, y: x + y, all_responses)
-            function_calls = [
-                item for item in full_completion.items if isinstance(item, FunctionCallContent)
-            ]
-
-            # If tool calls are present, execute them
-            if function_calls:
-                await self._manage_function_calls(function_calls, chat_history, kernel)
-
-                # Make a recursive call to get the final streamed response
-                async for final_response_chunk in self.recursion_invoke_stream(
-                    inputs=chat_history,
-                    session_id=session_id,
-                    task_id=task_id,
-                    request_id=request_id
-                ):
-                    yield final_response_chunk
-                return
-
-        except hitl_manager.HitlInterventionRequired as hitl_exc:
-            yield await self._manage_hitl_exception(
-                agent_task, session_id, task_id, request_id, hitl_exc.function_calls, chat_history
-            )
-            return
-
-        except Exception as e:
-            logger.exception(
-                f"Error invoking stream for {self.name}:{self.version} "
-                f"for Session ID {session_id}, Task ID {task_id}, Request ID {request_id}. "
-                f"Error message: {str(e)}",
-                exc_info=True,
-            )
-            raise AgentInvokeException(
-                f"Error invoking stream for {self.name}:{self.version}"
-                f" for Session ID {session_id}, Task ID {task_id}, Request ID {request_id}, "
-                f"Error message: {str(e)}"
-            ) from e
-
-        # # Persist and return response
-        yield await self.prepare_agent_response(
-            agent_task, request_id, final_response, token_usage, extra_data_collector
+        final_response_stream = self.recursion_invoke_stream(
+            chat_history, session_id, task_id, request_id
         )
+        return final_response_stream
 
     async def recursion_invoke(
         self, inputs: ChatHistory, session_id: str, task_id: str, request_id: str
@@ -650,9 +457,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             final_response = None
 
             # Separate content and tool calls
-            for idx, response in enumerate(response_list):
-                if idx == 0:
-                    print(f"** Response: {response} is type {type(response)}")
+            for response in response_list:
                 # Update token usage
                 call_usage = get_token_usage_for_response(agent.get_model_type(), response)
                 completion_tokens += call_usage.completion_tokens

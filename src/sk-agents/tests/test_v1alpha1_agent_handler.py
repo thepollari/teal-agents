@@ -391,6 +391,12 @@ async def test_invoke_success(
     mocker.patch.object(
         teal_agents_handler, "_manage_incoming_task", return_value=agent_task_invoke
     )
+    mocker.patch.object(
+        teal_agents_handler.state,
+        "load_by_request_id",
+        return_value=agent_task_invoke,
+        new_callable=mocker.AsyncMock,
+    )
     mocker.patch(
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler._validate_user_id"
     )
@@ -457,7 +463,9 @@ async def test_invoke_success(
 
 
 @pytest.mark.asyncio
-async def test_invoke_intervention_required(teal_agents_handler, mocker, user_message, agent_task):
+async def test_invoke_intervention_required(
+    teal_agents_handler, mocker, user_message, agent_task_invoke
+):
     """
     Test the invocation of the agent when intervention is required.
     Mocks all internal and external dependencies.
@@ -475,7 +483,9 @@ async def test_invoke_intervention_required(teal_agents_handler, mocker, user_me
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler.handle_state_id",
         return_value=(mock_session_id, mock_task_id, mock_request_id),
     )
-    mocker.patch.object(teal_agents_handler, "_manage_incoming_task", return_value=agent_task)
+    mocker.patch.object(
+        teal_agents_handler, "_manage_incoming_task", return_value=agent_task_invoke
+    )
     mocker.patch(
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler._validate_user_id"
     )
@@ -484,6 +494,12 @@ async def test_invoke_intervention_required(teal_agents_handler, mocker, user_me
     )
     mocker.patch(
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler._build_chat_history"
+    )
+    mocker.patch.object(
+        teal_agents_handler.state,
+        "load_by_request_id",
+        return_value=agent_task_invoke,
+        new_callable=mocker.AsyncMock,
     )
 
     # Mock intervention check to always return True
@@ -526,7 +542,7 @@ async def test_invoke_intervention_required(teal_agents_handler, mocker, user_me
     mocker.patch.object(teal_agents_handler.state, "update", new_callable=mocker.AsyncMock)
 
     # Add the task to the in-memory storage
-    await teal_agents_handler.state.create(agent_task)
+    await teal_agents_handler.state.create(agent_task_invoke)
 
     # Invoke the handler
     result = await teal_agents_handler.invoke(auth_token=auth_token, inputs=user_message)
