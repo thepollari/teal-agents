@@ -572,7 +572,12 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
                 await self._manage_function_calls(function_calls, chat_history, kernel)
 
                 # Make a recursive call to get the final streamed response
-                async for final_response_chunk in self.invoke_stream(auth_token, inputs):
+                async for final_response_chunk in self.recursion_invoke_stream(
+                    inputs=chat_history,
+                    session_id=session_id,
+                    task_id=task_id,
+                    request_id=request_id
+                ):
                     yield final_response_chunk
                 return
 
