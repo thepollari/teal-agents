@@ -20,6 +20,7 @@ def reset_singleton():
 def mock_app_config():
     return MagicMock()
 
+
 @pytest.mark.asyncio
 @patch("sk_agents.authorization.authorizer_factory.ModuleLoader.load_module")
 async def test_successful_initialization_and_get_authorizer(mock_load_module, mock_app_config):

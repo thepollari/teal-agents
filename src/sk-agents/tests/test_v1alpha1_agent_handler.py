@@ -94,6 +94,7 @@ def agent_task(mock_date_time, agent_task_item):
         status="Running",
     )
 
+
 @pytest.fixture
 def agent_task_invoke(mock_date_time, agent_task_item, user_message):
     return AgentTask(
@@ -105,6 +106,7 @@ def agent_task_invoke(mock_date_time, agent_task_item, user_message):
         last_updated=mock_date_time,
         status="Running",
     )
+
 
 @pytest.fixture
 def agent_response(agent_task):
@@ -200,6 +202,7 @@ def test_configure_agent_task(mocker, user_message):
 
     assert agent_task_item.item.content == user_message.items[0].content
 
+
 @pytest.mark.asyncio
 async def test_authenticate_user_success(teal_agents_handler, mocker):
     """
@@ -216,6 +219,7 @@ async def test_authenticate_user_success(teal_agents_handler, mocker):
 
     assert user_id == expected_user_id
     teal_agents_handler.authorizer.authorize_request.assert_called_once_with(auth_header=test_token)
+
 
 @pytest.mark.asyncio
 async def test_authenticate_user_failure(teal_agents_handler, mocker):
@@ -264,7 +268,9 @@ def test_handle_state_id(user_message):
 
 
 @pytest.mark.asyncio
-async def test_manage_incoming_task_load_success(teal_agents_handler, mocker, user_message, agent_task):
+async def test_manage_incoming_task_load_success(
+    teal_agents_handler, mocker, user_message, agent_task
+):
     """
     Test _manage_incoming_task when the task is successfully loaded from state.
     """
@@ -276,7 +282,7 @@ async def test_manage_incoming_task_load_success(teal_agents_handler, mocker, us
     mocker.patch.object(teal_agents_handler.state, "load", return_value=agent_task)
     mocker.patch.object(teal_agents_handler.state, "create")
 
-    result_task = await teal_agents_handler._manage_incoming_task(
+    await teal_agents_handler._manage_incoming_task(
         task_id=task_id,
         session_id=session_id,
         user_id=user_id,
@@ -382,7 +388,9 @@ async def test_invoke_success(
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler.handle_state_id",
         return_value=(mock_session_id, mock_task_id, mock_request_id),
     )
-    mocker.patch.object(teal_agents_handler, "_manage_incoming_task", return_value=agent_task_invoke)
+    mocker.patch.object(
+        teal_agents_handler, "_manage_incoming_task", return_value=agent_task_invoke
+    )
     mocker.patch(
         "sk_agents.tealagents.v1alpha1.agent.handler.TealAgentsV1Alpha1Handler._validate_user_id"
     )
