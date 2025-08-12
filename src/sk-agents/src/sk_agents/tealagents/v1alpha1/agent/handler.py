@@ -182,21 +182,17 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         return AgentTaskItem(
             task_id=task_id,
             role="user",
-            item=MultiModalItem(
-                content_type=ContentType.TEXT, content="tool execution rejected"
-            ),
+            item=MultiModalItem(content_type=ContentType.TEXT, content="tool execution rejected"),
             request_id=request_id,
             updated=datetime.now(),
         )
-    
+
     @staticmethod
     def _approved_task_item(task_id: str, request_id: str) -> AgentTaskItem:
         return AgentTaskItem(
             task_id=task_id,
             role="user",
-            item=MultiModalItem(
-                content_type=ContentType.TEXT, content="tool execution approved"
-            ),
+            item=MultiModalItem(content_type=ContentType.TEXT, content="tool execution approved"),
             request_id=request_id,
             updated=datetime.now(),
         )
@@ -351,7 +347,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         )
         agent_task.last_updated = datetime.now()
         await self.state.update(agent_task)
-        
+
         # Retrieve the pending_tool_calls from the last AgentTaskItem before approval/rejection item
         tool_calls_in_task_items = agent_task.items[-2].pending_tool_calls
         if tool_calls_in_task_items is None:
