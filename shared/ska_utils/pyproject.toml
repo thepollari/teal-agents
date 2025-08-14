@@ -56,6 +56,10 @@ select = [
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
 ]
+ignore = [
+    "UP046", # Ignore Generic class `InvokeResponse` uses `Generic` subclass instead of type parameters
+    "UP047", # Ignore Generic function should use type parameters
+]
 isort = { combine-as-imports = true }
 
 [tool.ruff.lint.pydocstyle]
