@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+from contextlib import nullcontext
 from collections.abc import AsyncIterable
 from copy import deepcopy
 from typing import Any
@@ -22,6 +23,7 @@ from sk_agents.skagents.v1.sequential.config import Config
 from sk_agents.skagents.v1.sequential.output_transformer import OutputTransformer
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
 from sk_agents.skagents.v1.utils import get_token_usage_for_response, parse_chat_history
+from ska_utils import get_telemetry
 from sk_agents.type_loader import get_type_loader
 
 logger = logging.getLogger(__name__)
@@ -226,16 +228,24 @@ class SequentialSkagents(BaseHandler):
         else:
             session_id = str(uuid.uuid4().hex)
         request_id = str(uuid.uuid4().hex)
+        st = get_telemetry()
 
         for task in self.tasks:
             try:
-                i_response = await task.invoke(history=chat_history, inputs=task_inputs)
-                task_inputs[f"_{task.name}"] = i_response.output_raw
-                completion_tokens += i_response.token_usage.completion_tokens
-                prompt_tokens += i_response.token_usage.prompt_tokens
-                total_tokens += i_response.token_usage.total_tokens
-                collector.add_extra_data_items(i_response.extra_data)
-                task_no += 1
+                with (
+                    st.tracer.start_as_current_span(
+                        f"{self.name}:{self.version} - execution task info "
+                    )
+                    if st.telemetry_enabled()
+                    else nullcontext()            
+                ):
+                    i_response = await task.invoke(history=chat_history, inputs=task_inputs)
+                    task_inputs[f"_{task.name}"] = i_response.output_raw
+                    completion_tokens += i_response.token_usage.completion_tokens
+                    prompt_tokens += i_response.token_usage.prompt_tokens
+                    total_tokens += i_response.token_usage.total_tokens
+                    collector.add_extra_data_items(i_response.extra_data)
+                    task_no += 1
             except Exception as e:
                 raise AgentInvokeException(
                     f"Error invoking {self.name}:{self.version} "

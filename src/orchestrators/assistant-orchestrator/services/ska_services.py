@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import logging
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -140,15 +141,21 @@ async def verify_ticket(
 async def new_conversation(
     orchestrator_name: str, payload: NewConversationRequest, request: Request
 ) -> ConversationResponse:
-    try:
-        return await conversation_manager.new_conversation(
-            orchestrator_name, payload.user_id, payload.is_resumed
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"{type(e).__name__} - {e.msg}",
-        ) from e
+    jt = get_telemetry()
+    with(
+        jt.tracer.start_as_current_span("new_conversation_service")
+        if jt.telemetry_enabled()
+        else nullcontext()
+    ):
+        try:
+            return await conversation_manager.new_conversation(
+                orchestrator_name, payload.user_id, payload.is_resumed
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"{type(e).__name__} - {e.msg}",
+            ) from e
 
 
 @app.get(
