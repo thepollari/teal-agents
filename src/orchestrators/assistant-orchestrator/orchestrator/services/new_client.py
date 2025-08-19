@@ -5,9 +5,9 @@ from configs import (
     TA_SERVICES_TOKEN,
     TA_SERVICES_TYPE,
 )
-from orchestrator.services.external_services_client import ExternalServicesClient
-from orchestrator.services.internal_services_client import InternalServicesClient
-from orchestrator.services.services_client import ServicesClient
+from services.external_services_client import ExternalServicesClient
+from services.internal_services_client import InternalServicesClient
+from services.services_client import ServicesClient
 
 
 def new_client(orchestrator_name: str) -> ServicesClient:
