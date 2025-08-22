@@ -5,7 +5,7 @@ from opentelemetry.propagate import inject
 from pydantic import BaseModel
 
 from model import ContextItem, ContextType, Conversation
-from services.services_client import (
+from orchestrator.services.services_client import (
     GeneralResponse,
     MessageType,
     ServicesClient,
