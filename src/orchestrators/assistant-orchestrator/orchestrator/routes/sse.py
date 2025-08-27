@@ -2,6 +2,7 @@ import asyncio
 import json
 from contextlib import nullcontext
 from typing import Any
+import time
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -61,18 +62,33 @@ async def sse_event_response(
         await conv_manager.add_transient_context(conv, in_memory_user_context)
 
     with (
-        jt.tracer.start_as_current_span("conversation-turn")
+        jt.tracer.start_as_current_span(
+            name="conversation-turn",
+            attributes={
+                    "prompt": request.message,
+                    "user_id": conv.user_id,
+                }
+        )
         if jt.telemetry_enabled()
         else nullcontext()
     ):
         # --- Call Agent Selector Agent ---
         with (
-            jt.tracer.start_as_current_span("choose-recipient")
+            jt.tracer.start_as_current_span(
+                name="choose-recipient",
+                attributes={
+                    "prompt": request.message
+                }
+            )
             if jt.telemetry_enabled()
             else nullcontext()
-        ):
+        ) as recipient_span:
             try:
                 selected_agent = await rec_chooser.choose_recipient(request.message, conv)
+                recipient_span.add_event(
+                    "agent.selected",
+                    attributes={"agent_name": selected_agent.agent_name}
+                )
             except Exception as e:
                 sse_error = SseError(
                     error=f"Error retrieving agent: {e}",
@@ -115,15 +131,31 @@ async def sse_event_response(
 
         # --- Agent Response (Streaming Partial) and (Final Response) ---
         with (
-            jt.tracer.start_as_current_span("agent-streaming-partial-response")
+            jt.tracer.start_as_current_span(
+                name="agent-streaming-partial-response",
+                attributes={
+                    "prompt": request.message,
+                    "user_id": conv.user_id,
+                },
+            )
             if jt.telemetry_enabled()
             else nullcontext()
-        ):
+        ) as span:
             try:
                 # Initialize agent_response to be an empty string, to be populated from raw output
                 agent_response = ""
+                first_token_received = False
+                start_time = time.time()
                 async for content in agent.invoke_sse(conv, authorization):
                     try:
+                        if not first_token_received:
+                            first_token_time = time.time()
+                            ttft_ms = (first_token_time - start_time) * 1000
+                            span.add_event(
+                                "llm.first_token",
+                                attributes={"time_to_first_token_ms": ttft_ms}
+                            )
+                            first_token_received = True
                         # Check if extra data and process extra data, as done in ws
                         extra_data: ExtraData = ExtraData.new_from_json(content)
                         context_directives = parse_context_directives(extra_data)

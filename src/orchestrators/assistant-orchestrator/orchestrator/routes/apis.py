@@ -75,18 +75,33 @@ async def add_conversation_message_by_id(
         ).model_dump()["user_context"]
         await conv_manager.add_transient_context(conv, in_memory_user_context)
     with (
-        jt.tracer.start_as_current_span("conversation-turn")
+        jt.tracer.start_as_current_span(
+            name="conversation-turn",
+            attributes={
+                    "prompt": request.message,
+                    "user_id": user_id,
+                }
+        )
         if jt.telemetry_enabled()
         else nullcontext()
     ):
         with (
-            jt.tracer.start_as_current_span("choose-recipient")
+            jt.tracer.start_as_current_span(
+                name="choose-recipient",
+                attributes={
+                    "prompt": request.message
+                }
+            )
             if jt.telemetry_enabled()
             else nullcontext()
-        ):
+        ) as recipient_span:
             # Select an agent
             try:
                 selected_agent = await rec_chooser.choose_recipient(request.message, conv)
+                recipient_span.add_event(
+                    "agent.selected",
+                    attributes={"agent_name": selected_agent.agent_name}
+                )
             except Exception as e:
                 raise HTTPException(
                     status_code=500,
@@ -114,11 +129,22 @@ async def add_conversation_message_by_id(
                 ) from e
 
         with (
-            jt.tracer.start_as_current_span("agent-response")
+            jt.tracer.start_as_current_span(
+                name="agent-response",
+                attributes={
+                    "prompt": request.message,
+                    "user_id": user_id,
+                },
+            )
             if jt.telemetry_enabled()
             else nullcontext()
-        ):
+        ) as span:
             response = agent.invoke_api(conv, authorization)
+            token_usage = response.get("token_usage")
+            if token_usage:
+                span.set_attribute("completion_tokens", token_usage.get("completion_token", 0))
+                span.set_attribute("prompt_tokens", token_usage.get("prompt_tokens", 0))
+                span.set_attribute("total_tokens", token_usage.get("total_tokens", 0))
             try:
                 # Set the agent response from raw output
                 agent_response = response.get("output_raw", "No output available.")
