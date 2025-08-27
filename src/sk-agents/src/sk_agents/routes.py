@@ -1,14 +1,22 @@
 import logging
 from contextlib import nullcontext
-
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
-from opentelemetry.propagate import extract
+from typing import type
 
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.responses import StreamingResponse
+from opentelemetry.propagate import extract
 from ska_utils import AppConfig, get_telemetry
 
 from sk_agents.a2a import A2AAgentExecutor
@@ -29,8 +37,6 @@ from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
 from sk_agents.state import StateManager
 from sk_agents.tealagents.models import StateResponse, TaskStatus, UserMessage
 from sk_agents.utils import docstring_parameter, get_sse_event_for_response
-
-from typing import Type
 
 logger = logging.getLogger(__name__)
 
@@ -210,7 +216,9 @@ class Routes:
                             async for content in handler.invoke_stream(inputs=inv_inputs):
                                 yield get_sse_event_for_response(content)
                         case _:
-                            logger.exception("Unknown apiVersion: %s", config.apiVersion, exc_info=True)
+                            logger.exception(
+                                "Unknown apiVersion: %s", config.apiVersion, exc_info=True
+                            )
                             raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
             return StreamingResponse(event_generator(), media_type="text/event-stream")
@@ -258,7 +266,9 @@ class Routes:
                                     await websocket.send_text(content.output_partial)
                             await websocket.close()
                         case _:
-                            logger.exception("Unknown apiVersion: %s", config.apiVersion, exc_info=True)
+                            logger.exception(
+                                "Unknown apiVersion: %s", config.apiVersion, exc_info=True
+                            )
                             raise ValueError(f"Unknown apiVersion %s: {config.apiVersion}")
             except WebSocketDisconnect:
                 logger.exception("websocket disconnected")
@@ -274,7 +284,7 @@ class Routes:
         config: BaseConfig,
         state_manager: StateManager,
         authorizer: RequestAuthorizer,
-        input_class: Type[UserMessage],
+        input_class: type[UserMessage],
     ) -> APIRouter:
         """
         Get the stateful API routes for the given configuration.
@@ -285,7 +295,7 @@ class Routes:
             user_id = await authorizer.authorize_request(authorization)
             if not user_id:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Authentication required"
                 )
             return user_id
@@ -305,7 +315,7 @@ class Routes:
             if message.task_id is None:
                 # New task
                 session_id, task_id = await state_manager.create_task(
-                    message.session_id, 
+                    message.session_id,
                     user_id
                 )
                 task_state = await state_manager.get_task(task_id)

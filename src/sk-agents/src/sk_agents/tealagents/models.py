@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -71,10 +72,17 @@ class RejectedToolResponse(BaseModel):
 
 
 class StateResponse(BaseModel):
-    """Response model including state identifiers for stateful API operations"""
     session_id: str
     task_id: str
     request_id: str
     status: Literal["Running", "Paused", "Completed", "Failed"]
     content: str | dict | None = None
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+
+class TaskStatus(Enum):
+    """Enum representing the status of a task"""
+    RUNNING = "Running"
+    PAUSED = "Paused"
+    COMPLETED = "Completed"
+    FAILED = "Failed"

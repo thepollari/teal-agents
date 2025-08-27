@@ -1,10 +1,12 @@
+import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-import uuid
-from typing import Any, Optional, tuple, list, dict
-from pydantic import BaseModel, Field, UUID4, validator
+from typing import Any, Optional, dict, list, tuple
+
+from pydantic import UUID4, BaseModel, Field, validator
 from redis.asyncio import Redis
+
 
 class TaskStatus(Enum):
     RUNNING = "Running"

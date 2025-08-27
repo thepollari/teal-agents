@@ -12,6 +12,12 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
 
+from sk_agents.a2a.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentProvider,
+    AgentSkill,
+)
 from sk_agents.configs import (
     TA_AGENT_BASE_URL,
     TA_PROVIDER_ORG,
@@ -30,20 +36,14 @@ from sk_agents.ska_types import (
     BaseConfig,
 )
 from sk_agents.stateful import (
-    UserMessage,
-    StateManager,
-    InMemoryStateManager,
-    RedisStateManager,
     AuthenticationManager,
-    MockAuthenticationManager
+    InMemoryStateManager,
+    MockAuthenticationManager,
+    RedisStateManager,
+    StateManager,
+    UserMessage,
 )
 from sk_agents.utils import initialize_plugin_loader
-from sk_agents.a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentProvider,
-    AgentSkill,
-)
 
 
 class AppV3:
