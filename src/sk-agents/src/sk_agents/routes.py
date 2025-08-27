@@ -1,6 +1,6 @@
 import logging
 from contextlib import nullcontext
-from typing import type
+from typing import Type
 
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -14,6 +14,7 @@ from fastapi import (
     Request,
     WebSocket,
     WebSocketDisconnect,
+    status,
 )
 from fastapi.responses import StreamingResponse
 from opentelemetry.propagate import extract
@@ -308,7 +309,7 @@ class Routes:
             tags=["Agent"],
         )
         async def chat(
-            message: input_class, 
+            message: input_class,
             user_id: str = Depends(get_user_id)
         ) -> StateResponse:
             # Handle new task creation or task retrieval

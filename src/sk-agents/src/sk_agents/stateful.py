@@ -104,7 +104,7 @@ class InMemoryStateManager(StateManager):
         self.tasks: dict[UUID4, TaskState] = {}
         self.requests: dict[UUID4, RequestState] = {}
 
-    async def create_task(self, session_id: Optional[UUID4], user_id: str) -> tuple[UUID4, UUID4]:
+    async def create_task(self, session_id: UUID4 | None, user_id: str) -> tuple[UUID4, UUID4]:
         session_id = session_id or uuid.uuid4()
         task_id = uuid.uuid4()
         self.tasks[task_id] = TaskState(
