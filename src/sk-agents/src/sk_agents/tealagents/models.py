@@ -68,3 +68,13 @@ class RejectedToolResponse(BaseModel):
     session_id: str
     request_id: str
     message: str = "Tool excecution rejected."
+
+
+class StateResponse(BaseModel):
+    """Response model including state identifiers for stateful API operations"""
+    session_id: str
+    task_id: str
+    request_id: str
+    status: Literal["Running", "Paused", "Completed", "Failed"]
+    content: str | dict | None = None
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)

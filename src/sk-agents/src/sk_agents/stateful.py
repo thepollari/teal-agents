@@ -1,11 +1,10 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
 from enum import Enum
 import uuid
-from typing import dict, list, Optional, Any, tuple
-from datetime import datetime
-from pydantic import BaseModel, UUID4, Field, validator
+from typing import Any, Optional, tuple, list, dict
+from pydantic import BaseModel, Field, UUID4, validator
 from redis.asyncio import Redis
-from abc import ABC, abstractmethod
-
 
 class TaskStatus(Enum):
     RUNNING = "Running"
@@ -24,8 +23,8 @@ class UserMessage(BaseModel):
     New input model for the tealagents/v1alpha1 API version.
     Unlike BaseMultiModalInput, chat history is maintained server-side.
     """
-    session_id: Optional[UUID4] = None
-    task_id: Optional[UUID4] = None
+    session_id: UUID4 | None = None
+    task_id: UUID4 | None = None
     items: list[MultiModalItem]
 
     @validator('session_id', 'task_id', pre=True)
@@ -73,7 +72,7 @@ class StateManager(ABC):
     """Abstract base class for state management"""
 
     @abstractmethod
-    async def create_task(self, session_id: Optional[UUID4], user_id: str) -> tuple[UUID4, UUID4]:
+    async def create_task(self, session_id: UUID4 | None, user_id: str) -> tuple[UUID4, UUID4]:
         """Create a new task and return session_id and task_id"""
 
     @abstractmethod
@@ -144,11 +143,11 @@ class InMemoryStateManager(StateManager):
 class RedisStateManager(StateManager):
     """Redis implementation of state manager"""
 
-    def __init__(self, redis_client: Redis, ttl: Optional[int] = None):
+    def __init__(self, redis_client: Redis, ttl: int | None = None):
         self.redis = redis_client
         self.ttl = ttl  # Time-to-live in seconds
 
-    async def create_task(self, session_id: Optional[UUID4], user_id: str) -> tuple[UUID4, UUID4]:
+    async def create_task(self, session_id: UUID4 | None, user_id: str) -> tuple[UUID4, UUID4]:
         session_id = session_id or uuid.uuid4()
         task_id = uuid.uuid4()
         task_state = TaskState(

@@ -1,14 +1,14 @@
 import logging
 from contextlib import nullcontext
-from typing import Type
-from fastapi import APIRouter, HTTPException, Header, Depends, status
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
+from opentelemetry.propagate import extract
 
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
-from fastapi.responses import StreamingResponse
-from opentelemetry.propagate import extract
 from ska_utils import AppConfig, get_telemetry
 
 from sk_agents.a2a import A2AAgentExecutor
@@ -27,8 +27,10 @@ from sk_agents.ska_types import (
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
 from sk_agents.state import StateManager
-from sk_agents.tealagents.models import UserMessage, StateResponse, TaskStatus
+from sk_agents.tealagents.models import StateResponse, TaskStatus, UserMessage
 from sk_agents.utils import docstring_parameter, get_sse_event_for_response
+
+from typing import Type
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +210,7 @@ class Routes:
                             async for content in handler.invoke_stream(inputs=inv_inputs):
                                 yield get_sse_event_for_response(content)
                         case _:
-                            logger.exception(f"Unknown apiVersion: {config.apiVersion}")
+                            logger.exception("Unknown apiVersion: %s", config.apiVersion, exc_info=True)
                             raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
             return StreamingResponse(event_generator(), media_type="text/event-stream")
@@ -243,7 +245,7 @@ class Routes:
                     if st.telemetry_enabled()
                     else nullcontext()
                 ):
-                    inputs: input_class = input_class(**data)
+                    inputs = input_class(**data)
                     inv_inputs = inputs.__dict__
                     match root_handler_name:
                         case "skagents":
@@ -256,8 +258,8 @@ class Routes:
                                     await websocket.send_text(content.output_partial)
                             await websocket.close()
                         case _:
-                            logger.exception(f"Unknown apiVersion: {config.apiVersion}")
-                            raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
+                            logger.exception("Unknown apiVersion: %s", config.apiVersion, exc_info=True)
+                            raise ValueError(f"Unknown apiVersion %s: {config.apiVersion}")
             except WebSocketDisconnect:
                 logger.exception("websocket disconnected")
                 print("websocket disconnected")
@@ -270,7 +272,6 @@ class Routes:
         version: str,
         description: str,
         config: BaseConfig,
-        app_config: AppConfig,
         state_manager: StateManager,
         authorizer: RequestAuthorizer,
         input_class: Type[UserMessage],

@@ -7,9 +7,8 @@ class AppV3:
 
 import os
 from enum import Enum
-from uuid import UUID
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
 
@@ -143,7 +142,9 @@ class AppV3:
     @staticmethod
     def run(name: str, version: str, app_config: AppConfig, config: BaseConfig, app: FastAPI):
         if config.apiVersion != "tealagents/v1alpha1":
-            raise ValueError(f"AppV3 only supports 'tealagents/v1alpha1' API version, got: {config.apiVersion}")
+            raise ValueError(
+                f"AppV3 only supports 'tealagents/v1alpha1' API version, got: {config.apiVersion}"
+            )
 
         config_file = app_config.get(TA_SERVICE_CONFIG.env_name)
         agents_path = str(os.path.dirname(config_file))
@@ -183,4 +184,3 @@ class AppV3:
         except ValueError as e:
             # Log warning
             print(f"Warning: Could not generate agent card: {e}")
-            
