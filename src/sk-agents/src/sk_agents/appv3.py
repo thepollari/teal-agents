@@ -183,3 +183,4 @@ class AppV3:
         except ValueError as e:
             # Log warning
             print(f"Warning: Could not generate agent card: {e}")
+            
