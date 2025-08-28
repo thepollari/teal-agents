@@ -12,16 +12,8 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
 
-from sk_agents.a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentProvider,
-    AgentSkill,
-)
 from sk_agents.configs import (
     TA_AGENT_BASE_URL,
-    TA_PROVIDER_ORG,
-    TA_PROVIDER_URL,
     TA_REDIS_DB,
     TA_REDIS_HOST,
     TA_REDIS_PORT,
@@ -32,11 +24,8 @@ from sk_agents.configs import (
     TA_STATE_MANAGEMENT,
 )
 from sk_agents.routes import Routes
-from sk_agents.ska_types import (
-    BaseConfig,
-)
+from sk_agents.ska_types import BaseConfig
 from sk_agents.stateful import (
-    AuthenticationManager,
     InMemoryStateManager,
     MockAuthenticationManager,
     RedisStateManager,
@@ -50,55 +39,6 @@ class AppV3:
     class StateStores(Enum):
         IN_MEMORY = "in-memory"
         REDIS = "redis"
-
-    @staticmethod
-    def get_url(name: str, version: str, app_config: AppConfig) -> str:
-        base_url = app_config.get(TA_AGENT_BASE_URL.env_name)
-        if not base_url:
-            raise ValueError("Base URL is not provided in the app config.")
-        return f"{base_url}/{name}/{version}"
-
-    @staticmethod
-    def get_provider(app_config: AppConfig) -> AgentProvider:
-        return AgentProvider(
-            organization=app_config.get(TA_PROVIDER_ORG.env_name),
-            url=app_config.get(TA_PROVIDER_URL.env_name),
-        )
-
-    @staticmethod
-    def get_agent_card(config: BaseConfig, app_config: AppConfig) -> AgentCard:
-        if config.metadata is None:
-            raise ValueError("Agent card metadata is not provided in the config.")
-        if not config.name:
-            raise ValueError("Agent name is not provided in the config.")
-
-        metadata = config.metadata
-        skills = [
-            AgentSkill(
-                id=skill.id,
-                name=skill.name,
-                description=skill.description,
-                tags=skill.tags,
-                examples=skill.examples,
-                inputModes=skill.input_modes,
-                outputModes=skill.output_modes,
-            )
-            for skill in metadata.skills
-        ]
-        return AgentCard(
-            name=config.name,
-            version=str(config.version),
-            description=metadata.description,
-            url=AppV3.get_url(config.name, str(config.version), app_config),
-            provider=AppV3.get_provider(app_config),
-            documentationUrl=config.metadata.documentation_url,
-            capabilities=AgentCapabilities(
-                streaming=True, pushNotifications=False, stateTransitionHistory=True
-            ),
-            defaultInputModes=["text"],
-            defaultOutputModes=["text"],
-            skills=skills,
-        )
 
     @staticmethod
     def _get_redis_client(app_config: AppConfig) -> Redis:
@@ -135,8 +75,9 @@ class AppV3:
                 return InMemoryStateManager()
 
     @staticmethod
-    def _get_auth_manager(app_config: AppConfig) -> AuthenticationManager:
-        # For initial implementation, use mock authentication (Extend in future for Entra ID)
+    def _get_auth_manager(app_config: AppConfig):
+        # For initial implementation, use mock authentication
+        # Will be extended in future for Entra ID
         return MockAuthenticationManager()
 
     @staticmethod
@@ -168,19 +109,13 @@ class AppV3:
                 version=version,
                 description=description,
                 config=config,
-                app_config=app_config,
                 state_manager=state_manager,
-                auth_manager=auth_manager,
+                authorizer=auth_manager,
                 input_class=UserMessage,
             ),
             prefix=f"/{name}/{version}",
         )
 
-        # Generate agent card for metadata
-        try:
-            agent_card = AppV3.get_agent_card(config, app_config)
-            # Make agent card available to routes
-            app.state.agent_card = agent_card
-        except ValueError as e:
-            # Log warning
-            print(f"Warning: Could not generate agent card: {e}")
+        # Make config and other essentials available to request handlers
+        app.state.config = config
+        app.state.app_config = app_config

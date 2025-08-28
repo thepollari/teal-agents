@@ -2,7 +2,7 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, dict, list, tuple
+from typing import Any, dict, list, tuple
 
 from pydantic import UUID4, BaseModel, Field, validator
 from redis.asyncio import Redis
@@ -140,7 +140,6 @@ class InMemoryStateManager(StateManager):
     async def update_request(self, request_state: RequestState) -> None:
         request_state.updated_at = datetime.utcnow()
         self.requests[request_state.request_id] = request_state
-
 
 class RedisStateManager(StateManager):
     """Redis implementation of state manager"""

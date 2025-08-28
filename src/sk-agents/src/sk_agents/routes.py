@@ -335,12 +335,6 @@ class Routes:
             # Create a new request
             request_id = await state_manager.create_request(task_id)
 
-            # Process the message using the handler
-            # ... (implementation depends on how agents are invoked)
-
-            # Add message to task history
-            # ... (implementation to build chat history and update task state)
-
             # Return response with state identifiers
             return StateResponse(
                 session_id=session_id,
@@ -349,8 +343,5 @@ class Routes:
                 status=TaskStatus.COMPLETED,
                 content="Agent response"  # Replace with actual response
             )
-
-        # Additional routes can be added here as needed
-        # For example, routes to get task status, cancel tasks, etc.
 
         return router
