@@ -2,7 +2,7 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Any, dict, list, tuple
+from typing import Any
 
 from pydantic import UUID4, BaseModel, Field, validator
 from redis.asyncio import Redis
