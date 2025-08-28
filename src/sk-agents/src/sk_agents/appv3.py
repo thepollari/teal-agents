@@ -13,7 +13,6 @@ from redis.asyncio import Redis
 from ska_utils import AppConfig, strtobool
 
 from sk_agents.configs import (
-    TA_AGENT_BASE_URL,
     TA_REDIS_DB,
     TA_REDIS_HOST,
     TA_REDIS_PORT,

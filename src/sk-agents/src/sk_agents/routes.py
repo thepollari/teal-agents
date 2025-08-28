@@ -1,6 +1,5 @@
 import logging
 from contextlib import nullcontext
-from typing import Type
 
 from a2a.server.apps.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -261,7 +260,6 @@ class Routes:
                             handler: BaseHandler = skagents_handle(
                                 config, app_config, authorization
                             )
-                            # noinspection PyTypeChecker
                             async for content in handler.invoke_stream(inputs=inv_inputs):
                                 if isinstance(content, PartialResponse):
                                     await websocket.send_text(content.output_partial)
