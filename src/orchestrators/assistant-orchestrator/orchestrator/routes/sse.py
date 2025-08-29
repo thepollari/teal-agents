@@ -2,7 +2,6 @@ import asyncio
 import json
 from contextlib import nullcontext
 from typing import Any
-import time
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse

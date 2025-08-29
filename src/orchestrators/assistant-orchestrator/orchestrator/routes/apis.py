@@ -83,7 +83,7 @@ async def add_conversation_message_by_id(
             jt.tracer.start_as_current_span("choose-recipient")
             if jt.telemetry_enabled()
             else nullcontext()
-        ) as recipient_span:
+        ):
             # Select an agent
             try:
                 selected_agent = await rec_chooser.choose_recipient(request.message, conv)
