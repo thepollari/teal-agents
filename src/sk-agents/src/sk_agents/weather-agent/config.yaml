@@ -1,0 +1,30 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  A weather agent that provides current weather information for any city
+service_name: WeatherAgent
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: default
+      role: Weather Assistant
+      model: gpt-4o-mini
+      system_prompt: >
+        You are a helpful weather assistant. You can provide current weather information for any city.
+        When a user asks about weather, use the WeatherPlugin to get the current weather data and 
+        provide a friendly, informative response including temperature, weather condition, and city name.
+        If there's an error getting weather data, explain the issue politely and suggest the user 
+        check the city name spelling.
+      plugins:
+      - WeatherPlugin
+  tasks:
+    - name: weather_task
+      task_no: 1
+      description: Get weather information for user's requested city
+      instructions: >
+        Help the user get weather information for any city they request.
+        Use the WeatherPlugin to fetch current weather data and provide a clear,
+        friendly response with temperature, weather conditions, and city name.
+        Handle any errors gracefully by explaining the issue to the user.
+      agent: default
