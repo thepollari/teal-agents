@@ -46,7 +46,7 @@ class WeatherPlugin(BasePlugin):
             lon = location["longitude"]
             city_name = location["name"]
             
-            weather_url = f"https://api.open-meteo.com/v1/current?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph"
+            weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph"
             
             weather_response = requests.get(weather_url, timeout=10)
             weather_response.raise_for_status()
