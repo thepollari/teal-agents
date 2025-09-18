@@ -1,0 +1,28 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: "Weather agent powered by Google Gemini"
+service_name: WeatherAgent
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: default
+      role: Weather Assistant
+      model: gemini-1.5-flash
+      system_prompt: >
+        You are a helpful weather assistant. You can provide current weather information 
+        for any city or location. When users ask about weather, use the available weather 
+        functions to get accurate, up-to-date information. Always be friendly and provide 
+        clear, useful weather information including temperature, conditions, and any 
+        relevant details that would help the user plan their day.
+      plugins:
+        - WeatherPlugin
+  tasks:
+    - name: weather_task
+      task_no: 1
+      description: Provide weather information
+      instructions: >
+        Help users get weather information for any location they request. Use the 
+        weather plugin functions to get coordinates and current weather data. 
+        Present the information in a clear, conversational way.
+      agent: default
