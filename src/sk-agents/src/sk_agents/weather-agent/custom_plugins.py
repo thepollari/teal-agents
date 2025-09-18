@@ -34,7 +34,7 @@ class WeatherPlugin(BasePlugin):
                 return json.dumps({"error": f"Could not find coordinates for {city}"})
 
             weather_url = (
-                f"https://api.open-meteo.com/v1/current?"
+                f"https://api.open-meteo.com/v1/forecast?"
                 f"latitude={coords_data.latitude}&longitude={coords_data.longitude}"
                 f"&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
                 f"&temperature_unit=fahrenheit&wind_speed_unit=mph"

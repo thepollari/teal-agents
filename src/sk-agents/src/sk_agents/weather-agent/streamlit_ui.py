@@ -24,7 +24,7 @@ def call_weather_agent(user_input: str, chat_history: list) -> dict[str, Any]:
         }
 
         response = requests.post(
-            f"{st.session_state.agent_url}/skagents/v1/invoke",
+            f"{st.session_state.agent_url}/WeatherAgent/0.1",
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=30
@@ -98,7 +98,7 @@ def main():
         st.header("📋 Status")
 
         try:
-            health_response = requests.get(f"{agent_url}/health", timeout=5)
+            health_response = requests.get(f"{agent_url}/WeatherAgent/0.1/docs", timeout=5)
             if health_response.status_code == 200:
                 st.success("✅ Agent is running")
             else:

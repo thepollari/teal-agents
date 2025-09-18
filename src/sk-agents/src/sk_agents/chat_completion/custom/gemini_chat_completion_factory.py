@@ -20,6 +20,7 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
         env_name="GEMINI_API_KEY",
         is_required=True,
         description="Google Gemini API key for authentication",
+        default_value=None,
     )
 
     _CONFIGS: list[UtilConfig] = [GEMINI_API_KEY]
@@ -40,7 +41,7 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
         if model_name in self._GEMINI_MODELS:
             return GoogleAIChatCompletion(
                 service_id=service_id,
-                ai_model_id=model_name,
+                gemini_model_id=model_name,
                 api_key=self.api_key,
             )
         else:
