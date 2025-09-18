@@ -44,7 +44,7 @@ Set the required environment variables and start the agent:
 
 ```bash
 export TA_SERVICE_CONFIG="$(pwd)/src/sk_agents/weather-agent/config.yaml"
-export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="sk_agents.chat_completion.custom.gemini_chat_completion_factory"
+export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py"
 export TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME="GeminiChatCompletionFactory"
 export GEMINI_API_KEY="your-api-key-here"
 
