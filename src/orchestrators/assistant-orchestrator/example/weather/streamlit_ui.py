@@ -9,6 +9,10 @@ def initialize_session_state():
         st.session_state.messages = []
     if "agent_url" not in st.session_state:
         st.session_state.agent_url = "http://localhost:8000"
+    if "conversation_id" not in st.session_state:
+        st.session_state.conversation_id = None
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = "streamlit_user"
 
 
 def display_chat_history():
@@ -17,21 +21,58 @@ def display_chat_history():
             st.markdown(message["content"])
 
 
-def call_weather_agent(user_input: str, chat_history: list) -> dict[str, Any]:
+def create_conversation(user_id: str) -> dict[str, Any]:
     try:
-        payload = {
-            "chat_history": chat_history
+        response = requests.post(
+            f"{st.session_state.agent_url}/DemoAgentOrchestrator/0.1/conversations",
+            params={"user_id": user_id},
+            headers={"Content-Type": "application/json"},
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {
+                "error": f"Failed to create conversation: {response.status_code} - {response.text}"
+            }
+    except Exception as e:
+        return {
+            "error": f"Failed to create conversation: {str(e)}"
         }
 
+
+def call_weather_agent(user_input: str, chat_history: list) -> dict[str, Any]:
+    try:
+        if not st.session_state.conversation_id:
+            conv_result = create_conversation(st.session_state.user_id)
+            if "error" in conv_result:
+                return conv_result
+            st.session_state.conversation_id = conv_result["conversation_id"]
+
+        payload = {"message": user_input}
+        
         response = requests.post(
-            f"{st.session_state.agent_url}/skagents/v1/invoke",
+            f"{st.session_state.agent_url}/DemoAgentOrchestrator/0.1/conversations/{st.session_state.conversation_id}/messages",
+            params={"user_id": st.session_state.user_id},
             json=payload,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer dummy_token"
+            },
             timeout=30
         )
 
         if response.status_code == 200:
-            return response.json()
+            result = response.json()
+            conversation = result.get("conversation", [])
+            if conversation:
+                for msg in reversed(conversation):
+                    if "sender" in msg:
+                        return {"output_raw": msg["content"]}
+                return {"output_raw": "No agent response found"}
+            else:
+                return {"output_raw": "Empty conversation"}
         else:
             return {
                 "error": f"Agent request failed with status {response.status_code}: {response.text}"
@@ -39,11 +80,11 @@ def call_weather_agent(user_input: str, chat_history: list) -> dict[str, Any]:
 
     except requests.exceptions.ConnectionError:
         return {
-            "error": "Could not connect to weather agent. Make sure the agent is running on http://localhost:8000"
+            "error": "Could not connect to assistant orchestrator. Make sure it's running on http://localhost:8000"
         }
     except requests.exceptions.Timeout:
         return {
-            "error": "Request to weather agent timed out. Please try again."
+            "error": "Request to assistant orchestrator timed out. Please try again."
         }
     except Exception as e:
         return {
@@ -82,29 +123,29 @@ def main():
 
     initialize_session_state()
 
-    st.title("🌤️ Weather Agent Chat")
-    st.markdown("Ask me about the weather in any city around the world!")
+    st.title("🌤️ Weather Agent Chat (Assistant Orchestrator)")
+    st.markdown("Ask me about the weather in any city around the world! Powered by Assistant Orchestrator.")
 
     with st.sidebar:
         st.header("⚙️ Configuration")
 
         agent_url = st.text_input(
-            "Agent URL",
+            "Assistant Orchestrator URL",
             value=st.session_state.agent_url,
-            help="URL where the weather agent is running"
+            help="URL where the assistant orchestrator is running"
         )
         st.session_state.agent_url = agent_url
 
         st.header("📋 Status")
 
         try:
-            health_response = requests.get(f"{agent_url}/health", timeout=5)
+            health_response = requests.get(f"{agent_url}/DemoAgentOrchestrator/0.1/healthcheck", timeout=5)
             if health_response.status_code == 200:
-                st.success("✅ Agent is running")
+                st.success("✅ Assistant Orchestrator is running")
             else:
-                st.error("❌ Agent health check failed")
+                st.error("❌ Assistant Orchestrator health check failed")
         except Exception:
-            st.error("❌ Cannot connect to agent")
+            st.error("❌ Cannot connect to Assistant Orchestrator")
 
         st.header("💡 Example Queries")
         st.markdown("""
@@ -117,6 +158,11 @@ def main():
 
         if st.button("🗑️ Clear Chat History"):
             st.session_state.messages = []
+            st.session_state.conversation_id = None
+            st.rerun()
+
+        if st.button("🔄 New Conversation"):
+            st.session_state.conversation_id = None
             st.rerun()
 
     display_chat_history()
