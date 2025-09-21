@@ -9,6 +9,8 @@ def initialize_session_state():
         st.session_state.messages = []
     if "agent_url" not in st.session_state:
         st.session_state.agent_url = "http://localhost:8000"
+    if "ta_agw_key" not in st.session_state:
+        st.session_state.ta_agw_key = "dummy_key"
 
 
 def display_chat_history():
@@ -28,7 +30,7 @@ def call_weather_agent(user_input: str, chat_history: list) -> dict[str, Any]:
             json=payload,
             headers={
                 "Content-Type": "application/json",
-                "taAgwKey": "dummy_key"
+                "taAgwKey": st.session_state.ta_agw_key
             },
             timeout=30
         )
@@ -97,6 +99,14 @@ def main():
             help="URL where the weather agent is running"
         )
         st.session_state.agent_url = agent_url
+
+        ta_agw_key = st.text_input(
+            "Kong Gateway Key (taAgwKey)",
+            value=st.session_state.ta_agw_key,
+            type="password",
+            help="Authentication key for Kong gateway routing"
+        )
+        st.session_state.ta_agw_key = ta_agw_key
 
         st.header("📋 Status")
 
