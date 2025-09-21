@@ -3,6 +3,19 @@ from typing import Any
 import requests
 import streamlit as st
 
+from assets import (
+    CLEAR_ICON,
+    ERROR_ICON,
+    EXAMPLES_ICON,
+    LOCATION_ICON,
+    SETTINGS_ICON,
+    STATUS_ICON,
+    SUCCESS_ICON,
+    TEMPERATURE_ICON,
+    TOKENS_ICON,
+    WEATHER_ICON,
+)
+
 
 def initialize_session_state():
     if "messages" not in st.session_state:
@@ -65,9 +78,9 @@ def format_weather_response(response_text: str) -> str:
             for line in lines:
                 keywords = ["temperature", "humidity", "wind", "weather"]
                 if any(keyword in line.lower() for keyword in keywords):
-                    formatted_lines.append(f"🌡️ {line}")
+                    formatted_lines.append(f"{TEMPERATURE_ICON} {line}")
                 elif "city" in line.lower() or "location" in line.lower():
-                    formatted_lines.append(f"📍 {line}")
+                    formatted_lines.append(f"{LOCATION_ICON} {line}")
                 else:
                     formatted_lines.append(line)
 
@@ -81,17 +94,17 @@ def format_weather_response(response_text: str) -> str:
 def main():
     st.set_page_config(
         page_title="Weather Agent Chat",
-        page_icon="🌤️",
+        page_icon=WEATHER_ICON,
         layout="wide"
     )
 
     initialize_session_state()
 
-    st.title("🌤️ Weather Agent Chat")
+    st.title(f"{WEATHER_ICON} Weather Agent Chat")
     st.markdown("Ask me about the weather in any city around the world!")
 
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.header(f"{SETTINGS_ICON} Configuration")
 
         agent_url = st.text_input(
             "Weather Agent URL",
@@ -108,18 +121,18 @@ def main():
         )
         st.session_state.ta_agw_key = ta_agw_key
 
-        st.header("📋 Status")
+        st.header(f"{STATUS_ICON} Status")
 
         try:
             health_response = requests.get(f"{agent_url}/WeatherAgent/0.1/docs", timeout=5)
             if health_response.status_code == 200:
-                st.success("✅ Weather Agent is running")
+                st.success(f"{SUCCESS_ICON} Weather Agent is running")
             else:
-                st.error("❌ Weather Agent health check failed")
+                st.error(f"{ERROR_ICON} Weather Agent health check failed")
         except Exception:
-            st.error("❌ Cannot connect to Weather Agent")
+            st.error(f"{ERROR_ICON} Cannot connect to Weather Agent")
 
-        st.header("💡 Example Queries")
+        st.header(f"{EXAMPLES_ICON} Example Queries")
         st.markdown("""
         - "What's the weather in New York?"
         - "How's the weather in Tokyo today?"
@@ -128,7 +141,7 @@ def main():
         - "Is it raining in Seattle?"
         """)
 
-        if st.button("🗑️ Clear Chat History"):
+        if st.button(f"{CLEAR_ICON} Clear Chat History"):
             st.session_state.messages = []
             st.rerun()
 
@@ -151,7 +164,7 @@ def main():
                 response = call_weather_agent(prompt, chat_history)
 
                 if "error" in response:
-                    error_message = f"❌ **Error:** {response['error']}"
+                    error_message = f"{ERROR_ICON} **Error:** {response['error']}"
                     st.markdown(error_message)
                     st.session_state.messages.append({
                         "role": "assistant",
@@ -177,10 +190,10 @@ def main():
 
                         if "token_usage" in response:
                             token_info = response["token_usage"]
-                            st.caption(f"🔢 Tokens used: {token_info.get('total_tokens', 'N/A')}")
+                            st.caption(f"{TOKENS_ICON} Tokens used: {token_info.get('total_tokens', 'N/A')}")
 
                     except Exception as e:
-                        error_message = f"❌ **Error processing response:** {str(e)}"
+                        error_message = f"{ERROR_ICON} **Error processing response:** {str(e)}"
                         st.markdown(error_message)
                         st.session_state.messages.append({
                             "role": "assistant",
