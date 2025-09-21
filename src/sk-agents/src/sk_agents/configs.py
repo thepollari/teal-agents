@@ -76,6 +76,12 @@ TA_PERSISTENCE_CLASS = Config(
     default_value="InMemoryPersistenceManager",
 )
 
+TA_GEMINI_API_KEY = Config(
+    env_name="GEMINI_API_KEY",
+    is_required=False,
+    default_value=None
+)
+
 configs: list[Config] = [
     TA_API_KEY,
     TA_SERVICE_CONFIG,
@@ -101,4 +107,5 @@ configs: list[Config] = [
     TA_PERSISTENCE_CLASS,
     TA_AUTHORIZER_CLASS,
     TA_AUTHORIZER_MODULE,
+    TA_GEMINI_API_KEY,
 ]

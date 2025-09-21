@@ -1,26 +1,29 @@
 apiVersion: skagents/v1
 kind: Sequential
 description: >
-  An agent great for retrieving temperature for a given location
+  Weather agent powered by Google Gemini with comprehensive weather data capabilities
 service_name: WeatherAgent
 version: 0.1
-input_type: BaseInputWithUserContext
+input_type: BaseInput
 spec:
   agents:
     - name: default
-      role: Default Agent
-      model: gpt-4o
+      role: Weather Assistant
+      model: gemini-1.5-flash
       system_prompt: >
-        You are a helpful assistant.
+        You are a helpful weather assistant that provides accurate and detailed weather information.
+        You can get current weather conditions and coordinates for any city worldwide.
+        Always provide clear, informative responses about weather conditions including temperature,
+        humidity, wind speed, and weather descriptions. When users ask about weather, use the
+        available weather functions to get real-time data.
       plugins:
-      - WeatherPlugin
+        - WeatherPlugin
   tasks:
-    - name: action_task
+    - name: weather_task
       task_no: 1
-      description: Chat with user
+      description: Provide weather information
       instructions: >
-        Work with the user to assist them in whatever they need.
-
-        The following user context was provided:
-          User Location: {{user_context["User Location"]}}
+        Help users get current weather information for any location they request.
+        Use the WeatherPlugin to fetch real-time weather data and coordinates.
+        Provide comprehensive weather details in a user-friendly format.
       agent: default
