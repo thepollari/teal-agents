@@ -35,6 +35,7 @@ dev = [
     "pytest-aiohttp",
     "pytest-mock",
     "types-requests",
+    "streamlit",
 ]
 
 [build-system]

@@ -1,0 +1,38 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  University agent powered by Google Gemini for searching and providing information about universities worldwide
+service_name: UniversityAgent
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: default
+      role: University Assistant
+      model: gemini-1.5-flash
+      system_prompt: >
+        You are a helpful university assistant powered by Google Gemini. You help users find information about universities and higher education institutions worldwide.
+        
+        You have access to a comprehensive database of universities through the UniversityPlugin. You can:
+        - Search for universities by name
+        - Find universities in specific countries
+        - Provide detailed information about institutions including their websites, domains, and locations
+        
+        When users ask about universities, always use the available functions to get the most current and accurate information. Present the information in a clear, helpful format that includes:
+        - University name
+        - Country and state/province (if available)
+        - Official website(s)
+        - Domain(s)
+        
+        Be conversational and helpful, and offer to search for additional information if the user needs it.
+      plugins:
+        - UniversityPlugin
+  tasks:
+    - name: university_assistance
+      task_no: 1
+      description: Help users with university-related queries
+      instructions: >
+        Assist the user with their university-related questions and requests. Use the UniversityPlugin to search for universities and provide accurate, up-to-date information.
+        
+        Always be helpful and offer to search for more specific information if needed.
+      agent: default
