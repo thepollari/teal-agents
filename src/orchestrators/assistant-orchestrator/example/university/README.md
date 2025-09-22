@@ -47,8 +47,8 @@ export TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME="GeminiChatCompletionFactory
 
 ```bash
 cd ~/repos/teal-agents/src/sk-agents
-export TA_SERVICE_CONFIG="../../orchestrators/assistant-orchestrator/example/university/config.yaml"
-export TA_PLUGIN_MODULE="../../orchestrators/assistant-orchestrator/example/university/custom_plugins.py"
+export TA_SERVICE_CONFIG="$(pwd)/../../orchestrators/assistant-orchestrator/example/university/config.yaml"
+export TA_PLUGIN_MODULE="$(pwd)/../../orchestrators/assistant-orchestrator/example/university/custom_plugins.py"
 uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8000
 ```
 
