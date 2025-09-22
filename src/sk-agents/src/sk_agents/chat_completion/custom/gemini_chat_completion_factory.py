@@ -4,8 +4,9 @@ from semantic_kernel.connectors.ai.chat_completion_client_base import (
 from semantic_kernel.connectors.ai.google.google_ai.services.google_ai_chat_completion import (
     GoogleAIChatCompletion,
 )
-from ska_utils import Config as UtilConfig
+from ska_utils import AppConfig, Config as UtilConfig
 
+from sk_agents.configs import TA_API_KEY
 from sk_agents.ska_types import ChatCompletionFactory, ModelType
 
 
@@ -16,17 +17,11 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
         "gemini-1.0-pro",
     ]
 
-    GEMINI_API_KEY = UtilConfig(
-        env_name="GEMINI_API_KEY",
-        is_required=True,
-        default_value=None,
-    )
+    _CONFIGS: list[UtilConfig] = []
 
-    _CONFIGS: list[UtilConfig] = [GEMINI_API_KEY]
-
-    def __init__(self, app_config):
+    def __init__(self, app_config: AppConfig):
         super().__init__(app_config)
-        self.api_key = app_config.get(self.GEMINI_API_KEY.env_name)
+        self.api_key = app_config.get(TA_API_KEY.env_name)
 
     @staticmethod
     def get_configs() -> list[UtilConfig]:
@@ -38,7 +33,7 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
         if model_name in self._GEMINI_MODELS:
             return GoogleAIChatCompletion(
                 service_id=service_id,
-                ai_model_id=model_name,
+                gemini_model_id=model_name,
                 api_key=self.api_key,
             )
         else:
