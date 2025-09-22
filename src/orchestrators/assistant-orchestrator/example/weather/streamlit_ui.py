@@ -85,7 +85,8 @@ def format_weather_response(response_text: str) -> str:
                     formatted_lines.append(line)
 
             return '\n'.join(formatted_lines)
-    except Exception:
+    except Exception as e:
+        print(f"Warning: Error formatting weather response: {e}")
         pass
 
     return response_text
