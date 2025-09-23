@@ -37,7 +37,7 @@ export GEMINI_API_KEY="your_gemini_api_key_here"
 
 2. Configure the agent to use the custom Gemini completion factory:
 ```bash
-export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="sk_agents.chat_completion.custom.gemini_chat_completion_factory"
+export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py"
 export TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME="GeminiChatCompletionFactory"
 ```
 
