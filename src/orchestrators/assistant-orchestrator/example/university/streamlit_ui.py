@@ -46,7 +46,7 @@ def call_university_agent(message: str, chat_history: List[Dict]) -> str:
         }
         
         response = requests.post(
-            f"{st.session_state.agent_url}/skagents/v1/invoke",
+            f"{st.session_state.agent_url}/UniversityAgent/0.1",
             json=payload,
             timeout=30
         )
@@ -68,7 +68,7 @@ def call_university_agent(message: str, chat_history: List[Dict]) -> str:
 def check_agent_status() -> bool:
     """Check if the university agent is running."""
     try:
-        response = requests.get(f"{st.session_state.agent_url}/health", timeout=5)
+        response = requests.get(f"{st.session_state.agent_url}/UniversityAgent/0.1/docs", timeout=5)
         return response.status_code == 200
     except:
         return False
