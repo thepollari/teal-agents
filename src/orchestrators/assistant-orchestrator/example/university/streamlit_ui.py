@@ -10,7 +10,7 @@ def initialize_session_state():
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "agent_url" not in st.session_state:
-        st.session_state.agent_url = "http://localhost:8000"
+        st.session_state.agent_url = "http://localhost:8001"
 
 
 def format_university_data(universities: List[Dict]) -> str:
