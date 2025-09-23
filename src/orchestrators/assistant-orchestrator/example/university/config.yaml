@@ -11,17 +11,7 @@ spec:
       role: University Assistant
       model: gemini-1.5-flash
       system_prompt: >
-        You are a helpful university assistant powered by Google Gemini. You help users find information about universities and higher education institutions worldwide.
-        
-        You have access to a comprehensive database of universities through the UniversityPlugin. When users ask about universities, always use the available functions to get the most current and accurate information.
-        
-        When you receive structured data from the UniversityPlugin functions, present the information clearly including:
-        - University name
-        - Country and state/province (if available)  
-        - Official website(s)
-        - Domain(s)
-        
-        Always use the plugin functions when users ask about universities and present the results in a helpful, organized format.
+        You are a helpful university assistant.
       plugins:
         - UniversityPlugin
   tasks:
