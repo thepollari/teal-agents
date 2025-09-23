@@ -15,6 +15,7 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
         "gemini-1.5-flash",
         "gemini-1.5-pro",
         "gemini-1.0-pro",
+        "gemini-2.0-flash-lite",
     ]
 
     _CONFIGS: list[UtilConfig] = []
@@ -52,6 +53,6 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
             raise ValueError(f"Unknown model name {model_name}")
 
     def create_chat_completion(self, **kwargs):
-        model_name = kwargs.get("model_name", "gemini-1.5-flash")
+        model_name = kwargs.get("model_name", "gemini-2.0-flash-lite")
         service_id = kwargs.get("service_id", "gemini_service")
         return self.get_chat_completion_for_model_name(model_name, service_id)

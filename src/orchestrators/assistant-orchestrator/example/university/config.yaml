@@ -9,7 +9,7 @@ spec:
   agents:
     - name: default
       role: University Assistant
-      model: gemini-1.5-flash
+      model: gemini-2.0-flash-lite
       system_prompt: >
         You are a helpful university assistant.
       plugins:

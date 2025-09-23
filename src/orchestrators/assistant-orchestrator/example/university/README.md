@@ -5,7 +5,7 @@ A comprehensive university agent powered by Google Gemini that provides informat
 ## Overview
 
 The University Agent demonstrates the full Teal Agents Framework capabilities by integrating:
-- **Google Gemini 1.5 Flash** for natural language processing via custom chat completion factory
+- **Google Gemini 2.0 Flash-Lite** for natural language processing via custom chat completion factory
 - **Universities API** (universities.hipolabs.com) for real-time university data
 - **Streamlit UI** for interactive testing and user experience
 
@@ -95,7 +95,7 @@ The agent returns structured information about universities:
 
 1. **GeminiChatCompletionFactory** (`src/sk-agents/src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py`)
    - Custom completion factory for Google Gemini integration
-   - Supports Gemini 1.5 Flash model with structured output
+   - Supports Gemini 2.0 Flash-Lite model with structured output
    - Environment variable configuration for API key
 
 2. **UniversityPlugin** (`custom_plugins.py`)
@@ -105,7 +105,7 @@ The agent returns structured information about universities:
    - Comprehensive error handling and response formatting
 
 3. **Agent Configuration** (`config.yaml`)
-   - Sequential agent using Gemini 1.5 Flash model
+   - Sequential agent using Gemini 2.0 Flash-Lite model
    - University-focused system prompt
    - Plugin integration and task definition
 
@@ -133,7 +133,7 @@ User Query → Streamlit UI → University Agent → Gemini API → University A
 
 ### Google Gemini API
 
-- **Model**: gemini-1.5-flash
+- **Model**: gemini-2.0-flash-lite
 - **Rate Limits**: 15 requests/minute (free tier)
 - **Features**: Natural language processing, structured output support
 
