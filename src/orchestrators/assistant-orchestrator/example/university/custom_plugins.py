@@ -19,6 +19,12 @@ class University(BaseModel):
     alpha_two_code: str
 
 
+class UniversitySearchResult(BaseModel):
+    message: str
+    universities: List[University]
+    error: str | None = None
+
+
 class UniversityPlugin(BasePlugin):
     @staticmethod
     def _get_universities_url(name: str = None, country: str = None) -> str:
@@ -36,7 +42,7 @@ class UniversityPlugin(BasePlugin):
     @kernel_function(
         description="Search for universities by name and/or country"
     )
-    def search_universities(self, query: str) -> str:
+    def search_universities(self, query: str) -> UniversitySearchResult:
         try:
             url = self._get_universities_url(name=query)
             response = requests.get(url, timeout=10)
@@ -44,7 +50,10 @@ class UniversityPlugin(BasePlugin):
             
             universities_data = response.json()
             if not universities_data:
-                return json.dumps({"message": f"No universities found for query: {query}", "universities": []})
+                return UniversitySearchResult(
+                    message=f"No universities found for query: {query}",
+                    universities=[]
+                )
             
             universities = []
             for uni_data in universities_data[:10]:
@@ -56,22 +65,30 @@ class UniversityPlugin(BasePlugin):
                     state_province=uni_data.get("state-province"),
                     alpha_two_code=uni_data.get("alpha_two_code", "")
                 )
-                universities.append(university.model_dump())
+                universities.append(university)
             
-            return json.dumps({
-                "message": f"Found {len(universities)} universities for query: {query}",
-                "universities": universities
-            })
+            return UniversitySearchResult(
+                message=f"Found {len(universities)} universities for query: {query}",
+                universities=universities
+            )
             
         except requests.RequestException as e:
-            return json.dumps({"error": f"Failed to fetch universities: {str(e)}", "universities": []})
+            return UniversitySearchResult(
+                message="Failed to fetch universities",
+                universities=[],
+                error=f"Failed to fetch universities: {str(e)}"
+            )
         except Exception as e:
-            return json.dumps({"error": f"Unexpected error: {str(e)}", "universities": []})
+            return UniversitySearchResult(
+                message="Unexpected error occurred",
+                universities=[],
+                error=f"Unexpected error: {str(e)}"
+            )
 
     @kernel_function(
         description="Find universities in a specific country"
     )
-    def get_universities_by_country(self, country: str) -> str:
+    def get_universities_by_country(self, country: str) -> UniversitySearchResult:
         try:
             url = self._get_universities_url(country=country)
             response = requests.get(url, timeout=10)
@@ -79,7 +96,10 @@ class UniversityPlugin(BasePlugin):
             
             universities_data = response.json()
             if not universities_data:
-                return json.dumps({"message": f"No universities found in country: {country}", "universities": []})
+                return UniversitySearchResult(
+                    message=f"No universities found in country: {country}",
+                    universities=[]
+                )
             
             universities = []
             for uni_data in universities_data[:20]:
@@ -91,14 +111,22 @@ class UniversityPlugin(BasePlugin):
                     state_province=uni_data.get("state-province"),
                     alpha_two_code=uni_data.get("alpha_two_code", "")
                 )
-                universities.append(university.model_dump())
+                universities.append(university)
             
-            return json.dumps({
-                "message": f"Found {len(universities)} universities in {country}",
-                "universities": universities
-            })
+            return UniversitySearchResult(
+                message=f"Found {len(universities)} universities in {country}",
+                universities=universities
+            )
             
         except requests.RequestException as e:
-            return json.dumps({"error": f"Failed to fetch universities: {str(e)}", "universities": []})
+            return UniversitySearchResult(
+                message="Failed to fetch universities",
+                universities=[],
+                error=f"Failed to fetch universities: {str(e)}"
+            )
         except Exception as e:
-            return json.dumps({"error": f"Unexpected error: {str(e)}", "universities": []})
+            return UniversitySearchResult(
+                message="Unexpected error occurred", 
+                universities=[],
+                error=f"Unexpected error: {str(e)}"
+            )

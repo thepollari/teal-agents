@@ -129,7 +129,7 @@ def main():
             if message["role"] == "assistant":
                 content = message["content"]
                 try:
-                    if "universities" in content and content.strip().startswith("{"):
+                    if content.strip().startswith("{") and "universities" in content:
                         data = json.loads(content)
                         if "universities" in data:
                             st.markdown(data.get("message", ""))
@@ -141,7 +141,10 @@ def main():
                         else:
                             st.markdown(content)
                     else:
-                        st.markdown(content)
+                        if "universities" in content.lower() and any(keyword in content.lower() for keyword in ["website:", "domain:", "country:"]):
+                            st.markdown(content)
+                        else:
+                            st.markdown(content)
                 except (json.JSONDecodeError, KeyError):
                     st.markdown(content)
             else:
@@ -177,7 +180,10 @@ def main():
                         else:
                             st.markdown(response)
                     else:
-                        st.markdown(response)
+                        if "universities" in response.lower() and any(keyword in response.lower() for keyword in ["website:", "domain:", "country:"]):
+                            st.markdown(response)
+                        else:
+                            st.markdown(response)
                 except (json.JSONDecodeError, KeyError):
                     st.markdown(response)
         
