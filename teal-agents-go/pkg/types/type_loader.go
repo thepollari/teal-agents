@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"plugin"
 	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -38,6 +40,8 @@ func NewTypeLoader(typesModule string, agentsPath string) *TypeLoader {
 			log.Printf("Warning: Could not load custom types module '%s': %v", typesModule, err)
 		}
 	}
+	
+	tl.ApplyRegistrations()
 
 	return tl
 }
@@ -63,8 +67,39 @@ func (tl *TypeLoader) setTypesModule(typesModule string) error {
 	}
 
 	log.Printf("Custom types module specified: %s", typesModule)
-	log.Printf("Note: Custom types must be registered using TypeLoader.RegisterType() in Go")
+	
+	if strings.HasSuffix(typesModule, ".so") {
+		log.Printf("Loading .so plugin: %s", typesModule)
+		return tl.loadPluginTypes(typesModule)
+	}
+	
+	if strings.HasSuffix(typesModule, ".go") {
+		log.Printf("Loading .go file as plugin: %s", typesModule)
+		return tl.LoadCustomTypesFromFile(typesModule)
+	}
+	
+	log.Printf("Unsupported types module format: %s", typesModule)
+	return fmt.Errorf("unsupported types module format: %s", typesModule)
+}
 
+func (tl *TypeLoader) loadPluginTypes(pluginPath string) error {
+	p, err := plugin.Open(pluginPath)
+	if err != nil {
+		return fmt.Errorf("failed to open plugin %s: %w", pluginPath, err)
+	}
+	
+	registerFunc, err := p.Lookup("RegisterCustomTypes")
+	if err != nil {
+		return fmt.Errorf("RegisterCustomTypes function not found in plugin: %w", err)
+	}
+	
+	if regFunc, ok := registerFunc.(func(*TypeLoader)); ok {
+		regFunc(tl)
+		log.Printf("Successfully loaded custom types from plugin: %s", pluginPath)
+	} else {
+		return fmt.Errorf("RegisterCustomTypes function has wrong signature")
+	}
+	
 	return nil
 }
 
@@ -109,21 +144,6 @@ func InitializeTypeLoader(typesModule, agentsPath string) {
 	typeLoaderOnce.Do(func() {
 		globalTypeLoader = NewTypeLoader(typesModule, agentsPath)
 	})
-	
-	if typesModule != "" && globalTypeLoader != nil {
-		globalTypeLoader.RegisterType("MathInput", struct {
-			Number1   int    `json:"number_1"`
-			Number2   int    `json:"number_2"`
-			Operation string `json:"operation"`
-		}{})
-		
-		globalTypeLoader.RegisterType("MathOutput", struct {
-			Result int    `json:"result"`
-			Error  string `json:"error,omitempty"`
-		}{})
-		
-		log.Printf("Registered example custom types in TypeLoader")
-	}
 }
 
 func GetTypeLoaderWithPath(typesModule, agentsPath string) *TypeLoader {

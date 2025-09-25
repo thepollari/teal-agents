@@ -124,25 +124,6 @@ func setupApplication(config *types.BaseConfig, appConfig types.AppConfig) http.
 	typesModule := appConfig.Get("TA_TYPES_MODULE")
 
 	types.InitializeTypeLoader(typesModule, agentsPath)
-	
-	if typesModule != "" {
-		log.Printf("Attempting to register custom types from: %s", typesModule)
-		
-		typeLoader := types.GetTypeLoader()
-		
-		typeLoader.RegisterType("MathInput", struct {
-			Number1   int    `json:"number_1"`
-			Number2   int    `json:"number_2"`
-			Operation string `json:"operation"`
-		}{})
-		
-		typeLoader.RegisterType("MathOutput", struct {
-			Result int    `json:"result"`
-			Error  string `json:"error,omitempty"`
-		}{})
-		
-		log.Printf("Registered example custom types: MathInput, MathOutput")
-	}
 
 	return routes.GetRestRoutes(name, version, description, *config)
 }

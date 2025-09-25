@@ -37,3 +37,7 @@ func RegisterCustomTypes(tl *types.TypeLoader) {
 	tl.RegisterType("UserProfileInput", UserProfileInput{})
 	tl.RegisterType("UserProfileOutput", UserProfileOutput{})
 }
+
+func init() {
+	types.RegisterTypeRegistrationFunc(RegisterCustomTypes)
+}
