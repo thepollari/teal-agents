@@ -165,11 +165,19 @@ func (r *Routes) handleAgentCard(name, version, description string, config types
 		if config.InputType != nil && *config.InputType != "" {
 			if _, err := typeLoader.GetType(*config.InputType); err == nil {
 				agentCard["customInputType"] = true
+				log.Printf("Custom input type '%s' is registered", *config.InputType)
+			} else {
+				log.Printf("Custom input type '%s' not found: %v", *config.InputType, err)
+				agentCard["customInputType"] = false
 			}
 		}
 		if config.OutputType != nil && *config.OutputType != "" {
 			if _, err := typeLoader.GetType(*config.OutputType); err == nil {
 				agentCard["customOutputType"] = true
+				log.Printf("Custom output type '%s' is registered", *config.OutputType)
+			} else {
+				log.Printf("Custom output type '%s' not found: %v", *config.OutputType, err)
+				agentCard["customOutputType"] = false
 			}
 		}
 
