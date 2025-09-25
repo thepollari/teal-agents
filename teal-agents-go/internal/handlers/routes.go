@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/thepollari/teal-agents-go/pkg/agents"
 	"github.com/thepollari/teal-agents-go/pkg/types"
 )
@@ -21,23 +23,19 @@ func NewRoutes(appConfig types.AppConfig) *Routes {
 	}
 }
 
-func (r *Routes) GetRestRoutes(name, version, description string, config types.BaseConfig) *http.ServeMux {
-	mux := http.NewServeMux()
+func (r *Routes) GetRestRoutes(name, version, description string, config types.BaseConfig) chi.Router {
+	router := chi.NewRouter()
 
-	mux.HandleFunc("POST /", r.addCORSHeaders(r.handleInvoke(config)))
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Use(r.corsMiddleware)
 
-	mux.HandleFunc("POST /sse", r.addCORSHeaders(r.handleInvokeSSE(config)))
+	router.Post("/", r.handleInvoke(config))
+	router.Post("/sse", r.handleInvokeSSE(config))
+	router.Get("/health", r.handleHealth())
+	router.Get("/agent-card", r.handleAgentCard(name, version, description, config))
 
-	mux.HandleFunc("GET /health", r.addCORSHeaders(r.handleHealth()))
-
-	mux.HandleFunc("GET /agent-card", r.addCORSHeaders(r.handleAgentCard(name, version, description, config)))
-
-	mux.HandleFunc("OPTIONS /", r.handleOptions())
-	mux.HandleFunc("OPTIONS /sse", r.handleOptions())
-	mux.HandleFunc("OPTIONS /health", r.handleOptions())
-	mux.HandleFunc("OPTIONS /agent-card", r.handleOptions())
-
-	return mux
+	return router
 }
 
 func (r *Routes) handleInvoke(config types.BaseConfig) http.HandlerFunc {
@@ -194,21 +192,17 @@ func (r *Routes) createHandler(config types.BaseConfig) (types.BaseHandler, erro
 	}
 }
 
-func (r *Routes) addCORSHeaders(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func (r *Routes) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		handler(w, req)
-	}
-}
+		if req.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 
-func (r *Routes) handleOptions() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.WriteHeader(http.StatusOK)
-	}
+		next.ServeHTTP(w, req)
+	})
 }
