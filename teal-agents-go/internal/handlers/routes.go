@@ -30,10 +30,13 @@ func (r *Routes) GetRestRoutes(name, version, description string, config types.B
 	router.Use(middleware.Recoverer)
 	router.Use(r.corsMiddleware)
 
-	router.Post("/", r.handleInvoke(config))
-	router.Post("/sse", r.handleInvokeSSE(config))
-	router.Get("/health", r.handleHealth())
-	router.Get("/agent-card", r.handleAgentCard(name, version, description, config))
+	versionedRouter := chi.NewRouter()
+	versionedRouter.Post("/", r.handleInvoke(config))
+	versionedRouter.Post("/sse", r.handleInvokeSSE(config))
+	versionedRouter.Get("/health", r.handleHealth())
+	versionedRouter.Get("/agent-card", r.handleAgentCard(name, version, description, config))
+
+	router.Mount(fmt.Sprintf("/%s/%s", name, version), versionedRouter)
 
 	return router
 }

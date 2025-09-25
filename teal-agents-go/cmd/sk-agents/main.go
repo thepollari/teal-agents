@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/thepollari/teal-agents-go/internal/handlers"
 	"github.com/thepollari/teal-agents-go/pkg/kernel"
@@ -67,14 +68,16 @@ func loadConfigFromFile(path string) (*types.BaseConfig, error) {
 
 func getDefaultConfig() *types.BaseConfig {
 	name := "teal-agents-go"
+	serviceName := "teal-agents-go"
 	version := "1.0.0"
 	description := "Golang implementation of teal-agents with semantic kernel"
 	inputType := "BaseInput"
 	outputType := "InvokeResponse"
 
 	return &types.BaseConfig{
-		APIVersion:  "v1",
+		APIVersion:  "skagents/v1",
 		Name:        &name,
+		ServiceName: &serviceName,
 		Version:     version,
 		Description: &description,
 		InputType:   &inputType,
@@ -107,11 +110,52 @@ func getDefaultConfig() *types.BaseConfig {
 func setupApplication(config *types.BaseConfig, appConfig types.AppConfig) http.Handler {
 	routes := handlers.NewRoutes(appConfig)
 
-	name := getStringValue(config.Name)
-	version := fmt.Sprintf("%v", config.Version)
-	description := getStringValue(config.Description)
+	name, version, description, err := extractServiceInfo(*config)
+	if err != nil {
+		log.Fatalf("Failed to extract service info: %v", err)
+	}
 
 	return routes.GetRestRoutes(name, version, description, *config)
+}
+
+func extractServiceInfo(config types.BaseConfig) (string, string, string, error) {
+	parts := strings.Split(config.APIVersion, "/")
+	if len(parts) != 2 {
+		return "", "", "", fmt.Errorf("invalid API version format: %s", config.APIVersion)
+	}
+
+	rootHandler := parts[0]
+	apiVersion := parts[1]
+
+	var name string
+	version := fmt.Sprintf("%v", config.Version)
+
+	if rootHandler == "tealagents" {
+		if apiVersion == "v1alpha1" {
+			name = getStringValue(config.Name)
+		}
+	} else if rootHandler == "skagents" {
+		if apiVersion == "v2alpha1" {
+			name = getStringValue(config.Name)
+		} else {
+			name = getStringValue(config.ServiceName)
+		}
+	}
+
+	if name == "" {
+		return "", "", "", fmt.Errorf("service name is not defined in the configuration")
+	}
+
+	if version == "" {
+		return "", "", "", fmt.Errorf("service version is not defined in the configuration")
+	}
+
+	description := getStringValue(config.Description)
+	if description == "" && config.ServiceName != nil {
+		description = fmt.Sprintf("%s API", *config.ServiceName)
+	}
+
+	return name, version, description, nil
 }
 
 func getStringValue(s *string) string {
