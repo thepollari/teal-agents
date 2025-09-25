@@ -62,19 +62,32 @@ class MockGeminiChatCompletion(ChatCompletionClientBase):
         )
 
     async def get_chat_message_contents(self, *args, **kwargs):
-        """Return mock chat response."""
-        return [
-            ChatMessageContent(
-                role=AuthorRole.ASSISTANT,
-                content=(
-                    "I found several universities in Finland. Here are the details:\n\n"
-                    "**1. Aalto University**\n🌍 **Country:** Finland\n"
-                    "🔗 **Website:** https://www.aalto.fi\n📧 **Domain:** aalto.fi\n\n"
-                    "**2. University of Helsinki**\n🌍 **Country:** Finland\n"
-                    "🔗 **Website:** https://www.helsinki.fi\n📧 **Domain:** helsinki.fi"
-                ),
-            )
-        ]
+        """Return mock chat response with proper metadata."""
+        content = (
+            "I found several universities in Finland. Here are the details:\n\n"
+            "**1. Aalto University**\n🌍 **Country:** Finland\n"
+            "🔗 **Website:** https://www.aalto.fi\n📧 **Domain:** aalto.fi\n\n"
+            "**2. University of Helsinki**\n🌍 **Country:** Finland\n"
+            "🔗 **Website:** https://www.helsinki.fi\n📧 **Domain:** helsinki.fi"
+        )
+        
+        message = ChatMessageContent(
+            role=AuthorRole.ASSISTANT,
+            content=content,
+        )
+        
+        class MockUsage:
+            def __init__(self):
+                self.output_tokens = len(content.split())
+                self.input_tokens = 50
+                
+        class MockInnerContent:
+            def __init__(self):
+                self.usage = MockUsage()
+        
+        message.inner_content = MockInnerContent()
+        
+        return [message]
 
     async def get_streaming_chat_message_contents(self, *args, **kwargs):
         """Return mock streaming chat response."""

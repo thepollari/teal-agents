@@ -51,10 +51,13 @@ Streamlit Error Handling Test
     [Documentation]    Test UI error handling when agent is unavailable
     [Tags]    ui    error-handling
     
-    Terminate Process    ${AGENT_PROCESS}
+    # Get the agent process from the suite setup and stop it
+    ${agent_process}=    Get Variable Value    ${AGENT_PROCESS}    ${NONE}
+    Run Keyword If    "${agent_process}" != "None"    Terminate Process    ${agent_process}
+    Sleep    3s    # Allow process to fully terminate
     
     Open University Agent UI        ${UI_BASE_URL}
-    Click Button                   Check Agent Status
+    Click Agent Status Check Button
     Verify Agent Status Shows      ❌ Agent is not responding
     
     Enter Chat Message             Find universities in Finland
