@@ -1,230 +1,267 @@
 # Custom Types in Teal Agents Go
 
-This document explains how to use custom types with the `TA_TYPES_MODULE` environment variable in the Golang implementation of teal-agents.
+This document explains how to use custom types with the Golang implementation of Teal Agents.
 
 ## Overview
 
-Unlike Python's dynamic module loading, Go uses a registry-based approach for custom types. Users must explicitly register their custom types with the TypeLoader during application startup.
+The Golang implementation supports custom types through a **build-time approach** where custom types must be compiled into the binary. This is different from Python's dynamic module loading due to Go's static nature.
+
+## Build-Time Approach
+
+### Why Build-Time?
+
+Go is a statically compiled language that doesn't support Python's dynamic module loading. The available options were:
+
+1. **Build-time approach**: Compile custom types into the binary ✅ (Current implementation)
+2. **Accept limitations**: Document that Go requires custom types to be compiled in
+
+This approach ensures stability and avoids runtime crashes while maintaining type safety.
 
 ## How It Works
 
-1. **Define Custom Types**: Create Go structs that represent your custom input/output types
-2. **Create Registration Function**: Write a function that registers your types with the TypeLoader
-3. **Set Environment Variable**: Use `TA_TYPES_MODULE` to point to your custom types file
-4. **Initialize**: The TypeLoader will detect your custom types file and log instructions
+### Type Registration System
 
-## Step-by-Step Guide
+Custom types are registered using `init()` functions that execute when the binary starts:
 
-### 1. Create Custom Types File
+1. **Standard Types**: Built-in types like `BaseInput`, `InvokeResponse`, etc.
+2. **Custom Types**: User-defined types registered through `init()` functions
+3. **Build Tags**: Use `-tags custom_types` to include custom type packages
 
-Create a file (e.g., `custom_types.go`) with your custom types:
+## Creating Custom Types
+
+### 1. Create Custom Types Package
+
+Create a separate package for your custom types:
+
+```
+examples/math_agent/
+├── types/
+│   └── custom_types.go
+├── config.yaml
+└── main.go
+```
+
+### 2. Define Your Types
 
 ```go
-package main
+// examples/math_agent/types/custom_types.go
+package types
 
 import (
     "github.com/thepollari/teal-agents-go/pkg/types"
 )
 
-// Custom input type for mathematical operations
 type MathInput struct {
     Number1   int    `json:"number_1"`
     Number2   int    `json:"number_2"`
     Operation string `json:"operation"`
 }
 
-// Custom output type for mathematical results
 type MathOutput struct {
     Result int    `json:"result"`
     Error  string `json:"error,omitempty"`
 }
 
-// Registration function - REQUIRED
 func RegisterCustomTypes(tl *types.TypeLoader) {
     tl.RegisterType("MathInput", MathInput{})
     tl.RegisterType("MathOutput", MathOutput{})
 }
+
+func init() {
+    types.RegisterTypeRegistrationFunc(RegisterCustomTypes)
+}
 ```
 
-### 2. Initialize Types in Your Application
-
-In your main application or initialization code:
+### 3. Create Import File with Build Tag
 
 ```go
+// cmd/sk-agents/import_custom_types.go
+//go:build custom_types
+
 package main
 
 import (
-    "github.com/thepollari/teal-agents-go/pkg/types"
+    _ "github.com/thepollari/teal-agents-go/examples/math_agent/types"
 )
-
-func main() {
-    // Get the global type loader
-    typeLoader := types.GetTypeLoader()
-    
-    // Register your custom types
-    RegisterCustomTypes(typeLoader)
-    
-    // Continue with your application...
-}
 ```
 
-### 3. Set Environment Variable
-
-Set the `TA_TYPES_MODULE` environment variable to point to your custom types file:
+### 4. Build with Custom Types
 
 ```bash
-export TA_TYPES_MODULE="/path/to/your/custom_types.go"
+# Build binary with custom types
+go build -tags custom_types -o sk-agents ./cmd/sk-agents/
+
+# Run with custom types compiled in
+./sk-agents
 ```
 
-Or use it when starting your application:
+## Configuration
 
-```bash
-TA_TYPES_MODULE="/path/to/custom_types.go" go run cmd/sk-agents/main.go
-```
-
-### 4. Configure Agent to Use Custom Types
-
-Update your agent configuration to specify the custom input/output types:
+Update your agent configuration to use the custom types:
 
 ```yaml
+# config.yaml
 apiVersion: skagents/v1
-name: MathAgent
-serviceName: math-service
-version: "1.0.0"
-description: "Agent that performs mathematical operations"
-inputType: "MathInput"    # Your custom input type
-outputType: "MathOutput"  # Your custom output type
+kind: Agent
+metadata:
+  name: MathAgent
+  version: "1.0.0"
+  description: "Agent that performs mathematical operations using custom types"
 spec:
-  model_name: "gpt-3.5-turbo"
-  service_id: "openai"
+  model_name: gpt-3.5-turbo
+  service_id: openai
   settings:
-    temperature: 0.1
+    temperature: 0.7
+    max_tokens: 1000
+  input_type: MathInput    # Reference your custom input type
+  output_type: MathOutput  # Reference your custom output type
 ```
 
-## Fallback Mechanism
+## Usage Example
 
-If `TA_TYPES_MODULE` is not set, the TypeLoader will automatically look for `custom_types.go` in the same directory as your configuration file:
+### Building and Running
 
-```
-your-agent/
-├── config.yaml
-├── custom_types.go  # Automatically detected
-└── main.go
-```
-
-## API Usage
-
-Once registered, your custom types work seamlessly with the HTTP API:
-
-### POST Request with Custom Input
 ```bash
-curl -X POST http://localhost:8000/math-service/1.0.0/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "number_1": 10,
-    "number_2": 5,
-    "operation": "add"
-  }'
+cd teal-agents-go
+
+# Build with custom types
+go build -tags custom_types -o cmd/sk-agents/sk-agents ./cmd/sk-agents/
+
+# Run the agent
+cd examples/math_agent
+export TA_SERVICE_CONFIG="$(pwd)/config.yaml"
+export OPENAI_API_KEY="your-api-key"
+export PORT=8080
+
+../../cmd/sk-agents/sk-agents
 ```
 
-### Response with Custom Output
+### Testing Custom Types
+
+1. **Check Agent Card**:
+```bash
+curl http://localhost:8080/math-service/1.0.0/agent-card | jq
+```
+
+Expected response:
 ```json
 {
-  "result": 15,
-  "error": ""
+  "customInputType": true,
+  "customOutputType": true,
+  "inputType": "MathInput",
+  "outputType": "MathOutput"
 }
 ```
 
-## Type Registration Methods
-
-The TypeLoader provides several methods for working with custom types:
-
-```go
-// Register a custom type
-typeLoader.RegisterType("MyType", MyType{})
-
-// Get a registered type
-typeRef, err := typeLoader.GetType("MyType")
-
-// Create an instance of a registered type
-instance, err := typeLoader.CreateInstance("MyType")
-
-// Check if a standard type exists
-typeRef, exists := typeLoader.GetStandardType("BaseInput")
-```
-
-## Best Practices
-
-1. **Consistent Naming**: Use the same type names in your Go code and configuration files
-2. **JSON Tags**: Always include JSON tags for proper serialization
-3. **Error Handling**: Handle registration errors gracefully
-4. **Documentation**: Document your custom types for other developers
-
-## Testing Results
-
-### ✅ Comprehensive Testing Completed
-
-**Server Functionality:**
-- ✅ Server starts successfully with `TA_TYPES_MODULE` environment variable
-- ✅ Server detects custom types module and logs proper initialization
-- ✅ Fallback mechanism works (automatically finds `custom_types.go` in agent directory)
-- ✅ Configuration parsing correctly recognizes `input_type` and `output_type` fields
-
-**HTTP Endpoints:**
-- ✅ `/health` endpoint returns proper health status
-- ✅ `/agent-card` endpoint returns correct `inputType` and `outputType` from configuration
-- ✅ `/` (invoke) endpoint successfully processes requests with custom input JSON
-- ✅ Server handles both valid and invalid JSON gracefully
-
-**Custom Type Processing:**
-- ✅ Server accepts custom MathInput JSON structure (`number_1`, `number_2`, `operation`)
-- ✅ Type validation works during request processing
-- ✅ Placeholder responses demonstrate end-to-end functionality
-- ⚠️ Testing done with mock OpenAI API key (placeholder implementation)
-
-**Example Test Commands:**
+2. **Invoke with Custom Input**:
 ```bash
-# Test agent-card endpoint
-curl -s http://localhost:PORT/math-service/1.0.0/agent-card | jq '{inputType, outputType}'
-
-# Test invoke endpoint with custom types
-curl -s -X POST http://localhost:PORT/math-service/1.0.0/ \
-  -H "Content-Type: application/json" \
-  -d '{"number_1": 200, "number_2": 8, "operation": "divide"}' | jq .
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"number_1": 10, "number_2": 5, "operation": "add"}' \
+  http://localhost:8080/math-service/1.0.0/
 ```
+
+## User Instructions
+
+### For Users Who Need Custom Types
+
+If you need custom types, you must:
+
+1. **Create your custom types package** following the structure above
+2. **Update the import file** to include your custom types package
+3. **Build your own binary** using `go build -tags custom_types`
+4. **Deploy your custom binary** instead of the standard one
+
+### For Users Who Don't Need Custom Types
+
+If you only use standard types or remote agents:
+
+1. **Use the standard binary** (no build tags needed)
+2. **Remote agents are the primary use case** and work without custom types
+3. **Standard types** (BaseInput, InvokeResponse) work out of the box
+
+## Limitations
+
+### Go vs Python Differences
+
+| Feature | Python | Go (Build-time) |
+|---------|--------|-----------------|
+| Dynamic loading | ✅ Runtime | ❌ Compile-time only |
+| Type discovery | ✅ Automatic | ❌ Manual registration |
+| Binary distribution | ✅ Single binary | ❌ Custom binary needed |
+| Type safety | ⚠️ Runtime errors | ✅ Compile-time safety |
+
+### Impact on Functionality
+
+- **✅ Remote agents**: Work perfectly (primary use case)
+- **✅ Standard types**: Work out of the box
+- **⚠️ Custom types**: Require custom binary build
+- **❌ Dynamic type loading**: Not supported in Go
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Type Not Found Error**
-   - Ensure you've called `RegisterCustomTypes()` before using the type
-   - Check that the type name matches exactly between registration and configuration
+1. **Custom types not recognized**
+   - Ensure you built with `-tags custom_types`
+   - Verify the import file includes your custom types package
+   - Check that `init()` function is called
 
-2. **JSON Parsing Errors**
-   - Verify your JSON tags match the expected field names
-   - Ensure required fields are present in requests
+2. **Build errors**
+   - Verify Go module paths are correct
+   - Ensure custom types package is properly structured
+   - Check import paths in import_custom_types.go
 
-3. **Module Not Found Warning**
-   - Check that `TA_TYPES_MODULE` points to an existing file
-   - Verify the file path is absolute or relative to the working directory
+3. **Server crashes**
+   - The build-time approach eliminates crashes from dynamic loading
+   - If crashes occur, check for other issues (missing config, etc.)
 
 ### Debug Logging
 
-The TypeLoader logs helpful information:
+The system provides debug logging:
 
 ```
-2025/09/25 12:09:32 Custom types module specified: /path/to/custom_types.go
-2025/09/25 12:09:32 Note: Custom types must be registered using TypeLoader.RegisterType() in Go
+2025/09/25 14:32:36 Applied 1 custom type registration functions
+2025/09/25 14:32:54 Custom input type 'MathInput' is registered
+2025/09/25 14:32:54 Custom output type 'MathOutput' is registered
+2025/09/25 14:33:05 Successfully parsed custom input type: MathInput
 ```
 
-## Differences from Python Implementation
+## Testing Results
 
-| Aspect | Python | Go |
-|--------|--------|-----|
-| Loading | Automatic via `importlib` | Manual via `RegisterType()` |
-| Type Discovery | Dynamic `getattr()` | Explicit registration |
-| Runtime | Dynamic | Compile-time safe |
-| Performance | Runtime overhead | Zero runtime overhead |
+### Successful Build-Time Test
 
-The Go approach trades Python's dynamic flexibility for compile-time safety and better performance.
+**Build Command**: 
+```bash
+go build -tags custom_types -o cmd/sk-agents/sk-agents ./cmd/sk-agents/
+```
+
+**Environment**:
+- TA_SERVICE_CONFIG: `/path/to/examples/math_agent/config.yaml`
+- Custom types compiled into binary
+
+**Results**:
+- ✅ Binary builds successfully with custom types
+- ✅ Server starts without crashes
+- ✅ Custom types registered via init() functions
+- ✅ Agent card shows `customInputType: true`, `customOutputType: true`
+- ✅ Invoke endpoint processes custom input correctly
+
+**Agent Card Response**:
+```json
+{
+  "name": "MathAgent",
+  "version": "1.0.0",
+  "inputType": "MathInput",
+  "outputType": "MathOutput",
+  "customInputType": true,
+  "customOutputType": true
+}
+```
+
+**Server Logs**:
+```
+2025/09/25 14:32:36 Applied 1 custom type registration functions
+2025/09/25 14:33:05 Successfully parsed custom input type: MathInput
+```
+
+This confirms that the build-time custom type approach works correctly and eliminates the crashes from dynamic loading attempts.
