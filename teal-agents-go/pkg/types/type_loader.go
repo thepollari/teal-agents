@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"plugin"
 	"reflect"
-	"strings"
 	"sync"
 )
 
@@ -63,23 +62,16 @@ func (tl *TypeLoader) setTypesModule(typesModule string) error {
 	}
 
 	if _, err := os.Stat(typesModule); os.IsNotExist(err) {
-		return fmt.Errorf("types module file not found: %s", typesModule)
+		log.Printf("Warning: Custom types file not found: %s", typesModule)
+		log.Printf("Note: Custom types must be compiled into the binary using init() functions")
+		return nil
 	}
 
 	log.Printf("Custom types module specified: %s", typesModule)
+	log.Printf("Note: Go requires custom types to be compiled into the binary")
+	log.Printf("Custom types should be registered via init() functions in imported packages")
 	
-	if strings.HasSuffix(typesModule, ".so") {
-		log.Printf("Loading .so plugin: %s", typesModule)
-		return tl.loadPluginTypes(typesModule)
-	}
-	
-	if strings.HasSuffix(typesModule, ".go") {
-		log.Printf("Loading .go file via source parsing: %s", typesModule)
-		return tl.LoadCustomTypesFromFile(typesModule)
-	}
-	
-	log.Printf("Unsupported types module format: %s", typesModule)
-	return fmt.Errorf("unsupported types module format: %s", typesModule)
+	return nil
 }
 
 func (tl *TypeLoader) loadPluginTypes(pluginPath string) error {

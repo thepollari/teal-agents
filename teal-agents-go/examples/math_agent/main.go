@@ -3,14 +3,15 @@ package main
 import (
 	"log"
 
-	"github.com/thepollari/teal-agents-go/pkg/types"
+	"github.com/thepollari/teal-agents-go/examples/math_agent/types"
+	coretypes "github.com/thepollari/teal-agents-go/pkg/types"
 )
 
 func main() {
 	log.Println("Starting Math Agent with Custom Types...")
 
-	typeLoader := types.GetTypeLoader()
-	RegisterCustomTypes(typeLoader)
+	typeLoader := coretypes.GetTypeLoader()
+	types.RegisterCustomTypes(typeLoader)
 
 	log.Println("Custom types registered successfully:")
 	log.Println("- MathInput")
