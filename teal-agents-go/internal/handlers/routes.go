@@ -24,17 +24,20 @@ func NewRoutes(appConfig types.AppConfig) *Routes {
 func (r *Routes) GetRestRoutes(name, version, description string, config types.BaseConfig) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	corsHandler := r.addCORS(mux)
+	mux.HandleFunc("POST /", r.addCORSHeaders(r.handleInvoke(config)))
 
-	mux.HandleFunc("POST /", r.handleInvoke(config))
+	mux.HandleFunc("POST /sse", r.addCORSHeaders(r.handleInvokeSSE(config)))
 
-	mux.HandleFunc("POST /sse", r.handleInvokeSSE(config))
+	mux.HandleFunc("GET /health", r.addCORSHeaders(r.handleHealth()))
 
-	mux.HandleFunc("GET /health", r.handleHealth())
+	mux.HandleFunc("GET /agent-card", r.addCORSHeaders(r.handleAgentCard(name, version, description, config)))
 
-	mux.HandleFunc("GET /agent-card", r.handleAgentCard(name, version, description, config))
+	mux.HandleFunc("OPTIONS /", r.handleOptions())
+	mux.HandleFunc("OPTIONS /sse", r.handleOptions())
+	mux.HandleFunc("OPTIONS /health", r.handleOptions())
+	mux.HandleFunc("OPTIONS /agent-card", r.handleOptions())
 
-	return corsHandler
+	return mux
 }
 
 func (r *Routes) handleInvoke(config types.BaseConfig) http.HandlerFunc {
@@ -191,21 +194,21 @@ func (r *Routes) createHandler(config types.BaseConfig) (types.BaseHandler, erro
 	}
 }
 
-func (r *Routes) addCORS(handler http.Handler) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+func (r *Routes) addCORSHeaders(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if req.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+		handler(w, req)
+	}
+}
 
-		handler.ServeHTTP(w, req)
-	})
-
-	return mux
+func (r *Routes) handleOptions() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.WriteHeader(http.StatusOK)
+	}
 }
