@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/thepollari/teal-agents-go/internal/handlers"
@@ -114,6 +115,15 @@ func setupApplication(config *types.BaseConfig, appConfig types.AppConfig) http.
 	if err != nil {
 		log.Fatalf("Failed to extract service info: %v", err)
 	}
+
+	configPath := appConfig.Get("TA_SERVICE_CONFIG")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+	agentsPath := filepath.Dir(configPath)
+	typesModule := appConfig.Get("TA_TYPES_MODULE")
+
+	types.InitializeTypeLoader(typesModule, agentsPath)
 
 	return routes.GetRestRoutes(name, version, description, *config)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -44,9 +45,33 @@ func (r *Routes) GetRestRoutes(name, version, description string, config types.B
 func (r *Routes) handleInvoke(config types.BaseConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var inputs map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&inputs); err != nil {
-			http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
-			return
+
+		if config.InputType != nil && *config.InputType != "" {
+			typeLoader := types.GetTypeLoader()
+			inputType, err := typeLoader.GetType(*config.InputType)
+			if err != nil {
+				log.Printf("Warning: Could not load input type %s: %v", *config.InputType, err)
+				if err := json.NewDecoder(req.Body).Decode(&inputs); err != nil {
+					http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+					return
+				}
+			} else {
+				inputInstance := reflect.New(inputType).Interface()
+				if err := json.NewDecoder(req.Body).Decode(inputInstance); err != nil {
+					http.Error(w, fmt.Sprintf("Invalid JSON for type %s: %v", *config.InputType, err), http.StatusBadRequest)
+					return
+				}
+
+				inputBytes, _ := json.Marshal(inputInstance)
+				json.Unmarshal(inputBytes, &inputs)
+
+				log.Printf("Successfully parsed custom input type: %s", *config.InputType)
+			}
+		} else {
+			if err := json.NewDecoder(req.Body).Decode(&inputs); err != nil {
+				http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+				return
+			}
 		}
 
 		handler, err := r.createHandler(config)
@@ -134,6 +159,18 @@ func (r *Routes) handleAgentCard(name, version, description string, config types
 
 		if config.Metadata != nil {
 			agentCard["metadata"] = config.Metadata
+		}
+
+		typeLoader := types.GetTypeLoader()
+		if config.InputType != nil && *config.InputType != "" {
+			if _, err := typeLoader.GetType(*config.InputType); err == nil {
+				agentCard["customInputType"] = true
+			}
+		}
+		if config.OutputType != nil && *config.OutputType != "" {
+			if _, err := typeLoader.GetType(*config.OutputType); err == nil {
+				agentCard["customOutputType"] = true
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

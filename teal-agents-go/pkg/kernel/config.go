@@ -59,4 +59,14 @@ func (sac *SimpleAppConfig) LoadFromEnvironment() {
 			}
 		}
 	}
+
+	sac.setDefaultIfEmpty("TA_TYPES_MODULE", "")
+	sac.setDefaultIfEmpty("TA_PLUGIN_MODULE", "")
+	sac.setDefaultIfEmpty("TA_SERVICE_CONFIG", "config.yaml")
+}
+
+func (sac *SimpleAppConfig) setDefaultIfEmpty(key, defaultValue string) {
+	if _, exists := sac.values[key]; !exists {
+		sac.values[key] = defaultValue
+	}
 }
