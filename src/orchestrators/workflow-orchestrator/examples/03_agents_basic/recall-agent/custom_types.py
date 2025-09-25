@@ -1,7 +1,7 @@
 from typing import List
 
 from pydantic import Field
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel as KernelBaseModel
 
 
 class Interaction(KernelBaseModel):

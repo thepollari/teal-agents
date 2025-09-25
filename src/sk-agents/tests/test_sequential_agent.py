@@ -4,7 +4,7 @@ import pytest
 from sk_agents.exceptions import AgentInvokeException, InvalidConfigException
 from sk_agents.extra_data_collector import ExtraDataCollector
 from sk_agents.ska_types import BaseConfig, InvokeResponse, TokenUsage
-from sk_agents.skagents.kernel_builder import KernelBuilder
+from sk_agents.skagents.kernel_builder import ChainBuilder
 from sk_agents.skagents.v1.config import AgentConfig
 from sk_agents.skagents.v1.sequential.config import Spec, TaskConfig
 from sk_agents.skagents.v1.sequential.sequential_skagents import SequentialSkagents
@@ -51,7 +51,7 @@ def config():
 
 @pytest.fixture
 def mock_kernel_builder(mocker):
-    return mocker.Mock(spec=KernelBuilder)
+    return mocker.Mock(spec=ChainBuilder)
 
 
 @pytest.fixture
@@ -78,7 +78,8 @@ def task_invoke_response_mock(mocker):
         output_raw="raw output",
     )
 
-    async def mock_invoke(*args, **kwargs):
+    async def mock_invoke(history, inputs=None):
+        history.add_ai_message("This is a Mock Message")
         return mock_response
 
     mocker.patch("sk_agents.skagents.v1.sequential.task.Task.invoke", side_effect=mock_invoke)
@@ -107,11 +108,22 @@ def mock_extra_data_collector(mocker):
 
 
 class MockMessage:
-    content: str = "This is a Mock Message"
+    def __init__(self, content: str = "This is a Mock Message"):
+        self.content = content
 
 
 class MockChatHistory:
-    messages: list = [MockMessage(), MockMessage()]
+    def __init__(self):
+        self.messages = [MockMessage(), MockMessage()]
+
+    def add_message(self, message):
+        self.messages.append(message)
+
+    def add_user_message(self, content: str):
+        self.messages.append(MockMessage(content))
+
+    def add_ai_message(self, content: str):
+        self.messages.append(MockMessage(content))
 
 
 class MockSpan:
@@ -172,10 +184,10 @@ async def test_sequential_invoke(
     )
     mock_parse_chat_history = mocker.patch(
         "sk_agents.skagents.v1.sequential.sequential_skagents.parse_chat_history",
-        return_value=MockChatHistory,
+        return_value=MockChatHistory(),
     )
     mocker.patch(
-        "sk_agents.skagents.v1.sequential.sequential_skagents.ChatHistory", new=MockChatHistory
+        "langchain_core.chat_history.InMemoryChatMessageHistory", new=MockChatHistory
     )
 
     response = await skagents.invoke(inputs=test_input)
@@ -224,10 +236,10 @@ async def test_sequential_invoke_with_output_type(
     )
     mocker.patch(
         "sk_agents.skagents.v1.sequential.sequential_skagents.parse_chat_history",
-        return_value=MockChatHistory,
+        return_value=MockChatHistory(),
     )
     mocker.patch(
-        "sk_agents.skagents.v1.sequential.sequential_skagents.ChatHistory", new=MockChatHistory
+        "langchain_core.chat_history.InMemoryChatMessageHistory", new=MockChatHistory
     )
 
     await skagents.invoke(inputs=test_input)
@@ -292,10 +304,10 @@ async def test_sequential_invoke_exception_error(
     )
     mocker.patch(
         "sk_agents.skagents.v1.sequential.sequential_skagents.parse_chat_history",
-        return_value=MockChatHistory,
+        return_value=MockChatHistory(),
     )
     mocker.patch(
-        "sk_agents.skagents.v1.sequential.sequential_skagents.ChatHistory", new=MockChatHistory
+        "langchain_core.chat_history.InMemoryChatMessageHistory", new=MockChatHistory
     )
     with pytest.raises(AgentInvokeException):
         await skagents.invoke(inputs=test_input)

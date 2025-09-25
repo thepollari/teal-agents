@@ -1,9 +1,5 @@
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
-from semantic_kernel.connectors.ai.google.google_ai.services.google_ai_chat_completion import (
-    GoogleAIChatCompletion,
-)
+from langchain_core.language_models import BaseChatModel
+from langchain_google_genai import ChatGoogleGenerativeAI
 from ska_utils import AppConfig, Config as UtilConfig
 
 from sk_agents.configs import TA_API_KEY
@@ -30,12 +26,12 @@ class GeminiChatCompletionFactory(ChatCompletionFactory):
 
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> ChatCompletionClientBase:
+    ) -> BaseChatModel:
         if model_name in self._GEMINI_MODELS:
-            return GoogleAIChatCompletion(
-                service_id=service_id,
-                gemini_model_id=model_name,
-                api_key=self.api_key,
+            return ChatGoogleGenerativeAI(
+                model=model_name,
+                google_api_key=self.api_key,
+                temperature=0.0,
             )
         else:
             raise ValueError(f"Model {model_name} not supported by GeminiChatCompletionFactory")

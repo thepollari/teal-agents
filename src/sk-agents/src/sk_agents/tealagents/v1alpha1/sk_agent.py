@@ -1,12 +1,9 @@
 from collections.abc import AsyncIterable
 from typing import Any
 
-from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents.chat_message_content import ChatMessageContent
-from semantic_kernel.contents.streaming_chat_message_content import (
-    StreamingChatMessageContent,
-)
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import BaseMessage
+from langchain_core.runnables import Runnable
 
 from sk_agents.ska_types import ModelType
 
@@ -16,7 +13,7 @@ class SKAgent:
         self,
         model_name: str,
         model_attributes: dict[str, Any],
-        agent: ChatCompletionAgent,
+        agent: Runnable,
     ):
         self.model_name = model_name
         self.agent = agent
@@ -29,11 +26,11 @@ class SKAgent:
         return self.model_attributes["so_supported"]
 
     async def invoke_stream(
-        self, history: ChatHistory
-    ) -> AsyncIterable[StreamingChatMessageContent]:
+        self, history: BaseChatMessageHistory
+    ) -> AsyncIterable[BaseMessage]:
         async for result in self.agent.invoke_stream(messages=history):
             yield result.content
 
-    async def invoke(self, history: ChatHistory) -> AsyncIterable[ChatMessageContent]:
+    async def invoke(self, history: BaseChatMessageHistory) -> AsyncIterable[BaseMessage]:
         async for result in self.agent.invoke(messages=history):
             yield result.content

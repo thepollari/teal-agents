@@ -2,17 +2,9 @@ from collections.abc import AsyncIterable
 from typing import Any
 
 from jinja2 import Template
-from semantic_kernel.contents import (
-    AuthorRole,
-    ChatMessageContent,
-    ImageContent,
-    TextContent,
-)
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents.streaming_chat_message_content import (
-    StreamingChatMessageContent,
-)
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import BaseMessage, HumanMessage
+from pydantic import BaseModel as KernelBaseModel
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
 from sk_agents.ska_types import EmbeddedImage, InvokeResponse, TokenUsage
@@ -48,10 +40,10 @@ class Task:
     @staticmethod
     def _embedded_image_to_image_content(
         embedded_image: EmbeddedImage | None,
-    ) -> ImageContent | None:
+    ) -> str | None:
         if embedded_image:
             data_uri = f"data:{embedded_image.format};base64,{embedded_image.data}"
-            return ImageContent(data_uri=data_uri)
+            return f"[Image: {data_uri}]"
         return None
 
     @staticmethod
@@ -65,24 +57,26 @@ class Task:
             return inputs.pop("embedded_image")
         return None
 
-    def _parse_text_input(self, inputs: dict[str, Any] | None = None) -> TextContent:
+    def _parse_text_input(self, inputs: dict[str, Any] | None = None) -> str:
         content = self._get_user_message_with_inputs(inputs)
-        return TextContent(text=content)
+        return content
 
-    def _get_message(self, inputs: dict[str, Any] | None = None) -> ChatMessageContent:
+    def _get_message(self, inputs: dict[str, Any] | None = None) -> HumanMessage:
         embedded_image = Task._parse_image_input(inputs)
         image_content = Task._embedded_image_to_image_content(embedded_image)
         text_content = self._parse_text_input(inputs)
-        return ChatMessageContent(
-            role=AuthorRole.USER,
-            items=[text_content, image_content] if image_content else [text_content],
-        )
+
+        if image_content:
+            content = f"{text_content}\n{image_content}"
+        else:
+            content = text_content
+        return HumanMessage(content=content)
 
     async def invoke_stream(
         self,
-        history: ChatHistory,
+        history: BaseChatMessageHistory,
         inputs: dict[str, Any] | None = None,
-    ) -> AsyncIterable[StreamingChatMessageContent | str]:
+    ) -> AsyncIterable[BaseMessage | str]:
         message = self._get_message(inputs)
         history.add_message(message)
         contents = []
@@ -94,11 +88,11 @@ class Task:
                 extra_data=self.extra_data_collector.get_extra_data()
             ).model_dump_json()
         message_content = "".join([content.content for content in contents])
-        history.add_assistant_message(message_content)
+        history.add_ai_message(message_content)
 
     async def invoke(
         self,
-        history: ChatHistory,
+        history: BaseChatMessageHistory,
         inputs: dict[str, Any] | None = None,
     ) -> InvokeResponse:
         message = self._get_message(inputs)

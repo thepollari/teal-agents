@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal
 
+from langchain_core.chat_history import BaseChatMessageHistory
 from pydantic import BaseModel, ConfigDict
-from semantic_kernel.contents.chat_history import ChatHistory
 
 from sk_agents.ska_types import ExtraData, MultiModalItem, TokenUsage
 
@@ -16,13 +16,14 @@ class UserMessage(BaseModel):
 
 
 class AgentTaskItem(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     task_id: str
     role: Literal["user", "assistant"]
     item: MultiModalItem
     request_id: str
     updated: datetime
     pending_tool_calls: list[dict] | None = None  # Store serialized FunctionCallContent
-    chat_history: ChatHistory | None = None
+    chat_history: BaseChatMessageHistory | None = None
 
 
 class AgentTask(BaseModel):

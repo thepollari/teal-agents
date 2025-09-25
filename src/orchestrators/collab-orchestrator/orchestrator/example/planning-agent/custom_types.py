@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel as KernelBaseModel
 from sk_agents.ska_types import HistoryMessage
 
 

@@ -1,5 +1,5 @@
+
 import pytest
-from semantic_kernel.contents.function_call_content import FunctionCallContent
 
 from sk_agents.tealagents.v1alpha1.hitl_manager import (
     HitlInterventionRequired,
@@ -19,14 +19,22 @@ from sk_agents.tealagents.v1alpha1.hitl_manager import (
     ],
 )
 def test_check_for_intervention(plugin_name, function_name, expected):
-    tool_call = FunctionCallContent(plugin_name=plugin_name, function_name=function_name)
+    tool_call = {
+        "name": f"{plugin_name}.{function_name}",
+        "plugin_name": plugin_name,
+        "function_name": function_name
+    }
     assert check_for_intervention(tool_call) == expected
 
 
 def test_hitl_intervention_required_exception_single():
     plugin_name = "sensitive_plugin"
     function_name = "delete_user_data"
-    fc = FunctionCallContent(plugin_name=plugin_name, function_name=function_name)
+    fc = {
+        "name": f"{plugin_name}.{function_name}",
+        "plugin_name": plugin_name,
+        "function_name": function_name
+    }
 
     with pytest.raises(HitlInterventionRequired) as exc_info:
         raise HitlInterventionRequired([fc])
@@ -39,8 +47,16 @@ def test_hitl_intervention_required_exception_single():
 
 
 def test_hitl_intervention_required_exception_multiple():
-    fc1 = FunctionCallContent(plugin_name="sensitive_plugin", function_name="delete_user_data")
-    fc2 = FunctionCallContent(plugin_name="finance_plugin", function_name="initiate_transfer")
+    fc1 = {
+        "name": "sensitive_plugin.delete_user_data",
+        "plugin_name": "sensitive_plugin",
+        "function_name": "delete_user_data"
+    }
+    fc2 = {
+        "name": "finance_plugin.initiate_transfer",
+        "plugin_name": "finance_plugin",
+        "function_name": "initiate_transfer"
+    }
     exc = HitlInterventionRequired([fc1, fc2])
 
     assert fc1 in exc.function_calls

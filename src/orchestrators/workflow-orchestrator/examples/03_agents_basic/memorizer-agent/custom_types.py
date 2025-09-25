@@ -1,10 +1,10 @@
 from typing import List
 
 from pydantic import Field
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel
 
 
-class Memory(KernelBaseModel):
+class Memory(BaseModel):
     """
     A memory based on some previous interaction
     """
@@ -17,7 +17,7 @@ class Memory(KernelBaseModel):
     content: str = Field(description="The content of the memory")
 
 
-class MemorizerInput(KernelBaseModel):
+class MemorizerInput(BaseModel):
     """
     An interaction between a user and the assistant
     """

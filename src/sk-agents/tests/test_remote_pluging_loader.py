@@ -1,7 +1,6 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from httpx import AsyncClient
 from ska_utils import AppConfig
 
 from sk_agents.skagents.remote_plugin_loader import (
@@ -90,36 +89,26 @@ def test_get_remote_plugin_exception(mock_parse_yaml):
         )
 
 
-@patch("sk_agents.skagents.remote_plugin_loader.httpx.AsyncClient")
-@patch("sk_agents.skagents.remote_plugin_loader.Kernel")
-def test_load_remote_plugin_success(mock_kernel_class, mock_async_client_class, remote_plugin):
-    mock_kernel = Mock()
-    mock_kernel_class.return_value = mock_kernel
-
-    mock_client_instance = Mock(spec=AsyncClient)
-    mock_async_client_class.return_value = mock_client_instance
+@patch("sk_agents.skagents.remote_plugin_loader.OpenAPISpec.from_file")
+def test_load_remote_plugin_success(mock_openapi_spec, remote_plugin):
+    mock_spec = Mock()
+    mock_spec.operations = []
+    mock_openapi_spec.return_value = mock_spec
 
     catalog = Mock()
     catalog.get_remote_plugin.return_value = remote_plugin
 
     loader = RemotePluginLoader(catalog)
-    loader.load_remote_plugins(mock_kernel, ["test_plugin"])
+    result = loader.load_remote_plugins(["test_plugin"])
 
-    mock_kernel.add_plugin_from_openapi.assert_called_once()
-    call_kwargs = mock_kernel.add_plugin_from_openapi.call_args.kwargs
-
-    # Assertions
-    assert call_kwargs["plugin_name"] == remote_plugin.plugin_name
-    assert call_kwargs["openapi_document_path"] == remote_plugin.openapi_json_path
-    assert isinstance(call_kwargs["execution_settings"].http_client, AsyncClient)
-    assert call_kwargs["execution_settings"].server_url_override == remote_plugin.server_url
+    mock_openapi_spec.assert_called_once_with(remote_plugin.openapi_json_path)
+    assert result == []
 
 
-@patch("sk_agents.skagents.remote_plugin_loader.Kernel")
-def test_load_remote_plugin_not_found(mock_kernel):
+def test_load_remote_plugin_not_found():
     catalog = Mock()
     catalog.get_remote_plugin.return_value = None
     loader = RemotePluginLoader(catalog)
 
     with pytest.raises(ValueError, match="Remote plugin test_plugin not found in catalog"):
-        loader.load_remote_plugins(mock_kernel, ["test_plugin"])
+        loader.load_remote_plugins(["test_plugin"])

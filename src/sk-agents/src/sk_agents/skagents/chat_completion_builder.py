@@ -1,8 +1,6 @@
 import logging
 
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
+from langchain_core.language_models import BaseChatModel
 from ska_utils import AppConfig, ModuleLoader
 
 from sk_agents.chat_completion.default_chat_completion_factory import (
@@ -47,7 +45,7 @@ class ChatCompletionBuilder:
         self,
         service_id: str,
         model_name: str,
-    ) -> ChatCompletionClientBase:
+    ) -> BaseChatModel:
         if self.ccc_factory:
             try:
                 return self.ccc_factory.get_chat_completion_for_model_name(model_name, service_id)

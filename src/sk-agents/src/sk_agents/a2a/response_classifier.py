@@ -1,12 +1,7 @@
 import json
 from enum import Enum
 
-from pydantic import ConfigDict
-from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.functions.kernel_arguments import KernelArguments
-from semantic_kernel.kernel import Kernel
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel, ConfigDict
 from ska_utils import AppConfig
 
 from sk_agents.configs import TA_A2A_OUTPUT_CLASSIFIER_MODEL
@@ -20,11 +15,11 @@ class A2AResponseStatus(Enum):
     auth_required = "auth-required"
 
 
-class ConcreteAuthDetails(KernelBaseModel):  # Or KernelBaseModel
+class ConcreteAuthDetails(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class A2AResponseClassification(KernelBaseModel):
+class A2AResponseClassification(BaseModel):
     status: A2AResponseStatus
     message: str | None = None
     auth_details: ConcreteAuthDetails | None = None
@@ -217,19 +212,11 @@ class A2AResponseClassifier:
 
     def __init__(self, app_config: AppConfig, chat_completion_builder: ChatCompletionBuilder):
         model_name = app_config.get(TA_A2A_OUTPUT_CLASSIFIER_MODEL.env_name)
-        chat_completion = chat_completion_builder.get_chat_completion_for_model(
+        self.llm = chat_completion_builder.get_chat_completion_for_model(
             service_id=self.NAME, model_name=model_name
         )
-        kernel = Kernel()
-        kernel.add_service(chat_completion)
-        settings = kernel.get_prompt_execution_settings_from_service_id(self.NAME)
-        settings.response_format = A2AResponseClassification
-        self.agent = ChatCompletionAgent(
-            kernel=kernel,
-            name=self.NAME,
-            instructions=self.SYSTEM_PROMPT,
-            arguments=KernelArguments(settings=settings),
-        )
+        if hasattr(self.llm, 'with_structured_output'):
+            self.llm = self.llm.with_structured_output(A2AResponseClassification)
 
     async def classify_response(self, response: str) -> A2AResponseClassification:
         """
@@ -241,12 +228,24 @@ class A2AResponseClassifier:
         Returns:
             str: The classification of the response.
         """
-        chat_history = ChatHistory()
-        chat_history.add_user_message(f"Please classify the following response:\n\n{response}")
-        async for content in self.agent.invoke(messages=chat_history):
-            data = json.loads(str(content.content))
-            return A2AResponseClassification(**data)
-        return A2AResponseClassification(
-            status=A2AResponseStatus.failed,
-            message="No response received from response classifier.",
-        )
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        messages = [
+            SystemMessage(content=self.SYSTEM_PROMPT),
+            HumanMessage(content=f"Please classify the following response:\n\n{response}")
+        ]
+
+        try:
+            result = await self.llm.ainvoke(messages)
+            if hasattr(result, 'content') and isinstance(result.content, str):
+                data = json.loads(result.content)
+                return A2AResponseClassification(**data)
+            elif isinstance(result, A2AResponseClassification):
+                return result
+            else:
+                return A2AResponseClassification(**result)
+        except Exception:
+            return A2AResponseClassification(
+                status=A2AResponseStatus.failed,
+                message="No response received from response classifier.",
+            )

@@ -5,7 +5,7 @@ from sk_agents.ska_types import (
     BaseHandler,
 )
 from sk_agents.tealagents.chat_completion_builder import ChatCompletionBuilder
-from sk_agents.tealagents.kernel_builder import KernelBuilder
+from sk_agents.tealagents.kernel_builder import ChainBuilder
 from sk_agents.tealagents.remote_plugin_loader import (
     RemotePluginCatalog,
     RemotePluginLoader,
@@ -35,7 +35,7 @@ def _handle_chat(
 
     remote_plugin_loader = RemotePluginLoader(RemotePluginCatalog(app_config))
     chat_completion_builder = ChatCompletionBuilder(app_config)
-    kernel_builder = KernelBuilder(chat_completion_builder, remote_plugin_loader, app_config)
+    kernel_builder = ChainBuilder(chat_completion_builder, remote_plugin_loader, app_config)
     agent_builder = AgentBuilder(kernel_builder, authorization)
     chat_agents = TealAgentsV1Alpha1Handler(config, agent_builder)
     return chat_agents

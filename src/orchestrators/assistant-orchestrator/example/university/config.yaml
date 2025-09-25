@@ -1,19 +1,22 @@
-apiVersion: skagents/v1
-kind: Sequential
+apiVersion: langchain/v1
+kind: AgentExecutor
 description: >
   University agent powered by Google Gemini for searching and providing information about universities worldwide
 service_name: UniversityAgent
 version: 0.1
 input_type: BaseInput
 spec:
-  agents:
-    - name: default
-      role: University Assistant
-      model: gemini-2.0-flash-lite
-      system_prompt: >
-        You are a helpful university assistant.
-      plugins:
-        - UniversityPlugin
+  llm:
+    provider: custom_gemini
+    model: gemini-2.0-flash-lite
+    temperature: 0.7
+  tools: 
+    - UniversityPlugin
+  agent_type: openai-functions
+  system_prompt: >
+    You are a helpful university assistant. Assist users with their university-related questions and requests. 
+    Use the UniversityPlugin to search for universities and provide accurate, up-to-date information.
+    Always be helpful and offer to search for more specific information if needed.
   tasks:
     - name: university_assistance
       task_no: 1
@@ -22,4 +25,3 @@ spec:
         Assist the user with their university-related questions and requests. Use the UniversityPlugin to search for universities and provide accurate, up-to-date information.
         
         Always be helpful and offer to search for more specific information if needed.
-      agent: default

@@ -1,5 +1,5 @@
-apiVersion: skagents/v1
-kind: Sequential
+apiVersion: langchain/v1
+kind: AgentExecutor
 description: >
   A number adder
 service_name: AdderAgent
@@ -7,12 +7,14 @@ version: 0.1
 input_type: NumbersInput
 output_type: AddOutput
 spec:
-  agents:
-    - name: default
-      role: Default Agent
-      model: gpt-4o-mini
-      system_prompt: >
-        You are a helpful assistant.
+  llm:
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.7
+  tools: []
+  agent_type: openai-functions
+  system_prompt: >
+    You are a helpful assistant. Add the following two numbers together: {{number_1}} {{number_2}}
   tasks:
     - name: action_task
       task_no: 1
@@ -20,4 +22,3 @@ spec:
       instructions: >
         Add the following two numbers together
         {{number_1}} {{number_2}}
-      agent: default

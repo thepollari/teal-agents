@@ -3,11 +3,8 @@ from collections.abc import AsyncIterable
 from enum import Enum
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from langchain_core.language_models import BaseChatModel
+from pydantic import BaseModel, BaseModel as KernelBaseModel, ConfigDict
 from ska_utils import AppConfig, Config as UtilConfig
 
 from sk_agents.extra_data_collector import (
@@ -188,7 +185,7 @@ class ChatCompletionFactory(ABC):
     @abstractmethod
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> ChatCompletionClientBase:
+    ) -> BaseChatModel:
         pass
 
     @abstractmethod
