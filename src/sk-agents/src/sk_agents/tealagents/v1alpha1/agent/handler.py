@@ -3,17 +3,15 @@ import logging
 import uuid
 from collections.abc import AsyncIterable
 from datetime import datetime
-from functools import reduce
 from typing import Literal
 
-from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
-from semantic_kernel.contents import ChatMessageContent, ImageContent, TextContent
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents.function_call_content import FunctionCallContent
-from semantic_kernel.contents.function_result_content import FunctionResultContent
-from semantic_kernel.contents.streaming_chat_message_content import StreamingChatMessageContent
-from semantic_kernel.contents.utils.author_role import AuthorRole
-from semantic_kernel.kernel import Kernel
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import (
+    BaseMessage,
+    ToolCall,
+    ToolMessage,
+)
+from langchain_core.runnables import Runnable
 
 from sk_agents.authorization.dummy_authorizer import DummyAuthorizer
 from sk_agents.exceptions import AgentInvokeException, AuthenticationException, PersistenceLoadError
@@ -52,26 +50,27 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         self.authorizer = DummyAuthorizer()
 
     @staticmethod
-    async def _invoke_function(kernel, fc_content: FunctionCallContent) -> FunctionResultContent:
+    async def _invoke_function(agent_executor, tool_call: ToolCall) -> ToolMessage:
         """Helper to execute a single tool function call."""
-        function = kernel.get_function(
-            fc_content.plugin_name,
-            fc_content.function_name,
-        )
-        function_result = await function(kernel, fc_content.to_kernel_arguments())
-        return FunctionResultContent.from_function_call_content_and_result(
-            fc_content, function_result
+        # Execute tool using LangChain agent executor
+        tool_result = await agent_executor.ainvoke({
+            "input": tool_call.get("args", {}),
+            "tool_name": tool_call.get("name", "")
+        })
+        return ToolMessage(
+            content=str(tool_result),
+            tool_call_id=tool_call.get("id", "")
         )
 
     @staticmethod
-    def _augment_with_user_context(inputs: UserMessage, chat_history: ChatHistory) -> None:
+    def _augment_with_user_context(
+        inputs: UserMessage, chat_history: BaseChatMessageHistory
+    ) -> None:
         if inputs.user_context:
             content = "The following user context was provided:\n"
             for key, value in inputs.user_context.items():
                 content += f"  {key}: {value}\n"
-            chat_history.add_message(
-                ChatMessageContent(role=AuthorRole.USER, items=[TextContent(text=content)])
-            )
+            chat_history.add_user_message(content)
 
     @staticmethod
     def _configure_agent_task(
@@ -170,12 +169,15 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             ) from e
 
     @staticmethod
-    def _build_chat_history(agent_task: AgentTask, chat_history: ChatHistory) -> ChatHistory:
-        chat_message_items: list[TextContent | ImageContent] = []
+    def _build_chat_history(
+        agent_task: AgentTask, chat_history: BaseChatMessageHistory
+    ) -> BaseChatMessageHistory:
         for task_item in agent_task.items:
-            chat_message_items.append(item_to_content(task_item.item))
-            message_content = ChatMessageContent(role=task_item.role, items=chat_message_items)
-            chat_history.add_message(message_content)
+            content = item_to_content(task_item.item)
+            if task_item.role == "user":
+                chat_history.add_user_message(str(content))
+            else:
+                chat_history.add_ai_message(str(content))
         return chat_history
 
     @staticmethod
@@ -205,7 +207,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         task_id: str,
         request_id: str,
         function_calls: list,
-        chat_history: ChatHistory,
+        chat_history: BaseChatMessageHistory,
     ):
         agent_task.status = "Paused"
         assistant_item = AgentTaskItem(
@@ -216,7 +218,14 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             ),
             request_id=request_id,
             updated=datetime.now(),
-            pending_tool_calls=[fc.model_dump() for fc in function_calls],
+            pending_tool_calls=[
+                fc.model_dump() if hasattr(fc, 'model_dump')
+                else (fc if isinstance(fc, dict)
+                      else {"name": getattr(fc, "name", "unknown"),
+                            "arguments": getattr(fc, "args", {}),
+                            "id": getattr(fc, "id", "unknown")})
+                for fc in function_calls
+            ],
             chat_history=chat_history,
         )
         agent_task.items.append(assistant_item)
@@ -231,7 +240,14 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             session_id=session_id,
             task_id=task_id,
             request_id=request_id,
-            tool_calls=[fc.model_dump() for fc in function_calls],
+            tool_calls=[
+                fc.model_dump() if hasattr(fc, 'model_dump')
+                else (fc if isinstance(fc, dict)
+                      else {"name": getattr(fc, "name", "unknown"),
+                            "arguments": getattr(fc, "args", {}),
+                            "id": getattr(fc, "id", "unknown")})
+                for fc in function_calls
+            ],
             approval_url=approval_url,
             rejection_url=rejection_url,
         )
@@ -239,7 +255,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
 
     @staticmethod
     async def _manage_function_calls(
-        function_calls: list[FunctionCallContent], chat_history: ChatHistory, kernel: Kernel
+        function_calls: list[dict], chat_history: BaseChatMessageHistory, agent_executor: Runnable
     ) -> None:
         intervention_calls = []
         non_intervention_calls = []
@@ -255,7 +271,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         if non_intervention_calls:
             results = await asyncio.gather(
                 *[
-                    TealAgentsV1Alpha1Handler._invoke_function(kernel, fc)
+                    TealAgentsV1Alpha1Handler._invoke_function(agent_executor, fc)
                     for fc in non_intervention_calls
                 ]
             )
@@ -273,7 +289,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         self,
         agent_task: AgentTask,
         request_id: str,
-        response: ChatMessageContent | list[str],
+        response: BaseMessage | list[str],
         token_usage: TokenUsage,
         extra_data_collector: ExtraDataCollector,
     ):
@@ -354,16 +370,19 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         if tool_calls_in_task_items is None:
             raise AgentInvokeException(f"Pending tool calls no found for request ID: {request_id}")
         _pending_tools = list(tool_calls_in_task_items)  # [fc for fc in tool_calls_in_task_items]
-        pending_tools = [FunctionCallContent(**function_call) for function_call in _pending_tools]
+        pending_tools = list(_pending_tools)
 
         # Execute the tool calls using asyncio.gather(), just as the agent would have.
         extra_data_collector = ExtraDataCollector()
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
-        kernel = agent.agent.kernel
+        agent_executor = agent.agent
 
         # Create ToolContent objects from the results
         results = await asyncio.gather(
-            *[TealAgentsV1Alpha1Handler._invoke_function(kernel, fc) for fc in pending_tools]
+            *[
+                TealAgentsV1Alpha1Handler._invoke_function(agent_executor, fc)
+                for fc in pending_tools
+            ]
         )
         # Add results to chat history
         for result in results:
@@ -395,7 +414,8 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         # Check user_id match request and state
         TealAgentsV1Alpha1Handler._validate_user_id(user_id, task_id, agent_task)
 
-        chat_history = ChatHistory()
+        from langchain_core.chat_history import InMemoryChatMessageHistory
+        chat_history = InMemoryChatMessageHistory()
         TealAgentsV1Alpha1Handler._augment_with_user_context(
             inputs=inputs, chat_history=chat_history
         )
@@ -421,7 +441,8 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         # Check user_id match request and state
         TealAgentsV1Alpha1Handler._validate_user_id(user_id, task_id, agent_task)
 
-        chat_history = ChatHistory()
+        from langchain_core.chat_history import InMemoryChatMessageHistory
+        chat_history = InMemoryChatMessageHistory()
         TealAgentsV1Alpha1Handler._augment_with_user_context(
             inputs=inputs, chat_history=chat_history
         )
@@ -432,7 +453,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         return final_response_stream
 
     async def recursion_invoke(
-        self, inputs: ChatHistory, session_id: str, task_id: str, request_id: str
+        self, inputs: BaseChatMessageHistory, session_id: str, task_id: str, request_id: str
     ) -> TealAgentsResponse | HitlResponse:
         # Initial setup
 
@@ -451,20 +472,15 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
 
         try:
             # Manual tool calling implementation (existing logic)
-            kernel = agent.agent.kernel
+            agent_executor = agent.agent
             arguments = agent.agent.arguments
-            chat_completion_service, settings = kernel.select_ai_service(
-                arguments=arguments, type=ChatCompletionClientBase
-            )
+            chat_completion_service = agent_executor
 
-            assert isinstance(chat_completion_service, ChatCompletionClientBase)
 
             # Initial call to the LLM
             response_list = []
             responses = await chat_completion_service.get_chat_message_contents(
                 chat_history=chat_history,
-                settings=settings,
-                kernel=kernel,
                 arguments=arguments,
             )
             for response_chunk in responses:
@@ -483,10 +499,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
                 prompt_tokens += call_usage.prompt_tokens
                 total_tokens += call_usage.total_tokens
 
-                # A response may have multiple items, e.g., multiple tool calls
-                fc_in_response = [
-                    item for item in response.items if isinstance(item, FunctionCallContent)
-                ]
+                fc_in_response = getattr(response, 'tool_calls', [])
 
                 if fc_in_response:
                     # chat_history.add_message(response)  # Add assistant's message to history
@@ -501,7 +514,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             )
             # If tool calls were returned, execute them
             if function_calls:
-                await self._manage_function_calls(function_calls, chat_history, kernel)
+                await self._manage_function_calls(function_calls, chat_history, agent_executor)
 
                 # Make a recursive call to get the final response from the LLM
                 recursive_response = await self.recursion_invoke(
@@ -540,7 +553,7 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         )
 
     async def recursion_invoke_stream(
-        self, inputs: ChatHistory, session_id: str, task_id: str, request_id: str
+        self, inputs: BaseChatMessageHistory, session_id: str, task_id: str, request_id: str
     ) -> AsyncIterable[TealAgentsResponse | TealAgentsPartialResponse | HitlResponse]:
         chat_history = inputs
         agent_task = await self.state.load_by_request_id(request_id)
@@ -557,20 +570,15 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
         total_tokens: int = 0
 
         try:
-            kernel = agent.agent.kernel
+            agent_executor = agent.agent
             arguments = agent.agent.arguments
-            chat_completion_service, settings = kernel.select_ai_service(
-                arguments=arguments, type=ChatCompletionClientBase
-            )
-            assert isinstance(chat_completion_service, ChatCompletionClientBase)
+            chat_completion_service = agent_executor
 
             all_responses = []
             # Stream the initial response from the LLM
             response_list = []
             responses = await chat_completion_service.get_chat_message_contents(
                 chat_history=chat_history,
-                settings=settings,
-                kernel=kernel,
                 arguments=arguments,
             )
             for response_chunk in responses:
@@ -613,14 +621,15 @@ class TealAgentsV1Alpha1Handler(BaseHandler):
             if not all_responses:
                 return
 
-            full_completion: StreamingChatMessageContent = reduce(lambda x, y: x + y, all_responses)
-            function_calls = [
-                item for item in full_completion.items if isinstance(item, FunctionCallContent)
-            ]
+            # Aggregate tool calls from all responses
+            function_calls = []
+            for response in all_responses:
+                tool_calls = getattr(response, 'tool_calls', [])
+                function_calls.extend(tool_calls)
 
             # If tool calls are present, execute them
             if function_calls:
-                await self._manage_function_calls(function_calls, chat_history, kernel)
+                await self._manage_function_calls(function_calls, chat_history, agent_executor)
                 # Make a recursive call to get the final streamed response
                 async for final_response_chunk in self.recursion_invoke_stream(
                     chat_history, session_id, task_id, request_id

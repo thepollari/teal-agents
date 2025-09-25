@@ -1,12 +1,11 @@
-from semantic_kernel.functions.kernel_function_decorator import kernel_function
-from sk_agents.ska_types import BasePlugin
+from langchain_core.tools import tool
+from pydantic import BaseModel
 
 
-class ArxivSearchPlugin(BasePlugin):
-    @kernel_function(
-        description="Search Arxiv for papers related to a given topic, including abstracts"
-    )
-    def arxiv_search(self, query: str, max_results: int = 2) -> list:  # type: ignore[type-arg]
+class ArxivSearchPlugin:
+    @staticmethod
+    @tool
+    def arxiv_search(query: str, max_results: int = 2) -> list:  # type: ignore[type-arg]
         """
         Search Arxiv for papers and return the results including abstracts.
         """

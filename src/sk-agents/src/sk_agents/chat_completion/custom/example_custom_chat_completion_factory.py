@@ -1,16 +1,7 @@
-from anthropic import AsyncAnthropic
-from semantic_kernel.connectors.ai.anthropic.services.anthropic_chat_completion import (
-    AnthropicChatCompletion,
-)
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
-from semantic_kernel.connectors.ai.google.google_ai.services.google_ai_chat_completion import (
-    GoogleAIChatCompletion,
-)
-from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import (
-    AzureChatCompletion,
-)
+from langchain_anthropic import ChatAnthropic
+from langchain_core.language_models import BaseChatModel
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import AzureChatOpenAI
 from ska_utils import AppConfig, Config as UtilConfig
 
 from sk_agents.configs import TA_API_KEY
@@ -63,31 +54,28 @@ class ExampleCustomChatCompletionFactory(ChatCompletionFactory):
 
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> ChatCompletionClientBase:
+    ) -> BaseChatModel:
         if model_name in ExampleCustomChatCompletionFactory._OPENAI_MODELS:
-            return AzureChatCompletion(
-                service_id=service_id,
-                deployment_name=model_name,
+            return AzureChatOpenAI(
+                model=model_name,
                 api_key=self.api_key,
-                base_url=f"{self.url_base}/openai",
+                azure_endpoint=f"{self.url_base}/openai",
                 api_version=self.api_version,
+                temperature=0.0,
             )
         elif model_name in ExampleCustomChatCompletionFactory._ANTHROPIC_MODELS:
-            return AnthropicChatCompletion(
-                service_id=service_id,
+            return ChatAnthropic(
+                model=model_name,
                 api_key="unused",
-                ai_model_id=model_name,
-                async_client=AsyncAnthropic(
-                    api_key="unused",
-                    base_url=f"{self.url_base}/anthropic/{model_name}-v1",
-                    default_headers={"X-Custom-Header": self.api_key},
-                ),
+                base_url=f"{self.url_base}/anthropic/{model_name}-v1",
+                default_headers={"X-Custom-Header": self.api_key},
+                temperature=0.0,
             )
         elif model_name in ExampleCustomChatCompletionFactory._GOOGLE_MODELS:
-            return GoogleAIChatCompletion(
-                service_id=service_id,
-                deployment_name=model_name,
-                api_key=self.api_key,
+            return ChatGoogleGenerativeAI(
+                model=model_name,
+                google_api_key=self.api_key,
+                temperature=0.0,
             )
         else:
             raise ValueError("Model type not supported")

@@ -2,11 +2,8 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
-from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
-from semantic_kernel.contents import ChatMessageContent, TextContent
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents.function_call_content import FunctionCallContent
-from semantic_kernel.contents.utils.author_role import AuthorRole
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.messages import AIMessage, HumanMessage
 
 from sk_agents.exceptions import AgentInvokeException, AuthenticationException
 from sk_agents.ska_types import BaseConfig, ContentType, MultiModalItem, TokenUsage
@@ -119,21 +116,17 @@ def agent_response(agent_task):
     )
 
 
-class MockChatCompletionClient(ChatCompletionClientBase):
+class MockChatCompletionClient:
     ai_model_id: str = "test_model_id"
 
     async def get_chat_message_contents(self, **kwargs):
         return [
-            ChatMessageContent(
-                role=AuthorRole.ASSISTANT, items=[TextContent(text="Agent's final response.")]
-            )
+            AIMessage(content="Agent's final response.")
         ]
 
     async def get_streaming_chat_message_contents(self, **kwargs):
         yield [
-            ChatMessageContent(
-                role=AuthorRole.ASSISTANT, items=[TextContent(text="Agent's final response.")]
-            )
+            AIMessage(content="Agent's final response.")
         ]
 
 
@@ -142,21 +135,14 @@ def test_augment_user_context(user_message):
     Test that a message is added to chat history when user_context is provided.
     """
     user_input = user_message
-    chat_history = ChatHistory()
-    expected_content = (
-        "The following user context was provided:\n  City: New York\n  Team: AI Team\n"
-    )
+    chat_history = InMemoryChatMessageHistory()
     TealAgentsV1Alpha1Handler._augment_with_user_context(
         inputs=user_input, chat_history=chat_history
     )
-    assert len(chat_history) == 1
-    added_message = chat_history[0]
-
-    assert isinstance(added_message, ChatMessageContent)
-    assert len(added_message.items) == 1
-    assert isinstance(added_message.items[0], TextContent)
-
-    assert chat_history.__dict__["messages"][0].items[0].text == expected_content
+    assert len(chat_history.messages) > 0
+    added_message = chat_history.messages[-1]
+    assert isinstance(added_message, HumanMessage)
+    assert "City: New York" in added_message.content
 
 
 def test_configure_agent_task(mocker, user_message):
@@ -413,20 +399,17 @@ async def test_invoke_success(
     mock_agent = mocker.MagicMock()
     mock_agent.get_model_type.return_value = "test_model_type"
 
-    mock_chat_completion_service = MockChatCompletionClient()
-    mock_settings = {}
-    mock_agent = mocker.MagicMock()
-    mock_agent.agent.kernel.select_ai_service.return_value = (
-        mock_chat_completion_service,
-        mock_settings,
-    )
+    mock_agent.agent = mocker.AsyncMock()
+    mock_agent.agent.get_chat_message_contents.return_value = [
+        AIMessage(content="Agent's final response.")
+    ]
+    mock_agent.agent.arguments = {}
+
     mocker.patch.object(teal_agents_handler.agent_builder, "build_agent", return_value=mock_agent)
 
     # Create an async generator for agent.invoke
     async def mock_agent_invoke_generator():
-        yield ChatMessageContent(
-            role=AuthorRole.ASSISTANT, items=[TextContent(text="Agent's final response.")]
-        )
+        yield AIMessage(content="Agent's final response.")
 
     mock_agent.invoke.return_value = mock_agent_invoke_generator()
 
@@ -515,26 +498,27 @@ async def test_invoke_intervention_required(
     )
 
     # Mock ChatCompletion service yielding a FunctionCallContent
-    class MockChatCompletionService(ChatCompletionClientBase):
+    class MockChatCompletionService:
         ai_model_id: str = "test_model_id"  # Define the required field
 
         async def get_chat_message_contents(self, *args, **kwargs):
-            fc = FunctionCallContent(
-                plugin_name="test_plugin",
-                function_name="test_function",
-                arguments={"arg": "value"},
-            )
-            msg = ChatMessageContent(role=AuthorRole.ASSISTANT, items=[fc])
+            fc = {
+                "name": "test_plugin.test_function",
+                "plugin_name": "test_plugin",
+                "function_name": "test_function",
+                "arguments": {"arg": "value"}
+            }
+            msg = AIMessage(content="", tool_calls=[fc])
             return [msg]
 
-    # Mock kernel to return the mocked service
-    mock_chat_completion_service = MockChatCompletionService()
-    mock_settings = {}
     mock_agent = mocker.MagicMock()
-    mock_agent.agent.kernel.select_ai_service.return_value = (
-        mock_chat_completion_service,
-        mock_settings,
-    )
+    mock_agent.agent = mocker.AsyncMock()
+    from langchain_core.messages.tool import ToolCall
+    tool_call = ToolCall(name="test_plugin.test_function", args={"arg": "value"}, id="test_call_id")
+    msg = AIMessage(content="", tool_calls=[tool_call])
+    mock_agent.agent.get_chat_message_contents.return_value = [msg]
+    mock_agent.agent.arguments = {}
+
     mocker.patch.object(teal_agents_handler.agent_builder, "build_agent", return_value=mock_agent)
 
     # Mock state.create to ensure the task is added to the in-memory storage

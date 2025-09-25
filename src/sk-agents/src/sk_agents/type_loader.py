@@ -1,6 +1,6 @@
 import logging
 
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel as KernelBaseModel
 from ska_utils import ModuleLoader
 
 from sk_agents.ska_types import (

@@ -1,4 +1,4 @@
-from semantic_kernel.contents.function_call_content import FunctionCallContent
+from langchain_core.messages import ToolCall
 
 # Placeholder for high-risk tools that require human intervention
 HIGH_RISK_TOOLS = {
@@ -10,15 +10,18 @@ HIGH_RISK_TOOLS = {
 }
 
 
-def check_for_intervention(tool_call: FunctionCallContent) -> bool:
+def check_for_intervention(tool_call: ToolCall) -> bool:
     """
     Checks if the tool call requires user consent based on predefined high-risk tools.
 
     Returns True if the tool call matches a high-risk tool, otherwise False.
     """
-    is_high_risk = (tool_call.plugin_name, tool_call.function_name) in HIGH_RISK_TOOLS
+    is_high_risk = (
+        tool_call.get("plugin_name", ""),
+        tool_call.get("function_name", "")
+    ) in HIGH_RISK_TOOLS
     print(
-        f"HITL Check: Intercepted call to {tool_call.plugin_name}.{tool_call.function_name}. "
+        f"HITL Check: Intercepted call to {tool_call.get('name', 'unknown')}. "
         f"{'Requires intervention.' if is_high_risk else 'Allowing to proceed.'}"
     )
 
@@ -31,11 +34,11 @@ class HitlInterventionRequired(Exception):
     Exception raised when a tool call requires human-in-the-loop intervention.
     """
 
-    def __init__(self, function_calls: list[FunctionCallContent]):
+    def __init__(self, function_calls: list[ToolCall]):
         self.function_calls = function_calls
         if function_calls:
-            self.plugin_name = function_calls[0].plugin_name
-            self.function_name = function_calls[0].function_name
+            self.plugin_name = function_calls[0].get("plugin_name", "unknown")
+            self.function_name = function_calls[0].get("function_name", "unknown")
             message = f"HITL intervention required for {self.plugin_name}.{self.function_name}"
         else:
             message = "HITL intervention required"

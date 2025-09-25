@@ -4,9 +4,7 @@ from collections.abc import AsyncIterable
 from contextlib import nullcontext
 from typing import Any
 
-from semantic_kernel.contents import ChatMessageContent, TextContent
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.contents.utils.author_role import AuthorRole
+from langchain_core.chat_history import BaseChatMessageHistory
 from ska_utils import get_telemetry
 
 from sk_agents.extra_data_collector import ExtraDataCollector, ExtraDataPartial
@@ -48,15 +46,13 @@ class ChatAgents(BaseHandler):
 
     @staticmethod
     def _augment_with_user_context(
-        inputs: dict[str, Any] | None, chat_history: ChatHistory
+        inputs: dict[str, Any] | None, chat_history: BaseChatMessageHistory
     ) -> None:
         if "user_context" in inputs and inputs["user_context"]:
             content = "The following user context was provided:\n"
             for key, value in inputs["user_context"].items():
                 content += f"  {key}: {value}\n"
-            chat_history.add_message(
-                ChatMessageContent(role=AuthorRole.USER, items=[TextContent(text=content)])
-            )
+            chat_history.add_user_message(content)
 
     async def invoke_stream(
         self, inputs: dict[str, Any] | None = None
@@ -71,7 +67,7 @@ class ChatAgents(BaseHandler):
         total_tokens: int = 0
         final_response = []
         # Initialize and parse the chat history
-        chat_history = ChatHistory()
+        chat_history = BaseChatMessageHistory()
         ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
 
@@ -145,7 +141,7 @@ class ChatAgents(BaseHandler):
     ) -> InvokeResponse:
         extra_data_collector = ExtraDataCollector()
         agent = self.agent_builder.build_agent(self.config.get_agent(), extra_data_collector)
-        chat_history = ChatHistory()
+        chat_history = BaseChatMessageHistory()
         ChatAgents._augment_with_user_context(inputs=inputs, chat_history=chat_history)
         parse_chat_history(chat_history, inputs)
         response_content = []

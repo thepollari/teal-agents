@@ -2,8 +2,8 @@ from typing import List
 
 import requests
 from pydantic import BaseModel, ConfigDict
-from semantic_kernel.functions.kernel_function_decorator import kernel_function
-from sk_agents.ska_types import BasePlugin
+from langchain_core.tools import tool
+from pydantic import BaseModel
 
 
 class LocationCoordinates(BaseModel):
@@ -58,21 +58,21 @@ class CoordsResponse(BaseModel):
     geonames: List[GeoName]
 
 
-class WeatherPlugin(BasePlugin):
+class WeatherPlugin:
     @staticmethod
     def _get_temp_url_for_location(lat: float, lng: float, timezone: str) -> str:
         return f"https://api.open-meteo.com/v1/forecast?latitude={str(lat)}&longitude={str(lng)}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone={timezone}&forecast_days=1"
 
     @staticmethod
-    def _get_loc_url_for_location(self, location_string: str) -> str:
+    def _get_loc_url_for_location(location_string: str) -> str:
         return f"http://api.geonames.org/searchJSON?formatted=true&q={location_string}&maxRows=1&lang=en&username=tealagents&style=full"
 
-    @kernel_function(
-        description="Retrieve low and high temperatures for the day for a given location"
-    )
+    @staticmethod
+    @tool
     def get_temperature(
-        self, lat: float, lng: float, timezone: str
+        lat: float, lng: float, timezone: str
     ) -> TemperatureResponse:
+        """Retrieve low and high temperatures for the day for a given location"""
         url = WeatherPlugin._get_temp_url_for_location(lat, lng, timezone)
 
         response = requests.get(url).json()
@@ -85,11 +85,11 @@ class WeatherPlugin(BasePlugin):
         else:
             raise ValueError("Error retrieving temperature")
 
-    @kernel_function(
-        description="Retrieve the latitude, longitude, and timezone for a given location search string"
-    )
-    def get_lat_lng_for_location(self, location_string: str) -> LocationCoordinates:
-        url = WeatherPlugin._get_loc_url_for_location(self, location_string)
+    @staticmethod
+    @tool
+    def get_lat_lng_for_location(location_string: str) -> LocationCoordinates:
+        """Retrieve the latitude, longitude, and timezone for a given location search string"""
+        url = WeatherPlugin._get_loc_url_for_location(location_string)
 
         response = requests.get(url).json()
         if response:

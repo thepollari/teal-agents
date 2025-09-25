@@ -3,9 +3,8 @@ from typing import List
 
 import requests
 from pydantic import BaseModel, ConfigDict
-from semantic_kernel.functions.kernel_function_decorator import kernel_function
-
-from sk_agents.ska_types import BasePlugin
+from langchain_core.tools import tool
+from pydantic import BaseModel
 
 
 class University(BaseModel):
@@ -25,7 +24,7 @@ class UniversitySearchResult(BaseModel):
     error: str | None = None
 
 
-class UniversityPlugin(BasePlugin):
+class UniversityPlugin:
     @staticmethod
     def _get_universities_url(name: str = None, country: str = None) -> str:
         base_url = "http://universities.hipolabs.com/search"
@@ -39,12 +38,12 @@ class UniversityPlugin(BasePlugin):
             return f"{base_url}?{'&'.join(params)}"
         return base_url
 
-    @kernel_function(
-        description="Search for universities by name and/or country"
-    )
-    def search_universities(self, query: str) -> UniversitySearchResult:
+    @staticmethod
+    @tool
+    def search_universities(query: str) -> UniversitySearchResult:
+        """Search for universities by name and/or country"""
         try:
-            url = self._get_universities_url(name=query)
+            url = UniversityPlugin._get_universities_url(name=query)
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             
@@ -85,12 +84,12 @@ class UniversityPlugin(BasePlugin):
                 error=f"Unexpected error: {str(e)}"
             )
 
-    @kernel_function(
-        description="Find universities in a specific country"
-    )
-    def get_universities_by_country(self, country: str) -> UniversitySearchResult:
+    @staticmethod
+    @tool
+    def get_universities_by_country(country: str) -> UniversitySearchResult:
+        """Find universities in a specific country"""
         try:
-            url = self._get_universities_url(country=country)
+            url = UniversityPlugin._get_universities_url(country=country)
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             

@@ -7,7 +7,7 @@ from openai import AzureOpenAI
 from qdrant_client import models, QdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 
-from semantic_kernel.functions.kernel_function_decorator import kernel_function
+from langchain_core.tools import tool
 
 from sk_agents.ska_types import BasePlugin
 
@@ -45,23 +45,26 @@ class MemoryPlugin(BasePlugin):
         self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
         self._check_create_memory_collection()
 
-    @kernel_function(description="Create a new memory")
+    @tool
     def memory_create(self, user_id: str, content: str) -> None:
+        """Create a new memory"""
         new_memory = Memory(
             memory_id=str(uuid4()), user_id=user_id, access_count=0, content=content
         )
         self._memory_upsert(new_memory)
 
-    @kernel_function(description="Update an existing memory with new content")
+    @tool
     def memory_update(self, memory_id: str, new_content: str) -> None:
+        """Update an existing memory with new content"""
         memory = self._get_memory_by_id(memory_id)
         if memory is None:
             return
         memory.content = new_content
         self._memory_upsert(memory)
 
-    @kernel_function(description="Search for memories for a specific user")
+    @tool
     def memory_search(self, user_id: str, query: str) -> List[Memory]:
+        """Search for memories for a specific user"""
         query_embeddings = self._generate_embeddings(query)
 
         query_result = self.qdrant.query_points(

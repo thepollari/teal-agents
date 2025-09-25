@@ -7,7 +7,7 @@ from contextlib import nullcontext
 from copy import deepcopy
 from typing import Any
 
-from semantic_kernel.contents.chat_history import ChatHistory
+from langchain_core.chat_history import InMemoryChatMessageHistory
 from ska_utils import get_telemetry
 
 from sk_agents.exceptions import AgentInvokeException, InvalidConfigException
@@ -20,7 +20,7 @@ from sk_agents.ska_types import (
     PartialResponse,
     TokenUsage,
 )
-from sk_agents.skagents.kernel_builder import KernelBuilder
+from sk_agents.skagents.kernel_builder import ChainBuilder
 from sk_agents.skagents.v1.sequential.config import Config
 from sk_agents.skagents.v1.sequential.output_transformer import OutputTransformer
 from sk_agents.skagents.v1.sequential.task_builder import TaskBuilder
@@ -34,7 +34,7 @@ class SequentialSkagents(BaseHandler):
     def __init__(
         self,
         config: BaseConfig,
-        kernel_builder: KernelBuilder,
+        chain_builder: ChainBuilder,
         task_builder: TaskBuilder,
     ):
         if hasattr(config, "spec"):
@@ -47,7 +47,7 @@ class SequentialSkagents(BaseHandler):
         self.name = config.service_name
         self.version = config.version
 
-        self.kernel_builder = kernel_builder
+        self.chain_builder = chain_builder
 
         task_configs = self.config.get_tasks()
         if not task_configs:
@@ -126,7 +126,7 @@ class SequentialSkagents(BaseHandler):
         total_tokens: int = 0
         final_response = []
         # Initialize and parse the chat history and task inputs from the provided inputs
-        chat_history = ChatHistory()
+        chat_history = InMemoryChatMessageHistory()
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
 
@@ -252,7 +252,7 @@ class SequentialSkagents(BaseHandler):
 
         collector = ExtraDataCollector()
 
-        chat_history = ChatHistory()
+        chat_history = InMemoryChatMessageHistory()
         parse_chat_history(chat_history, inputs)
         task_inputs = SequentialSkagents._parse_task_inputs(inputs)
 
@@ -301,7 +301,10 @@ class SequentialSkagents(BaseHandler):
                 f"{self.name}:{self.version} responded with {total_tokens} tokens. "
                 f"Session-id {session_id}, Request-id {request_id}"
             )
-            last_message = chat_history.messages[-1].content
+            last_message = (
+                chat_history.messages[-1].content if chat_history.messages
+                else "No response generated"
+            )
             response = InvokeResponse(
                 session_id=session_id,
                 source=f"{self.name}:{self.version}",

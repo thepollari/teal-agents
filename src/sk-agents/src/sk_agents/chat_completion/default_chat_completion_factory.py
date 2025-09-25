@@ -1,7 +1,5 @@
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from langchain_core.language_models import BaseChatModel
+from langchain_openai import ChatOpenAI
 from ska_utils import Config as UtilConfig
 
 from sk_agents.configs import TA_API_KEY
@@ -17,12 +15,12 @@ class DefaultChatCompletionFactory(ChatCompletionFactory):
 
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> ChatCompletionClientBase:
+    ) -> BaseChatModel:
         if model_name in self._OPENAI_MODELS:
-            return OpenAIChatCompletion(
-                service_id=service_id,
-                ai_model_id=model_name,
+            return ChatOpenAI(
+                model=model_name,
                 api_key=self.app_config.get(TA_API_KEY.env_name),
+                temperature=0.0,
             )
         raise ValueError("Model type not supported")
 
