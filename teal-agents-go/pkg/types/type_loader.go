@@ -74,8 +74,9 @@ func (tl *TypeLoader) setTypesModule(typesModule string) error {
 	}
 	
 	if strings.HasSuffix(typesModule, ".go") {
-		log.Printf("Loading .go file as plugin: %s", typesModule)
-		return tl.LoadCustomTypesFromFile(typesModule)
+		log.Printf("Loading .go file via registry: %s", typesModule)
+		log.Printf("Custom types from %s should be registered via init() function", typesModule)
+		return nil
 	}
 	
 	log.Printf("Unsupported types module format: %s", typesModule)
