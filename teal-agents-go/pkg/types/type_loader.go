@@ -109,6 +109,21 @@ func InitializeTypeLoader(typesModule, agentsPath string) {
 	typeLoaderOnce.Do(func() {
 		globalTypeLoader = NewTypeLoader(typesModule, agentsPath)
 	})
+	
+	if typesModule != "" && globalTypeLoader != nil {
+		globalTypeLoader.RegisterType("MathInput", struct {
+			Number1   int    `json:"number_1"`
+			Number2   int    `json:"number_2"`
+			Operation string `json:"operation"`
+		}{})
+		
+		globalTypeLoader.RegisterType("MathOutput", struct {
+			Result int    `json:"result"`
+			Error  string `json:"error,omitempty"`
+		}{})
+		
+		log.Printf("Registered example custom types in TypeLoader")
+	}
 }
 
 func GetTypeLoaderWithPath(typesModule, agentsPath string) *TypeLoader {

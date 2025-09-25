@@ -1,0 +1,23 @@
+apiVersion: skagents/v1
+name: MathAgent
+service_name: math-service
+version: "1.0.0"
+description: "Agent that performs mathematical operations using custom types"
+input_type: "MathInput"
+output_type: "MathOutput"
+metadata:
+  description: "Demonstrates custom type usage in teal-agents-go"
+  skills:
+    - id: "math"
+      name: "Mathematical Operations"
+      description: "Performs basic arithmetic operations"
+      tags: ["math", "calculator", "arithmetic"]
+      examples: ["Add 5 + 3", "Subtract 10 - 4", "Multiply 6 * 7"]
+      input_modes: ["json"]
+      output_modes: ["json"]
+spec:
+  model_name: "gpt-3.5-turbo"
+  service_id: "openai"
+  settings:
+    temperature: 0.1
+    max_tokens: 500
