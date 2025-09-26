@@ -58,7 +58,7 @@ Streamlit Error Handling Test
     Sleep    10s    # Extended wait to allow processes to fully terminate
     
     # Verify agent is not running
-    ${agent_check}=    Run Process    curl -s -o /dev/null -w "%%{http_code}" http://localhost:${AGENT_PORT}    shell=True
+    ${agent_check}=    Run Process    curl -s -o /dev/null -w "%{http_code}" http://localhost:${AGENT_PORT}    shell=True
     ${agent_running}=    Evaluate    "${agent_check.stdout}" == "200"
     Run Keyword If    ${agent_running}    Log    WARNING: Agent is still running despite cleanup attempts    WARN
     

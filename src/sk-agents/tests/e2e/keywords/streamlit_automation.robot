@@ -139,11 +139,13 @@ Click Agent Status Check Button
     Run Keyword If    "${js_result}" == "clicked"    Sleep    15s
     
     # Approach 2: Try any button in sidebar if JS didn't work
+    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Set Test Variable    ${sidebar_buttons}    ${EMPTY}
     Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    ${sidebar_buttons}=    Get WebElements    css:[data-testid="stSidebar"] button
     ${sidebar_buttons}=    Get Variable Value    ${sidebar_buttons}    ${EMPTY}
-    Run Keyword If    not ${clicked} and "${sidebar_buttons}" != ""    Click Element    ${sidebar_buttons}[0]
-    Run Keyword If    not ${clicked} and "${sidebar_buttons}" != ""    Set Variable    ${clicked}    ${TRUE}
-    Run Keyword If    not ${clicked} and "${sidebar_buttons}" != ""    Sleep    15s
+    ${has_buttons}=    Run Keyword And Return Status    Should Not Be Empty    ${sidebar_buttons}
+    Run Keyword If    not ${clicked} and ${has_buttons}    Click Element    ${sidebar_buttons}[0]
+    Run Keyword If    not ${clicked} and ${has_buttons}    Set Variable    ${clicked}    ${TRUE}
+    Run Keyword If    not ${clicked} and ${has_buttons}    Sleep    15s
     
     # Approach 3: Try to find any clickable element with "Status" text
     Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Click Element    xpath://*[contains(text(), 'Status')]
