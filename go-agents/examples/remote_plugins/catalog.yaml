@@ -1,0 +1,40 @@
+
+weather_api:
+  plugin_name: "weather_api"
+  openapi_json_path: "https://api.openweathermap.org/data/2.5/openapi.json"
+  server_url: "https://api.openweathermap.org/data/2.5"
+  description: "OpenWeatherMap API for weather information"
+  version: "2.5"
+  authentication: "api_key"
+
+university_search:
+  plugin_name: "university_search"
+  openapi_json_path: "http://universities.hipolabs.com/openapi.json"
+  server_url: "http://universities.hipolabs.com"
+  description: "University search API"
+  version: "1.0"
+  authentication: "none"
+
+github_api:
+  plugin_name: "github_api"
+  openapi_json_path: "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
+  server_url: "https://api.github.com"
+  description: "GitHub REST API v3"
+  version: "3.0"
+  authentication: "token"
+
+jsonplaceholder:
+  plugin_name: "jsonplaceholder"
+  openapi_json_path: "https://jsonplaceholder.typicode.com/openapi.json"
+  server_url: "https://jsonplaceholder.typicode.com"
+  description: "JSONPlaceholder fake REST API for testing"
+  version: "1.0"
+  authentication: "none"
+
+local_plugin:
+  plugin_name: "local_plugin"
+  openapi_json_path: "./specs/local-plugin-openapi.json"
+  server_url: "http://localhost:3000"
+  description: "Local development plugin"
+  version: "dev"
+  authentication: "bearer"
