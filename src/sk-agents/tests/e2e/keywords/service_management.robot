@@ -107,6 +107,12 @@ Cleanup Test Environment
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chrome    shell=True
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromedriver    shell=True
     
+    # Clean up Chrome user data directories and temp files
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/chrome-test-*    shell=True
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/.org.chromium.*    shell=True
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/scoped_dir*    shell=True
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/.com.google.Chrome.*    shell=True
+    
     # Terminate processes with better error handling
     ${agent_process}=    Get Variable Value    ${AGENT_PROCESS}    ${NONE}
     Run Keyword If    "${agent_process}" != "None"    Run Keyword And Ignore Error    Terminate Process    ${agent_process}

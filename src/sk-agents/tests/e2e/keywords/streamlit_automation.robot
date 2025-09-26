@@ -7,8 +7,12 @@ Library          Process
 *** Keywords ***
 Open University Agent UI
     [Arguments]    ${url}
-    # Use non-headless mode for better element detection
-    Open Browser    ${url}    browser=chrome    options=add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--window-size=1920,1080")
+    # Generate unique user data directory to avoid session conflicts
+    ${timestamp}=    Get Time    epoch
+    ${user_data_dir}=    Set Variable    /tmp/chrome-test-${timestamp}
+    
+    # Use headless mode with unique user data directory
+    Open Browser    ${url}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--window-size=1920,1080");add_argument("--user-data-dir=${user_data_dir}");add_argument("--disable-web-security");add_argument("--disable-features=VizDisplayCompositor")
     Set Window Size    1920    1080
     
     # Wait for Streamlit to fully load with very extended timeout
