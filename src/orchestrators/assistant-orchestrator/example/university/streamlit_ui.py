@@ -58,7 +58,7 @@ def call_university_agent(message: str, chat_history: List[Dict]) -> str:
             return f"Error: Agent returned status code {response.status_code}"
             
     except requests.exceptions.ConnectionError:
-        return "❌ **Connection Error**: Could not connect to the university agent. Please ensure the agent is running on http://localhost:8000"
+        return "❌ **Connection Error**: Could not connect to the university agent. Please ensure the agent is running on http://localhost:8001"
     except requests.exceptions.Timeout:
         return "⏱️ **Timeout Error**: The agent took too long to respond. Please try again."
     except Exception as e:
@@ -192,7 +192,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     **How to use:**
-    1. Make sure the University Agent is running on http://localhost:8000
+    1. Make sure the University Agent is running on http://localhost:8001
     2. Ask questions about universities, countries, or specific institutions
     3. Use the example queries in the sidebar to get started
     
@@ -204,7 +204,7 @@ def main():
     export TA_PLUGIN_MODULE="../../orchestrators/assistant-orchestrator/example/university/custom_plugins.py"
     export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="sk_agents.chat_completion.custom.gemini_chat_completion_factory"
     export TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME="GeminiChatCompletionFactory"
-    uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8000
+    uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8001
     
     cd ~/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university
     uv run streamlit run streamlit_ui.py

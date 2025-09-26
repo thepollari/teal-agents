@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Aalto University",
+    "web_pages": ["https://www.aalto.fi"],
+    "domains": ["aalto.fi"],
+    "country": "Finland",
+    "state-province": null,
+    "alpha_two_code": "FI"
+  },
+  {
+    "name": "University of Helsinki",
+    "web_pages": ["https://www.helsinki.fi"],
+    "domains": ["helsinki.fi"],
+    "country": "Finland",
+    "state-province": null,
+    "alpha_two_code": "FI"
+  }
+]

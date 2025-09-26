@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Harvard University",
+    "web_pages": ["https://www.harvard.edu"],
+    "domains": ["harvard.edu"],
+    "country": "United States",
+    "state-province": "Massachusetts",
+    "alpha_two_code": "US"
+  }
+]
