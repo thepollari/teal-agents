@@ -6,17 +6,13 @@ Library          String
 *** Keywords ***
 Open University Agent UI
     [Arguments]    ${url}
-    # Use Chrome options optimized for Streamlit with longer timeouts
-    Open Browser    ${url}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--disable-gpu");add_argument("--window-size=1920,1080");add_argument("--disable-web-security");add_argument("--allow-running-insecure-content")
+    Open Browser    ${url}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--disable-gpu");add_argument("--window-size=1920,1080")
     Set Window Size    1920    1080
     
-    # Wait for Streamlit to fully load with extended timeout
-    Wait Until Page Contains    🎓 University Agent Chat    timeout=60s
-    Sleep    10s    # Allow Streamlit app to fully initialize and render all components
-    
-    # Verify core UI elements are present
-    Wait Until Page Contains    Agent Status    timeout=30s
-    Wait Until Page Contains    Configuration    timeout=20s
+    # Wait for Streamlit to fully load with longer timeout
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Wait Until Page Contains    Agent Status                timeout=20s
+    Sleep    3s    # Allow all UI elements to render
 
 Enter Chat Message
     [Arguments]    ${message}
@@ -113,30 +109,15 @@ Click Example Query With Devinid
 
 Click Agent Status Check Button
     [Documentation]    Click the Check Agent Status button to trigger status check
-    
-    # Try multiple approaches to find and click the status button
-    ${status_button_found}=    Run Keyword And Return Status    Wait Until Element Is Visible    xpath://button[contains(., 'Check Agent Status')]    timeout=20s
-    Run Keyword If    ${status_button_found}    Click Button    xpath://button[contains(., 'Check Agent Status')]
-    
-    # Fallback: Look for any button in the status section
-    Run Keyword If    not ${status_button_found}    Wait Until Element Is Visible    xpath://div[contains(., 'Agent Status')]//button    timeout=20s
-    Run Keyword If    not ${status_button_found}    Click Button    xpath://div[contains(., 'Agent Status')]//button
-    
-    Sleep    10s    # Allow status check to complete and UI to update
+    Wait Until Element Is Visible    xpath://button[contains(., 'Check Agent Status')]    timeout=15s
+    Click Button    xpath://button[contains(., 'Check Agent Status')]
+    Sleep    5s    # Allow status check to complete and UI to update
     Log    Clicked Check Agent Status button
 
 Verify Agent Status Shows
     [Arguments]    ${expected_status}
-    
-    # Wait longer for status to appear and try multiple verification approaches
-    ${status_found}=    Run Keyword And Return Status    Wait Until Page Contains    ${expected_status}    timeout=30s
-    
-    # If exact status not found, check if any status indicator is present
-    Run Keyword If    not ${status_found}    Wait Until Page Contains Element    xpath://div[contains(., 'Agent')]    timeout=20s
-    Run Keyword If    not ${status_found}    Log    Expected status '${expected_status}' not found, but agent status section is present
-    
-    Run Keyword If    ${status_found}    Log    Agent status verified: ${expected_status}
-    Run Keyword If    not ${status_found}    Log    Agent status check completed but exact text not found
+    Wait Until Page Contains    ${expected_status}    timeout=20s
+    Log    Agent status verified: ${expected_status}
 
 Verify Chat History Updated
     [Arguments]    ${message_count}
