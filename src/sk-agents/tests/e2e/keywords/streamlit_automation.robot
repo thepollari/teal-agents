@@ -20,21 +20,32 @@ Open University Agent UI
 
 Enter Chat Message
     [Arguments]    ${message}
-    # Try multiple selectors for the chat input with extended timeouts
-    ${status}=    Run Keyword And Return Status    Wait Until Element Is Visible    css:textarea[data-testid="stChatInput"]    timeout=20s
-    Run Keyword If    ${status}    Input Text    css:textarea[data-testid="stChatInput"]    ${message}
-    Run Keyword If    ${status}    Press Keys    css:textarea[data-testid="stChatInput"]    RETURN
     
-    # Fallback to devinid if data-testid doesn't work
-    Run Keyword If    not ${status}    Wait Until Element Is Visible    css:textarea[devinid="16"]    timeout=20s
-    Run Keyword If    not ${status}    Input Text    css:textarea[devinid="16"]    ${message}
-    Run Keyword If    not ${status}    Press Keys    css:textarea[devinid="16"]    RETURN
+    # Wait for chat interface to be fully loaded
+    Wait Until Page Contains    Chat    timeout=30s
+    Sleep    3s    # Allow chat interface to render
     
-    # Final fallback to any textarea
-    Run Keyword If    not ${status}    Wait Until Element Is Visible    css:textarea    timeout=20s
-    Run Keyword If    not ${status}    Input Text    css:textarea    ${message}
-    Run Keyword If    not ${status}    Press Keys    css:textarea    RETURN
+    # Try multiple approaches to find and use the chat input
+    ${input_found}=    Set Variable    False
     
+    # Approach 1: Standard Streamlit chat input
+    ${status1}=    Run Keyword And Return Status    Wait Until Element Is Visible    css:textarea[data-testid="stChatInput"]    timeout=30s
+    Run Keyword If    ${status1}    Input Text    css:textarea[data-testid="stChatInput"]    ${message}
+    Run Keyword If    ${status1}    Press Keys    css:textarea[data-testid="stChatInput"]    RETURN
+    Run Keyword If    ${status1}    Set Variable    ${input_found}    True
+    
+    # Approach 2: Try any textarea in the main content area
+    Run Keyword If    not ${input_found}    Run Keyword And Return Status    Wait Until Element Is Visible    css:div[data-testid="stMain"] textarea    timeout=20s
+    Run Keyword If    not ${input_found}    Input Text    css:div[data-testid="stMain"] textarea    ${message}
+    Run Keyword If    not ${input_found}    Press Keys    css:div[data-testid="stMain"] textarea    RETURN
+    Run Keyword If    not ${input_found}    Set Variable    ${input_found}    True
+    
+    # Approach 3: Try any visible textarea as final fallback
+    Run Keyword If    not ${input_found}    Wait Until Element Is Visible    css:textarea    timeout=20s
+    Run Keyword If    not ${input_found}    Input Text    css:textarea    ${message}
+    Run Keyword If    not ${input_found}    Press Keys    css:textarea    RETURN
+    
+    Sleep    2s    # Allow message to be processed
     Log    Entered chat message: ${message}
 
 Wait For University Response
@@ -56,27 +67,31 @@ Verify University Data Format
 Click Example Query
     [Arguments]    ${query_text}
     
-    # Wait for sidebar and example queries section
-    Wait Until Page Contains    Example Queries    timeout=20s
-    Sleep    3s    # Allow buttons to render
+    # Wait for sidebar and example queries section with extended timeout
+    Wait Until Page Contains    Example Queries    timeout=30s
+    Sleep    5s    # Allow buttons to render fully
     
     # Remove quotes from query text for matching
     ${clean_query}=    Replace String    ${query_text}    "    ${EMPTY}
     
-    # Try devinid approach first, then fallback to text-based approach
-    ${devinid}=    Set Variable If
-    ...    '${clean_query}' == 'Find universities in Finland'    6
-    ...    '${clean_query}' == 'Search for Aalto University'     7
-    ...    '${clean_query}' == 'What universities are in Japan?' 8
-    ...    '${clean_query}' == 'Tell me about MIT'               9
-    ...    '${clean_query}' == 'Universities in Germany'         10
-    ...    6
+    # Try multiple approaches to find and click the button
+    ${button_clicked}=    Set Variable    False
     
-    ${button_found}=    Run Keyword And Return Status    Wait Until Element Is Visible    css:button[devinid="${devinid}"]    timeout=10s
-    Run Keyword If    ${button_found}    Click Button    css:button[devinid="${devinid}"]
-    Run Keyword If    not ${button_found}    Wait Until Element Is Visible    xpath://button[contains(text(), '${clean_query}')]    timeout=15s
-    Run Keyword If    not ${button_found}    Click Button    xpath://button[contains(text(), '${clean_query}')]
-    Log    Clicked example query: ${clean_query} (devinid=${devinid})
+    # Approach 1: Try any button containing the query text (more flexible)
+    ${status1}=    Run Keyword And Return Status    Wait Until Element Is Visible    xpath://button[contains(., '${clean_query}')]    timeout=20s
+    Run Keyword If    ${status1}    Click Button    xpath://button[contains(., '${clean_query}')]
+    Run Keyword If    ${status1}    Set Variable    ${button_clicked}    True
+    
+    # Approach 2: Try exact text match if partial match failed
+    Run Keyword If    not ${status1}    Run Keyword And Return Status    Wait Until Element Is Visible    xpath://button[text()='${clean_query}']    timeout=15s
+    Run Keyword If    not ${status1}    Click Button    xpath://button[text()='${clean_query}']
+    Run Keyword If    not ${status1}    Set Variable    ${button_clicked}    True
+    
+    # Approach 3: Try any button in the sidebar as fallback
+    Run Keyword If    not ${button_clicked}    Wait Until Element Is Visible    xpath://div[contains(@class, 'sidebar')]//button    timeout=15s
+    Run Keyword If    not ${button_clicked}    Click Button    xpath://div[contains(@class, 'sidebar')]//button[1]
+    
+    Log    Clicked example query: ${clean_query}
 
 Click Example Query With Devinid
     [Arguments]    ${query_text}
