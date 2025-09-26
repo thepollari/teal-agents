@@ -1,0 +1,26 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  A sequential agent with plugins migrated to Go
+service_name: PluginBot
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: university_agent
+      role: University Search Agent
+      model: gpt-4o-mini
+      system_prompt: >
+        You are a helpful assistant that can search for universities.
+        Use the search_universities function to find universities by name.
+      plugins:
+        - university
+      remote_plugins:
+        - weather_api
+  tasks:
+    - name: search_task
+      task_no: 1
+      description: Search for universities
+      instructions: >
+        Help the user search for universities using the available plugins.
+      agent: university_agent
