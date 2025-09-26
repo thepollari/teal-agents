@@ -29,10 +29,10 @@ tests/e2e/
 
 ## Prerequisites
 
-1. **Environment Setup** (includes streamlit dependency):
+1. **Environment Setup** (**CRITICAL: streamlit dependency required**):
    ```bash
    cd src/sk-agents
-   uv sync --dev
+   uv sync --dev  # This installs streamlit>=1.28.0 which is REQUIRED for UI tests
    ```
 
 2. **⚠️ CRITICAL: Environment Configuration Required**
@@ -137,10 +137,12 @@ uv run robot --outputdir results tests/e2e/
 
 ### Common Issues
 
-1. **Missing streamlit dependency**:
+1. **Missing streamlit dependency** (**CRITICAL - Tests will fail without this**):
    ```bash
    cd src/sk-agents
-   uv sync --dev  # This now includes streamlit>=1.28.0
+   uv sync --dev  # This installs streamlit>=1.28.0 which is REQUIRED
+   # Verify streamlit is installed:
+   uv run python -c "import streamlit; print(f'Streamlit {streamlit.__version__} installed')"
    ```
 
 2. **Environment path configuration errors**:
