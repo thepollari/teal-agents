@@ -66,6 +66,7 @@ dev = [
     "robotframework>=7.0.0",
     "robotframework-requests>=0.9.7",
     "robotframework-seleniumlibrary>=6.6.0",
+    "streamlit>=1.28.0",
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.0",
     "mkdocstrings[python]>=0.28.0",

@@ -29,13 +29,29 @@ tests/e2e/
 
 ## Prerequisites
 
-1. **Environment Setup**:
+1. **Environment Setup** (includes streamlit dependency):
    ```bash
    cd src/sk-agents
    uv sync --dev
    ```
 
-2. **Required Environment Variables**:
+2. **⚠️ IMPORTANT: Environment Configuration Required**
+   
+   **Before running tests, you MUST update environment-specific paths.** See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for detailed configuration instructions.
+   
+   **Quick Configuration**: Update these absolute paths in `tests/e2e/keywords/service_management.robot`:
+   ```robot
+   # Lines 16-21: Update to your repository location
+   Set Environment Variable    TA_SERVICE_CONFIG                           /YOUR/PATH/TO/teal-agents/src/sk-agents/tests/e2e/configs/test_university_config.yaml
+   Set Environment Variable    TA_PLUGIN_MODULE                            /YOUR/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university/custom_plugins.py
+   Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE    /YOUR/PATH/TO/teal-agents/src/sk-agents/tests/e2e/libraries/MockGeminiFactory.py
+   
+   # Lines 28 & 38: Update working directories
+   ...    cwd=/YOUR/PATH/TO/teal-agents/src/sk-agents    alias=university_agent
+   ...    cwd=/YOUR/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui
+   ```
+
+3. **Required Environment Variables**:
    ```bash
    export GEMINI_API_KEY="test_gemini_api_key"
    export TA_API_KEY="test_teal_agents_key"
@@ -104,17 +120,29 @@ uv run robot --outputdir results tests/e2e/
 
 ### Common Issues
 
-1. **Chrome/Selenium Issues**:
+1. **Missing streamlit dependency**:
+   ```bash
+   cd src/sk-agents
+   uv sync --dev  # This now includes streamlit>=1.28.0
+   ```
+
+2. **Environment path configuration errors**:
+   - Update absolute paths in `tests/e2e/keywords/service_management.robot`
+   - See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for detailed instructions
+   - Common error: "FileNotFoundError" for config files or plugins
+
+3. **Chrome/Selenium Issues**:
    ```bash
    sudo apt-get update
    sudo apt-get install -y chromium-browser chromium-chromedriver
    ```
 
-2. **Port Conflicts**:
+4. **Port Conflicts**:
    - Tests use ports 8001 (agent) and 8501 (UI)
    - Ensure these ports are available before running tests
+   - Kill existing processes: `pkill -f "uvicorn.*8001" && pkill -f "streamlit.*8501"`
 
-3. **Service Startup Timeouts**:
+5. **Service Startup Timeouts**:
    - Increase timeout values in service_management.robot if needed
    - Check service logs in agent.log and ui.log
 
