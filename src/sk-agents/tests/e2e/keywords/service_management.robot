@@ -16,9 +16,14 @@ Setup Test Environment
 Start University Agent Service
     [Documentation]    Start University Agent FastAPI service
     
-    # Kill any existing processes on the port first
-    Run Process    pkill    -f    uvicorn.*${AGENT_PORT}    shell=True
-    Sleep    2s    # Allow process to fully terminate
+    # More aggressive cleanup of existing processes on the port
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    uvicorn.*${AGENT_PORT}    shell=True
+    Run Keyword And Ignore Error    Run Process    fuser    -k    ${AGENT_PORT}/tcp    shell=True
+    Sleep    5s    # Allow processes to fully terminate
+    
+    # Verify port is available
+    ${port_check}=    Run Process    lsof -i:${AGENT_PORT}    shell=True
+    Run Keyword If    ${port_check.rc} == 0    Log    WARNING: Port ${AGENT_PORT} still in use after cleanup attempts    WARN
     
     Set Environment Variable    GEMINI_API_KEY                              test_gemini_api_key
     Set Environment Variable    TA_API_KEY                                  test_teal_agents_key
@@ -36,9 +41,14 @@ Start University Agent Service
 Start Streamlit UI Service
     [Documentation]    Start Streamlit UI service
     
-    # Kill any existing processes on the port first
-    Run Process    pkill    -f    streamlit.*${UI_PORT}    shell=True
-    Sleep    2s    # Allow process to fully terminate
+    # More aggressive cleanup of existing processes on the port
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    streamlit.*${UI_PORT}    shell=True
+    Run Keyword And Ignore Error    Run Process    fuser    -k    ${UI_PORT}/tcp    shell=True
+    Sleep    5s    # Allow processes to fully terminate
+    
+    # Verify port is available
+    ${port_check}=    Run Process    lsof -i:${UI_PORT}    shell=True
+    Run Keyword If    ${port_check.rc} == 0    Log    WARNING: Port ${UI_PORT} still in use after cleanup attempts    WARN
     
     ${ui_process}=    Start Process    uv    run    streamlit    run    streamlit_ui.py    --server.port    ${UI_PORT}    --server.headless    true
     ...    cwd=/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui    stdout=ui.log    stderr=ui.log
@@ -70,8 +80,14 @@ Check Streamlit UI Health
 Cleanup Test Environment
     [Documentation]    Clean up all test services and processes
     
-    # Close browsers first to prevent window not found errors
+    # Close browsers first with extended cleanup
     Run Keyword And Ignore Error    Close All Browsers
+    Sleep    3s
+    
+    # Kill all Chrome and WebDriver processes
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chrome    shell=True
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromedriver    shell=True
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromium    shell=True
     Sleep    2s
     
     # Terminate processes with better error handling
@@ -81,17 +97,19 @@ Cleanup Test Environment
     ${ui_process}=    Get Variable Value    ${UI_PROCESS}    ${NONE}
     Run Keyword If    "${ui_process}" != "None"    Run Keyword And Ignore Error    Terminate Process    ${ui_process}
     
-    # More aggressive cleanup with better error handling
+    # More aggressive service cleanup
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    uvicorn.*8001    shell=True
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    streamlit.*8501    shell=True
     Run Keyword And Ignore Error    Run Process    fuser    -k    8001/tcp    shell=True
     Run Keyword And Ignore Error    Run Process    fuser    -k    8501/tcp    shell=True
     Sleep    5s
     
-    # Clean up Chrome user data directories and processes
+    # Clean up temporary files and directories
     Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/chrome-test-*    shell=True
-    Run Keyword And Ignore Error    Run Process    pkill    -f    chrome    shell=True
-    Run Keyword And Ignore Error    Run Process    pkill    -f    chromedriver    shell=True
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/.org.chromium.*    shell=True
+    Run Keyword And Ignore Error    Run Process    rm    -rf    /tmp/scoped_dir*    shell=True
+    
+    Log    Test environment cleanup completed
 
 Set Environment Variables
     [Documentation]    Set required environment variables for testing
