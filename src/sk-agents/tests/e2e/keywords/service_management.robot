@@ -16,14 +16,20 @@ Setup Test Environment
 Start University Agent Service
     [Documentation]    Start University Agent FastAPI service
     
-    # More aggressive cleanup of existing processes on the port
+    # Ultra-aggressive cleanup of existing processes on the port
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    uvicorn.*${AGENT_PORT}    shell=True
     Run Keyword And Ignore Error    Run Process    fuser    -k    ${AGENT_PORT}/tcp    shell=True
-    Sleep    5s    # Allow processes to fully terminate
+    Run Keyword And Ignore Error    Run Process    kill -9 $(lsof -t -i:${AGENT_PORT})    shell=True
+    Sleep    8s    # Extended wait to allow processes to fully terminate
     
-    # Verify port is available
+    # Verify port is available and retry cleanup if needed
     ${port_check}=    Run Process    lsof -i:${AGENT_PORT}    shell=True
-    Run Keyword If    ${port_check.rc} == 0    Log    WARNING: Port ${AGENT_PORT} still in use after cleanup attempts    WARN
+    Run Keyword If    ${port_check.rc} == 0    Run Keyword And Ignore Error    Run Process    kill -9 $(lsof -t -i:${AGENT_PORT})    shell=True
+    Run Keyword If    ${port_check.rc} == 0    Sleep    5s
+    
+    # Final verification
+    ${final_check}=    Run Process    lsof -i:${AGENT_PORT}    shell=True
+    Run Keyword If    ${final_check.rc} == 0    Log    ERROR: Port ${AGENT_PORT} still in use after multiple cleanup attempts    ERROR
     
     Set Environment Variable    GEMINI_API_KEY                              test_gemini_api_key
     Set Environment Variable    TA_API_KEY                                  test_teal_agents_key
@@ -41,14 +47,20 @@ Start University Agent Service
 Start Streamlit UI Service
     [Documentation]    Start Streamlit UI service
     
-    # More aggressive cleanup of existing processes on the port
+    # Ultra-aggressive cleanup of existing processes on the port
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    streamlit.*${UI_PORT}    shell=True
     Run Keyword And Ignore Error    Run Process    fuser    -k    ${UI_PORT}/tcp    shell=True
-    Sleep    5s    # Allow processes to fully terminate
+    Run Keyword And Ignore Error    Run Process    kill -9 $(lsof -t -i:${UI_PORT})    shell=True
+    Sleep    8s    # Extended wait to allow processes to fully terminate
     
-    # Verify port is available
+    # Verify port is available and retry cleanup if needed
     ${port_check}=    Run Process    lsof -i:${UI_PORT}    shell=True
-    Run Keyword If    ${port_check.rc} == 0    Log    WARNING: Port ${UI_PORT} still in use after cleanup attempts    WARN
+    Run Keyword If    ${port_check.rc} == 0    Run Keyword And Ignore Error    Run Process    kill -9 $(lsof -t -i:${UI_PORT})    shell=True
+    Run Keyword If    ${port_check.rc} == 0    Sleep    5s
+    
+    # Final verification
+    ${final_check}=    Run Process    lsof -i:${UI_PORT}    shell=True
+    Run Keyword If    ${final_check.rc} == 0    Log    ERROR: Port ${UI_PORT} still in use after multiple cleanup attempts    ERROR
     
     ${ui_process}=    Start Process    uv    run    streamlit    run    streamlit_ui.py    --server.port    ${UI_PORT}    --server.headless    true
     ...    cwd=/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui    stdout=ui.log    stderr=ui.log
@@ -84,11 +96,16 @@ Cleanup Test Environment
     Run Keyword And Ignore Error    Close All Browsers
     Sleep    3s
     
-    # Kill all Chrome and WebDriver processes
+    # Kill all Chrome and WebDriver processes with multiple attempts
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chrome    shell=True
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromedriver    shell=True
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromium    shell=True
-    Sleep    2s
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    selenium    shell=True
+    Sleep    5s    # Extended wait for processes to terminate
+    
+    # Second attempt to ensure all processes are terminated
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chrome    shell=True
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chromedriver    shell=True
     
     # Terminate processes with better error handling
     ${agent_process}=    Get Variable Value    ${AGENT_PROCESS}    ${NONE}
