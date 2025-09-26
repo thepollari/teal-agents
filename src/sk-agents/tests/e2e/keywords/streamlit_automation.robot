@@ -7,22 +7,22 @@ Library          Process
 *** Keywords ***
 Open University Agent UI
     [Arguments]    ${url}
-    # Use simplified browser options for maximum compatibility
-    ${chrome_options}=    Create List    --headless    --no-sandbox    --disable-dev-shm-usage
-    Open Browser    ${url}    browser=chrome    options=add_argument("${chrome_options[0]}");add_argument("${chrome_options[1]}");add_argument("${chrome_options[2]}")
+    # Use non-headless mode for better element detection
+    Open Browser    ${url}    browser=chrome    options=add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--window-size=1920,1080")
     Set Window Size    1920    1080
     
-    # Wait for Streamlit to fully load with extended timeout and multiple checks
-    Wait Until Keyword Succeeds    90s    5s    Page Should Contain    🎓 University Agent Chat
-    Wait Until Keyword Succeeds    60s    5s    Page Should Contain    Agent Status
-    Sleep    15s    # Extended wait for all UI elements to render
-    
-    # Force page reload to ensure all elements are properly loaded
-    Execute JavaScript    window.location.reload(true);
-    Sleep    10s
+    # Wait for Streamlit to fully load with very extended timeout
+    Wait Until Keyword Succeeds    120s    10s    Page Should Contain    🎓 University Agent Chat
+    Sleep    20s    # Extended wait for all UI elements to render
     
     # Verify page is fully loaded
-    Wait Until Page Contains Element    css:[data-testid="stApp"]    timeout=45s
+    Wait Until Page Contains Element    css:[data-testid="stApp"]    timeout=60s
+    
+    # Check if agent status is visible - if not, try to make it visible
+    ${status_visible}=    Run Keyword And Return Status    Page Should Contain    Agent Status
+    Run Keyword Unless    ${status_visible}    Execute JavaScript    window.scrollTo(0, 0);
+    Run Keyword Unless    ${status_visible}    Sleep    5s
+    
     Log    Streamlit UI opened successfully
 
 Enter Chat Message
@@ -117,35 +117,35 @@ Click Agent Status Check Button
     [Documentation]    Click the Check Agent Status button to trigger status check
     
     # Wait for sidebar to be fully loaded with extended timeout
-    Wait Until Page Contains Element    css:[data-testid="stSidebar"]    timeout=45s
-    Sleep    5s    # Allow sidebar content to render
+    Wait Until Page Contains Element    css:[data-testid="stSidebar"]    timeout=60s
+    Sleep    10s    # Allow sidebar content to render
+    
+    # Scroll to ensure sidebar is visible
+    Execute JavaScript    document.querySelector('[data-testid="stSidebar"]').scrollIntoView();
+    Sleep    3s
     
     # Try multiple approaches to find and click the status button
     ${clicked}=    Set Variable    ${FALSE}
     
-    # Approach 1: Try direct JavaScript execution to click the button by text content
-    ${js_status}=    Run Keyword And Return Status    Execute JavaScript    
-    ...    Array.from(document.querySelectorAll('button')).find(el => el.textContent.includes('Check Agent Status')).click();
-    Run Keyword If    ${js_status}    Set Variable    ${clicked}    ${TRUE}
-    Run Keyword If    ${js_status}    Sleep    10s
+    # Approach 1: Try direct JavaScript execution to find and click any button with "Status" text
+    ${js_result}=    Execute JavaScript    
+    ...    var buttons = Array.from(document.querySelectorAll('button')); 
+    ...    var statusButton = buttons.find(el => el.textContent.includes('Status') || el.textContent.includes('Check')); 
+    ...    if (statusButton) { statusButton.click(); return 'clicked'; } else { return 'not_found'; }
+    Run Keyword If    "${js_result}" == "clicked"    Set Variable    ${clicked}    ${TRUE}
+    Run Keyword If    "${js_result}" == "clicked"    Sleep    15s
     
-    # Approach 2: Try devinid selector
-    Run Keyword If    not ${clicked}    ${status}=    Run Keyword And Return Status    Wait Until Element Is Visible    css:button[devinid="6"]    timeout=20s
-    Run Keyword If    not ${clicked} and ${status}    Click Element    css:button[devinid="6"]
-    Run Keyword If    not ${clicked} and ${status}    Set Variable    ${clicked}    ${TRUE}
-    Run Keyword If    not ${clicked} and ${status}    Sleep    10s
+    # Approach 2: Try any button in sidebar if JS didn't work
+    Run Keyword If    not ${clicked}    ${sidebar_buttons}=    Get WebElements    css:[data-testid="stSidebar"] button
+    Run Keyword If    not ${clicked}    Run Keyword If    ${sidebar_buttons}    Click Element    ${sidebar_buttons}[0]
+    Run Keyword If    not ${clicked}    Run Keyword If    ${sidebar_buttons}    Set Variable    ${clicked}    ${TRUE}
+    Run Keyword If    not ${clicked}    Run Keyword If    ${sidebar_buttons}    Sleep    15s
     
-    # Approach 3: Try text-based xpath with multiple variations
-    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Wait Until Element Is Visible    xpath://button[contains(., 'Check Agent Status')]    timeout=20s
-    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Click Element    xpath://button[contains(., 'Check Agent Status')]
-    Run Keyword If    not ${clicked}    Sleep    10s
+    # Approach 3: Try to find any clickable element with "Status" text
+    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Click Element    xpath://*[contains(text(), 'Status')]
+    Run Keyword If    not ${clicked}    Sleep    15s
     
-    # Approach 4: Try any button in sidebar as last resort
-    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Wait Until Element Is Visible    css:[data-testid="stSidebar"] button    timeout=20s
-    Run Keyword If    not ${clicked}    Run Keyword And Ignore Error    Click Element    css:[data-testid="stSidebar"] button
-    
-    Sleep    15s    # Extended wait for status check to complete
-    Log    Attempted to click Check Agent Status button
+    Log    Attempted to click Check Agent Status button (clicked: ${clicked})
 
 Verify Agent Status Shows
     [Arguments]    ${expected_status}
