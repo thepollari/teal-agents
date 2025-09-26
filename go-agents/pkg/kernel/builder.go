@@ -9,6 +9,7 @@ import (
 	"github.com/thepollari/teal-agents/go-agents/pkg/logging"
 	"github.com/thepollari/teal-agents/go-agents/pkg/plugins"
 	"github.com/thepollari/teal-agents/go-agents/pkg/plugins/remote"
+	_ "github.com/thepollari/teal-agents/go-agents/pkg/plugins/university"
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
 )
 
