@@ -9,7 +9,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	
 	"github.com/thepollari/teal-agents/go-agents/pkg/logging"
+	"github.com/thepollari/teal-agents/go-agents/pkg/telemetry"
 )
 
 func RequestLoggingMiddleware() gin.HandlerFunc {
@@ -107,13 +112,34 @@ func ErrorHandlingMiddleware() gin.HandlerFunc {
 
 func TelemetryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		ctx := otel.GetTextMapPropagator().Extract(c.Request.Context(), propagation.HeaderCarrier(c.Request.Header))
+		
+		ctx, span := telemetry.InstrumentHTTPRequest(ctx, c.Request.Method, c.Request.URL.Path)
+		defer span.End()
+		
+		c.Request = c.Request.WithContext(ctx)
+		
+		telemetry.AddSpanAttributes(span,
+			attribute.String("http.user_agent", c.Request.UserAgent()),
+			attribute.String("http.remote_addr", c.ClientIP()),
+		)
+		
 		start := time.Now()
-		
 		c.Next()
-		
 		duration := time.Since(start)
-		logger := logging.WithContext(c.Request.Context())
 		
+		telemetry.AddSpanAttributes(span,
+			attribute.Int("http.status_code", c.Writer.Status()),
+			attribute.Int("http.response_size", c.Writer.Size()),
+		)
+		
+		telemetry.RecordResponseTime(span, duration)
+		
+		if len(c.Errors) > 0 {
+			telemetry.RecordError(span, c.Errors.Last())
+		}
+		
+		logger := logging.WithContext(ctx)
 		logger.Info("Request telemetry",
 			"method", c.Request.Method,
 			"path", c.Request.URL.Path,

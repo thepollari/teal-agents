@@ -6,7 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/thepollari/teal-agents/go-agents/pkg/config"
+	"github.com/thepollari/teal-agents/go-agents/pkg/telemetry"
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
 )
 
@@ -111,20 +114,40 @@ func (s *SequentialAgent) initializeAgents(ctx context.Context, agentConfigs []c
 }
 
 func (s *SequentialAgent) Invoke(ctx context.Context, inputs map[string]interface{}) (*types.InvokeResponse, error) {
+	ctx, span := telemetry.InstrumentAgentInvocation(ctx, s.name, "sequential")
+	defer span.End()
+	
+	telemetry.AddSpanAttributes(span,
+		attribute.String("agent.type", "sequential"),
+		attribute.Int("agent.task_count", len(s.tasks)),
+	)
+	
 	s.mu.RLock()
 	tasks := s.tasks
 	s.mu.RUnlock()
 	
 	agents, err := s.initializeAgents(ctx, s.config.Spec.Agents)
 	if err != nil {
+		telemetry.RecordError(span, err)
 		return nil, fmt.Errorf("failed to initialize agents: %w", err)
 	}
 	
 	results := make(map[string]interface{})
-	for _, task := range tasks {
-		_, exists := agents[task.AgentName]
+	for i, task := range tasks {
+		_, taskSpan := telemetry.StartSpan(ctx, fmt.Sprintf("task.%s", task.Name))
+		telemetry.AddSpanAttributes(taskSpan,
+			attribute.String("task.name", task.Name),
+			attribute.String("task.agent", task.AgentName),
+			attribute.Int("task.number", task.TaskNo),
+		)
+		
+		agent, exists := agents[task.AgentName]
 		if !exists {
-			return nil, fmt.Errorf("agent %s not found for task %s", task.AgentName, task.Name)
+			err := fmt.Errorf("agent %s not found for task %s", task.AgentName, task.Name)
+			telemetry.RecordError(taskSpan, err)
+			taskSpan.End()
+			telemetry.RecordError(span, err)
+			return nil, err
 		}
 		
 		taskInputs := make(map[string]interface{})
@@ -139,9 +162,27 @@ func (s *SequentialAgent) Invoke(ctx context.Context, inputs map[string]interfac
 		taskInputs["task"] = task.Name
 		taskInputs["instructions"] = task.Instructions
 		
+		telemetry.AddSpanAttributes(taskSpan,
+			attribute.String("agent.model", agent.Config.Model),
+			attribute.String("agent.role", agent.Config.Role),
+		)
 		
 		results[task.Name] = fmt.Sprintf("Result for task %s", task.Name)
+		
+		telemetry.AddSpanAttributes(taskSpan,
+			attribute.String("task.status", "completed"),
+		)
+		taskSpan.End()
+		
+		telemetry.AddSpanAttributes(span,
+			attribute.Int("tasks.completed", i+1),
+		)
 	}
+	
+	telemetry.AddSpanAttributes(span,
+		attribute.String("invocation.status", "success"),
+		attribute.Int("results.count", len(results)),
+	)
 	
 	return &types.InvokeResponse{
 		Result:    results,
@@ -151,6 +192,15 @@ func (s *SequentialAgent) Invoke(ctx context.Context, inputs map[string]interfac
 }
 
 func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]interface{}) (<-chan types.StreamResponse, error) {
+	ctx, span := telemetry.InstrumentAgentInvocation(ctx, s.name, "sequential-stream")
+	defer span.End()
+	
+	telemetry.AddSpanAttributes(span,
+		attribute.String("agent.type", "sequential"),
+		attribute.String("invocation.mode", "stream"),
+		attribute.Int("agent.task_count", len(s.tasks)),
+	)
+	
 	responseChan := make(chan types.StreamResponse)
 	
 	go func() {
@@ -162,6 +212,7 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 		
 		agents, err := s.initializeAgents(ctx, s.config.Spec.Agents)
 		if err != nil {
+			telemetry.RecordError(span, err)
 			responseChan <- types.StreamResponse{
 				Data:      nil,
 				Metadata:  map[string]interface{}{"error": err.Error()},
@@ -173,11 +224,23 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 		
 		results := make(map[string]interface{})
 		for i, task := range tasks {
-			_, exists := agents[task.AgentName]
+			_, taskSpan := telemetry.StartSpan(ctx, fmt.Sprintf("stream.task.%s", task.Name))
+			telemetry.AddSpanAttributes(taskSpan,
+				attribute.String("task.name", task.Name),
+				attribute.String("task.agent", task.AgentName),
+				attribute.Int("task.number", task.TaskNo),
+				attribute.String("task.mode", "stream"),
+			)
+			
+			agent, exists := agents[task.AgentName]
 			if !exists {
+				err := fmt.Errorf("agent %s not found for task %s", task.AgentName, task.Name)
+				telemetry.RecordError(taskSpan, err)
+				telemetry.RecordError(span, err)
+				taskSpan.End()
 				responseChan <- types.StreamResponse{
 					Data:      nil,
-					Metadata:  map[string]interface{}{"error": fmt.Sprintf("agent %s not found for task %s", task.AgentName, task.Name)},
+					Metadata:  map[string]interface{}{"error": err.Error()},
 					Timestamp: time.Now(),
 					Done:      true,
 				}
@@ -196,6 +259,11 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 			taskInputs["task"] = task.Name
 			taskInputs["instructions"] = task.Instructions
 			
+			telemetry.AddSpanAttributes(taskSpan,
+				attribute.String("agent.model", agent.Config.Model),
+				attribute.String("agent.role", agent.Config.Role),
+			)
+			
 			responseChan <- types.StreamResponse{
 				Data:      fmt.Sprintf("Starting task %s", task.Name),
 				Metadata:  map[string]interface{}{"task": task.Name, "status": "started"},
@@ -203,9 +271,12 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 				Done:      false,
 			}
 			
-			
 			taskResult := fmt.Sprintf("Result for task %s", task.Name)
 			results[task.Name] = taskResult
+			
+			telemetry.AddSpanAttributes(taskSpan,
+				attribute.String("task.status", "completed"),
+			)
 			
 			responseChan <- types.StreamResponse{
 				Data:      taskResult,
@@ -213,7 +284,18 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 				Timestamp: time.Now(),
 				Done:      i == len(tasks)-1,
 			}
+			
+			taskSpan.End()
+			
+			telemetry.AddSpanAttributes(span,
+				attribute.Int("tasks.completed", i+1),
+			)
 		}
+		
+		telemetry.AddSpanAttributes(span,
+			attribute.String("invocation.status", "success"),
+			attribute.Int("results.count", len(results)),
+		)
 	}()
 	
 	return responseChan, nil

@@ -14,12 +14,21 @@ import (
 	"github.com/thepollari/teal-agents/go-agents/pkg/logging"
 	"github.com/thepollari/teal-agents/go-agents/pkg/plugins/remote"
 	"github.com/thepollari/teal-agents/go-agents/pkg/server"
+	"github.com/thepollari/teal-agents/go-agents/pkg/telemetry"
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
 )
 
 func main() {
 	appConfig := config.LoadAppConfig()
 	logger := logging.InitLogger(appConfig.LogLevel)
+	
+	telemetryConfig := telemetry.GetConfigFromEnv()
+	err := telemetry.Initialize(telemetryConfig)
+	if err != nil {
+		logger.Error("Failed to initialize telemetry", "error", err.Error())
+		log.Fatalf("Failed to initialize telemetry: %v", err)
+	}
+	logger.Info("Telemetry initialized", "enabled", telemetryConfig.Enabled, "service", telemetryConfig.ServiceName)
 	
 	configPath := os.Getenv("TA_SERVICE_CONFIG")
 	if configPath == "" && len(os.Args) >= 2 {
