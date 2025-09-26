@@ -16,10 +16,11 @@ Setup Test Environment
 Start University Agent Service
     [Documentation]    Start University Agent FastAPI service
     
-    # Kill any existing processes on the port first - more aggressive cleanup
-    Run Process    pkill    -9    -f    uvicorn.*${AGENT_PORT}    shell=True
-    Run Process    fuser    -k    ${AGENT_PORT}/tcp    shell=True
-    Sleep    5s    # Allow process to fully terminate
+    # Comprehensive port cleanup before starting service
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    uvicorn.*${AGENT_PORT}    shell=True
+    Run Keyword And Ignore Error    Run Process    fuser    -k    ${AGENT_PORT}/tcp    shell=True
+    Run Keyword And Ignore Error    Run Process    lsof    -ti:${AGENT_PORT}    |    xargs    kill    -9    shell=True
+    Sleep    8s    # Extended wait for process cleanup
     
     Set Environment Variable    GEMINI_API_KEY                              test_gemini_api_key
     Set Environment Variable    TA_API_KEY                                  test_teal_agents_key
@@ -37,10 +38,11 @@ Start University Agent Service
 Start Streamlit UI Service
     [Documentation]    Start Streamlit UI service
     
-    # Kill any existing processes on the port first - more aggressive cleanup
-    Run Process    pkill    -9    -f    streamlit.*${UI_PORT}    shell=True
-    Run Process    fuser    -k    ${UI_PORT}/tcp    shell=True
-    Sleep    5s    # Allow process to fully terminate
+    # Comprehensive port cleanup before starting UI service
+    Run Keyword And Ignore Error    Run Process    pkill    -9    -f    streamlit.*${UI_PORT}    shell=True
+    Run Keyword And Ignore Error    Run Process    fuser    -k    ${UI_PORT}/tcp    shell=True
+    Run Keyword And Ignore Error    Run Process    lsof    -ti:${UI_PORT}    |    xargs    kill    -9    shell=True
+    Sleep    8s    # Extended wait for process cleanup
     
     ${ui_process}=    Start Process    uv    run    streamlit    run    streamlit_ui.py    --server.port    ${UI_PORT}    --server.headless    true
     ...    cwd=/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui    stdout=ui.log    stderr=ui.log
