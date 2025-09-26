@@ -50,10 +50,11 @@ func (s *Server) setupRoutes() {
 	
 	v1 := s.router.Group(fmt.Sprintf("/%s/%s", s.config.ServiceName, s.config.Version))
 	
+	v1.GET("/health", s.handleHealth)
+	v1.GET("/health/ready", s.handleHealthReady)
+	
 	v1.POST("", s.handleInvoke)
-	
 	v1.GET("/sse", s.handleInvokeSSE)
-	
 	v1.GET("/ws", s.handleWebSocket)
 }
 
