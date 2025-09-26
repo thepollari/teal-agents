@@ -35,20 +35,37 @@ tests/e2e/
    uv sync --dev
    ```
 
-2. **⚠️ IMPORTANT: Environment Configuration Required**
+2. **⚠️ CRITICAL: Environment Configuration Required**
    
-   **Before running tests, you MUST update environment-specific paths.** See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for detailed configuration instructions.
+   **Before running tests, you MUST update environment-specific paths and endpoints.** The tests use absolute paths that need to be customized for your system.
    
-   **Quick Configuration**: Update these absolute paths in `tests/e2e/keywords/service_management.robot`:
+   **Required Updates in `tests/e2e/keywords/service_management.robot`:**
    ```robot
-   # Lines 16-21: Update to your repository location
-   Set Environment Variable    TA_SERVICE_CONFIG                           /YOUR/PATH/TO/teal-agents/src/sk-agents/tests/e2e/configs/test_university_config.yaml
-   Set Environment Variable    TA_PLUGIN_MODULE                            /YOUR/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university/custom_plugins.py
-   Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE    /YOUR/PATH/TO/teal-agents/src/sk-agents/tests/e2e/libraries/MockGeminiFactory.py
+   # Lines ~34-36: Update these absolute paths to match your repository location
+   Set Environment Variable    TA_SERVICE_CONFIG                           /YOUR/FULL/PATH/TO/teal-agents/src/sk-agents/tests/e2e/configs/test_university_config.yaml
+   Set Environment Variable    TA_PLUGIN_MODULE                            /YOUR/FULL/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university/custom_plugins.py
+   Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE    /YOUR/FULL/PATH/TO/teal-agents/src/sk-agents/tests/e2e/libraries/MockGeminiFactory.py
    
-   # Lines 28 & 38: Update working directories
-   ...    cwd=/YOUR/PATH/TO/teal-agents/src/sk-agents    alias=university_agent
-   ...    cwd=/YOUR/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui
+   # Lines ~41 & ~56: Update working directories
+   ...    cwd=/YOUR/FULL/PATH/TO/teal-agents/src/sk-agents    alias=university_agent
+   ...    cwd=/YOUR/FULL/PATH/TO/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui
+   ```
+   
+   **Service Endpoints (configurable in test variables):**
+   ```robot
+   ${AGENT_PORT}           8001    # University Agent FastAPI service port
+   ${UI_PORT}              8501    # Streamlit UI service port
+   ${AGENT_BASE_URL}       http://localhost:${AGENT_PORT}
+   ${UI_BASE_URL}          http://localhost:${UI_PORT}
+   ${AGENT_ENDPOINT}       ${AGENT_BASE_URL}/UniversityAgent/0.1
+   ```
+   
+   **Quick Setup Script:**
+   ```bash
+   # Run this from the src/sk-agents directory to auto-update paths
+   REPO_PATH=$(pwd | sed 's|/src/sk-agents.*||')
+   sed -i "s|/home/ubuntu/repos/teal-agents|${REPO_PATH}|g" tests/e2e/keywords/service_management.robot
+   echo "Updated repository paths to: ${REPO_PATH}"
    ```
 
 3. **Required Environment Variables**:

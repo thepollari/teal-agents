@@ -92,9 +92,11 @@ Check Streamlit UI Health
 Cleanup Test Environment
     [Documentation]    Clean up all test services and processes
     
-    # Close browsers first with extended cleanup
+    # Close browsers first with extended cleanup and explicit session termination
+    Run Keyword And Ignore Error    Execute JavaScript    window.close();
+    Sleep    2s
     Run Keyword And Ignore Error    Close All Browsers
-    Sleep    3s
+    Sleep    5s
     
     # Kill all Chrome and WebDriver processes with multiple attempts
     Run Keyword And Ignore Error    Run Process    pkill    -9    -f    chrome    shell=True

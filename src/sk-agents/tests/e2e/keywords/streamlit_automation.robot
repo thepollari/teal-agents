@@ -11,9 +11,12 @@ Open University Agent UI
     ${timestamp}=    Get Time    epoch
     ${user_data_dir}=    Set Variable    /tmp/chrome-test-${timestamp}
     
-    # Use headless mode with unique user data directory
-    Open Browser    ${url}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--window-size=1920,1080");add_argument("--user-data-dir=${user_data_dir}");add_argument("--disable-web-security");add_argument("--disable-features=VizDisplayCompositor")
+    # Use non-headless Chrome with minimal options for maximum stability
+    Open Browser    ${url}    browser=chrome    options=add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage");add_argument("--user-data-dir=${user_data_dir}");add_argument("--disable-web-security");add_argument("--remote-debugging-port=0")
     Set Window Size    1920    1080
+    
+    # Add explicit wait for browser to be ready
+    Sleep    5s
     
     # Wait for Streamlit to fully load with very extended timeout
     Wait Until Keyword Succeeds    120s    10s    Page Should Contain    🎓 University Agent Chat
