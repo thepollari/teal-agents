@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"sync"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	
@@ -41,7 +41,7 @@ func NewRemotePluginLoader(catalogPath string) (*RemotePluginLoader, error) {
 	
 	return &RemotePluginLoader{
 		catalog: catalog,
-		client:  &http.Client{Timeout: 60 * http.Second},
+		client:  &http.Client{Timeout: 60 * time.Second},
 	}, nil
 }
 
@@ -138,27 +138,4 @@ func (r *RemotePluginLoader) createRemotePlugin(config RemotePlugin, spec map[st
 
 func isURL(s string) bool {
 	return len(s) > 8 && (s[:7] == "http://" || s[:8] == "https://")
-}
-
-type OpenAPIPlugin struct {
-	name           string
-	description    string
-	serverURL      string
-	spec           map[string]interface{}
-	authorization  string
-	dataCollector  types.ExtraDataCollector
-}
-
-func (p *OpenAPIPlugin) Initialize(ctx context.Context, authorization string, extraDataCollector types.ExtraDataCollector) error {
-	p.authorization = authorization
-	p.dataCollector = extraDataCollector
-	return nil
-}
-
-func (p *OpenAPIPlugin) GetName() string {
-	return p.name
-}
-
-func (p *OpenAPIPlugin) GetDescription() string {
-	return p.description
 }

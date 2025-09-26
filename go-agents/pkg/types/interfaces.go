@@ -29,6 +29,7 @@ type ChatCompletionClient interface {
 type KernelBuilder interface {
 	BuildKernel(ctx context.Context, config AgentConfig) (Kernel, error)
 	AddPlugins(ctx context.Context, kernel Kernel, plugins []string) error
+	SetPluginCatalog(catalog interface{})
 }
 
 type Kernel interface {
@@ -46,4 +47,8 @@ type KernelFunction interface {
 
 type ExtraDataCollector interface {
 	Collect(ctx context.Context, data map[string]interface{}) error
+}
+
+type FunctionProvider interface {
+	GetFunctions() []KernelFunction
 }

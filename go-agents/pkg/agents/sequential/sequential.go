@@ -58,7 +58,7 @@ func (s *SequentialAgent) buildTasks(taskConfigs []config.TaskConfig, agentConfi
 	
 	tasks := make([]Task, len(taskConfigs))
 	for i, taskConfig := range taskConfigs {
-		agentConfig, exists := agentMap[taskConfig.Agent]
+		_, exists := agentMap[taskConfig.Agent]
 		if !exists {
 			return nil, fmt.Errorf("agent %s not found for task %s", taskConfig.Agent, taskConfig.Name)
 		}
@@ -79,7 +79,17 @@ func (s *SequentialAgent) initializeAgents(ctx context.Context, agentConfigs []c
 	agents := make(map[string]*AgentInstance)
 	
 	for _, agentConfig := range agentConfigs {
-		kernel, err := s.kernelBuilder.BuildKernel(ctx, agentConfig)
+		typesAgentConfig := types.AgentConfig{
+			Name:          agentConfig.Name,
+			Role:          agentConfig.Role,
+			Model:         agentConfig.Model,
+			SystemPrompt:  agentConfig.SystemPrompt,
+			Plugins:       agentConfig.Plugins,
+			RemotePlugins: agentConfig.RemotePlugins,
+			MaxTokens:     agentConfig.MaxTokens,
+		}
+		
+		kernel, err := s.kernelBuilder.BuildKernel(ctx, typesAgentConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build kernel for agent %s: %w", agentConfig.Name, err)
 		}
@@ -112,7 +122,7 @@ func (s *SequentialAgent) Invoke(ctx context.Context, inputs map[string]interfac
 	
 	results := make(map[string]interface{})
 	for _, task := range tasks {
-		agent, exists := agents[task.AgentName]
+		_, exists := agents[task.AgentName]
 		if !exists {
 			return nil, fmt.Errorf("agent %s not found for task %s", task.AgentName, task.Name)
 		}
@@ -163,7 +173,7 @@ func (s *SequentialAgent) InvokeStream(ctx context.Context, inputs map[string]in
 		
 		results := make(map[string]interface{})
 		for i, task := range tasks {
-			agent, exists := agents[task.AgentName]
+			_, exists := agents[task.AgentName]
 			if !exists {
 				responseChan <- types.StreamResponse{
 					Data:      nil,

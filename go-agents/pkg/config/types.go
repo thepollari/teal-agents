@@ -32,6 +32,7 @@ type AgentConfig struct {
 	SystemPrompt  string   `yaml:"system_prompt"`
 	Plugins       []string `yaml:"plugins,omitempty"`
 	RemotePlugins []string `yaml:"remote_plugins,omitempty"`
+	MaxTokens     *int     `yaml:"max_tokens,omitempty"`
 }
 
 type TaskConfig struct {

@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	
 	"github.com/thepollari/teal-agents/go-agents/pkg/config"
+	"github.com/thepollari/teal-agents/go-agents/pkg/logging"
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
 )
 
@@ -21,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(cfg *config.BaseConfig, handler types.Handler) *Server {
-	router := gin.Default()
+	router := gin.New()
 	
 	server := &Server{
 		config:  cfg,
@@ -29,19 +30,23 @@ func NewServer(cfg *config.BaseConfig, handler types.Handler) *Server {
 		router:  router,
 	}
 	
+	server.setupMiddleware()
 	server.setupRoutes()
 	
 	return server
 }
 
+func (s *Server) setupMiddleware() {
+	s.router.Use(RequestLoggingMiddleware())
+	s.router.Use(CORSMiddleware())
+	s.router.Use(AuthorizationMiddleware())
+	s.router.Use(TelemetryMiddleware())
+	s.router.Use(ErrorHandlingMiddleware())
+}
+
 func (s *Server) setupRoutes() {
-	s.router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"service": s.config.ServiceName,
-			"version": s.config.Version,
-		})
-	})
+	s.router.GET("/health", s.handleHealth)
+	s.router.GET("/health/ready", s.handleHealthReady)
 	
 	v1 := s.router.Group(fmt.Sprintf("/%s/%s", s.config.ServiceName, s.config.Version))
 	
@@ -52,30 +57,65 @@ func (s *Server) setupRoutes() {
 	v1.GET("/ws", s.handleWebSocket)
 }
 
+func (s *Server) handleHealth(c *gin.Context) {
+	logger := logging.WithContext(c.Request.Context())
+	logger.Info("Health check requested")
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "healthy",
+		"service":    s.config.ServiceName,
+		"version":    s.config.Version,
+		"request_id": c.GetHeader("X-Request-ID"),
+	})
+}
+
+func (s *Server) handleHealthReady(c *gin.Context) {
+	logger := logging.WithContext(c.Request.Context())
+	logger.Info("Readiness check requested")
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status":     "ready",
+		"service":    s.config.ServiceName,
+		"version":    s.config.Version,
+		"request_id": c.GetHeader("X-Request-ID"),
+	})
+}
+
 func (s *Server) Start(addr string) error {
+	logger := logging.GetLogger()
+	logger.Info("Starting server", "address", addr, "service", s.config.ServiceName)
 	return s.router.Run(addr)
 }
 
 func (s *Server) handleInvoke(c *gin.Context) {
+	logger := logging.WithContext(c.Request.Context())
+	
 	var inputs map[string]interface{}
 	if err := c.ShouldBindJSON(&inputs); err != nil {
+		logger.Error("Invalid JSON in invoke request", "error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("invalid request body: %v", err),
+			"error":      fmt.Sprintf("invalid request body: %v", err),
+			"request_id": c.GetHeader("X-Request-ID"),
 		})
 		return
 	}
+	
+	logger.Info("Processing invoke request", "request", inputs)
 	
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
 	defer cancel()
 	
 	response, err := s.handler.Invoke(ctx, inputs)
 	if err != nil {
+		logger.Error("Handler invoke failed", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("invocation failed: %v", err),
+			"error":      fmt.Sprintf("invocation failed: %v", err),
+			"request_id": c.GetHeader("X-Request-ID"),
 		})
 		return
 	}
 	
+	logger.Info("Invoke request completed successfully")
 	c.JSON(http.StatusOK, response)
 }
 

@@ -11,19 +11,37 @@ import (
 	"github.com/thepollari/teal-agents/go-agents/pkg/agents/sequential"
 	"github.com/thepollari/teal-agents/go-agents/pkg/config"
 	"github.com/thepollari/teal-agents/go-agents/pkg/kernel"
+	"github.com/thepollari/teal-agents/go-agents/pkg/logging"
+	"github.com/thepollari/teal-agents/go-agents/pkg/plugins/remote"
 	"github.com/thepollari/teal-agents/go-agents/pkg/server"
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
 )
 
 func main() {
+	appConfig := config.LoadAppConfig()
+	logger := logging.InitLogger(appConfig.LogLevel)
+	
 	configPath := os.Getenv("TA_SERVICE_CONFIG")
-	if configPath == "" {
-		log.Fatal("TA_SERVICE_CONFIG environment variable required")
+	if configPath == "" && len(os.Args) >= 2 {
+		configPath = os.Args[1]
 	}
+	if configPath == "" {
+		logger.Error("Missing configuration file")
+		log.Fatal("Usage: agent <config-file> or set TA_SERVICE_CONFIG environment variable")
+	}
+	
+	logger.Info("Starting Teal Agents", "config_path", configPath, "log_level", appConfig.LogLevel)
 	
 	cfg, err := config.LoadFromFile(configPath)
 	if err != nil {
+		logger.Error("Failed to load configuration", "error", err.Error())
 		log.Fatalf("Failed to load config: %v", err)
+	}
+	
+	err = config.ValidateConfig(cfg)
+	if err != nil {
+		logger.Error("Configuration validation failed", "error", err.Error())
+		log.Fatalf("Configuration validation failed: %v", err)
 	}
 	
 	rootHandler, apiVersion, err := parseAPIVersion(cfg.APIVersion)
@@ -32,6 +50,14 @@ func main() {
 	}
 	
 	kernelBuilder := kernel.NewKernelBuilder()
+	
+	pluginCatalog, err := remote.NewPluginCatalog("examples/remote_plugins/catalog.yaml")
+	if err != nil {
+		logger.Warn("Failed to load plugin catalog", "error", err.Error())
+	} else {
+		kernelBuilder.SetPluginCatalog(pluginCatalog)
+		logger.Info("Plugin catalog loaded successfully")
+	}
 	
 	var handler types.Handler
 	

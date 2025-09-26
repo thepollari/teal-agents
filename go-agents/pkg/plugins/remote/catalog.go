@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 	
@@ -39,7 +38,7 @@ func NewPluginCatalog(catalogPath string) (*PluginCatalog, error) {
 	
 	return &PluginCatalog{
 		plugins: plugins,
-		loader:  NewRemotePluginLoader(catalogPath),
+		loader:  &RemotePluginLoader{},
 	}, nil
 }
 
