@@ -39,8 +39,10 @@ UAT Scenario 1 - Basic University Search via API
     [Tags]    uat    api    university-search
     
     # Test Finland university search
+    &{message}=    Create Dictionary    role=user    content=Find universities in Finland
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": "Find universities in Finland"}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -56,8 +58,10 @@ UAT Scenario 2 - Specific University Search via API
     [Tags]    uat    api    specific-search
     
     # Test Harvard University search
+    &{message}=    Create Dictionary    role=user    content=Tell me about Harvard University
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": "Tell me about Harvard University"}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -106,8 +110,10 @@ UAT Scenario 4 - Error Handling and Edge Cases
     [Tags]    uat    error-handling    edge-cases
     
     # Test empty query
+    &{message}=    Create Dictionary    role=user    content=${EMPTY}
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": ""}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -115,8 +121,10 @@ UAT Scenario 4 - Error Handling and Edge Cases
     Log    ✅ Empty query handled gracefully
     
     # Test nonsensical query
+    &{message}=    Create Dictionary    role=user    content=xyzabc123 random nonsense query
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": "xyzabc123 random nonsense query"}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -132,8 +140,10 @@ UAT Scenario 5 - Performance and Response Time
     # Measure response time for university search
     ${start_time}=    Get Time    epoch
     
+    &{message}=    Create Dictionary    role=user    content=Find universities in Japan
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": "Find universities in Japan"}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -153,8 +163,10 @@ UAT Scenario 6 - Data Quality and Format Validation
     [Tags]    uat    data-quality    validation
     
     # Test comprehensive university search
+    &{message}=    Create Dictionary    role=user    content=Show me detailed information about universities in Germany
+    @{messages}=    Create List    ${message}
     ${request_body}=    Create Dictionary    
-    ...    messages=@{[{"role": "user", "content": "Show me detailed information about universities in Germany"}]}
+    ...    messages=${messages}
     ...    stream=${False}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
@@ -188,4 +200,4 @@ Measure API Response Time
     ${response}=    POST    ${endpoint}    json=${request_data}
     ${end_time}=    Get Time    epoch
     ${response_time}=    Evaluate    ${end_time} - ${start_time}
-    [Return]    ${response}    ${response_time}
+    RETURN    ${response}    ${response_time}
