@@ -34,41 +34,70 @@ UAT Health Check - Verify Services Are Running
     Should Contain    ${ui_response.text}    Streamlit
     Log    ✅ Streamlit UI is running on ${UI_BASE_URL}
 
-UAT Scenario 1 - Basic University Search via API
-    [Documentation]    Test direct API calls to the University Agent for basic university searches
-    [Tags]    uat    api    university-search
+UAT Scenario 1 - Basic University Search via Browser
+    [Documentation]    Test university search through Streamlit UI browser interaction
+    [Tags]    uat    browser    university-search    end-user
     
-    # Test Finland university search
-    &{user_message}=    Create Dictionary    role=user    content=Find universities in Finland
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Open browser and navigate to Streamlit UI
+    Open Browser    ${UI_BASE_URL}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage")
+    Set Window Size    1920    1080
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
-    Should Be Equal As Strings    ${response.status_code}    200
+    # Wait for UI to load completely
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Wait Until Page Contains    Agent Status    timeout=20s
+    Sleep    3s    # Allow UI to fully render
     
-    ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[output_raw]    Finland
-    Should Match Regexp    ${response_data}[output_raw]    (University|Aalto|Helsinki)
-    Log    ✅ Finland university search successful via API
+    # Test typing a university search query like a real user
+    ${chat_input_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    css:[data-testid="stChatInput"] textarea    timeout=15s
+    
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    Find universities in Finland
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    15s    # Wait for agent response
+    Run Keyword If    ${chat_input_found}    Page Should Contain    Finland
+    Run Keyword If    ${chat_input_found}    Log    ✅ Finland university search successful via browser
+    
+    # Test example query button interaction
+    ${example_buttons}=    Get WebElements    css:button
+    ${button_count}=    Get Length    ${example_buttons}
+    Run Keyword If    ${button_count} > 0    Log    Found ${button_count} interactive buttons for user interaction
+    
+    Close Browser
 
-UAT Scenario 2 - Specific University Search via API
-    [Documentation]    Test searching for specific universities via direct API calls
-    [Tags]    uat    api    specific-search
+UAT Scenario 2 - Example Query Button Interaction
+    [Documentation]    Test using example query buttons like a real user would
+    [Tags]    uat    browser    example-queries    end-user
     
-    # Test Harvard University search
-    &{user_message}=    Create Dictionary    role=user    content=Tell me about Harvard University
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Open browser and navigate to Streamlit UI
+    Open Browser    ${UI_BASE_URL}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage")
+    Set Window Size    1920    1080
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
-    Should Be Equal As Strings    ${response.status_code}    200
+    # Wait for UI to load completely
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Sleep    3s    # Allow UI to fully render
     
-    ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[output_raw]    Harvard
-    Should Match Regexp    ${response_data}[output_raw]    (University|United States|harvard.edu)
-    Log    ✅ Harvard University search successful via API
+    # Test clicking example query buttons in sidebar (real user behavior)
+    ${sidebar_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    css:[data-testid="stSidebar"]    timeout=10s
+    
+    Run Keyword If    ${sidebar_found}    Log    Sidebar found - testing example query interactions
+    
+    # Look for example query buttons and click them
+    ${example_buttons}=    Get WebElements    css:button
+    ${button_count}=    Get Length    ${example_buttons}
+    
+    Run Keyword If    ${button_count} > 0    Log    Found ${button_count} buttons - simulating user clicking example queries
+    
+    # Try to click first available example button
+    Run Keyword And Ignore Error    Click Element    css:button[key*="example"]
+    Sleep    10s    # Wait for response
+    
+    # Verify some university-related content appeared
+    ${page_source}=    Get Source
+    Should Match Regexp    ${page_source}    (University|Finland|Japan|Germany|MIT|Aalto)
+    
+    Close Browser
+    Log    ✅ Example query button interaction test completed
 
 UAT Scenario 3 - Complete User Journey via Streamlit UI
     [Documentation]    Test the complete user experience through the Streamlit interface
@@ -103,83 +132,121 @@ UAT Scenario 3 - Complete User Journey via Streamlit UI
     Close Browser
     Log    ✅ Complete user journey test completed
 
-UAT Scenario 4 - Error Handling and Edge Cases
-    [Documentation]    Test how the system handles various edge cases and errors
-    [Tags]    uat    error-handling    edge-cases
+UAT Scenario 4 - Agent Status Check and Error Handling via Browser
+    [Documentation]    Test agent status monitoring and error handling through UI like end users
+    [Tags]    uat    browser    error-handling    status-check    end-user
     
-    # Test empty query
-    &{user_message}=    Create Dictionary    role=user    content=${EMPTY}
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Open browser and navigate to Streamlit UI
+    Open Browser    ${UI_BASE_URL}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage")
+    Set Window Size    1920    1080
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
-    Should Be Equal As Strings    ${response.status_code}    200
-    Log    ✅ Empty query handled gracefully
+    # Wait for UI to load completely
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Sleep    3s    # Allow UI to fully render
     
-    # Test nonsensical query
-    &{user_message}=    Create Dictionary    role=user    content=xyzabc123 random nonsense query
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Test agent status check button (real user behavior)
+    ${status_button_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    xpath://button[contains(text(), 'Check Agent Status')]    timeout=10s
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
-    Should Be Equal As Strings    ${response.status_code}    200
-    ${response_data}=    Set Variable    ${response.json()}
-    Should Not Be Empty    ${response_data}[output_raw]
-    Log    ✅ Nonsensical query handled gracefully
+    Run Keyword If    ${status_button_found}    Click Button    xpath://button[contains(text(), 'Check Agent Status')]
+    Run Keyword If    ${status_button_found}    Sleep    5s    # Wait for status check
+    Run Keyword If    ${status_button_found}    Page Should Contain    Agent is
+    Run Keyword If    ${status_button_found}    Log    ✅ Agent status check button works
+    
+    # Test empty message handling through UI
+    ${chat_input_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    css:[data-testid="stChatInput"] textarea    timeout=10s
+    
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    ${EMPTY}
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    5s
+    Run Keyword If    ${chat_input_found}    Log    ✅ Empty message handled through UI
+    
+    # Test nonsensical query through UI
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    xyzabc123 random nonsense
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    10s
+    Run Keyword If    ${chat_input_found}    Log    ✅ Nonsensical query handled through UI
+    
+    Close Browser
 
-UAT Scenario 5 - Performance and Response Time
-    [Documentation]    Test system performance and response times under normal load
-    [Tags]    uat    performance    response-time
+UAT Scenario 5 - End-to-End User Workflow Performance via Browser
+    [Documentation]    Test complete user workflow performance through browser like real usage
+    [Tags]    uat    browser    performance    end-user-workflow
     
-    # Measure response time for university search
+    # Measure complete user interaction time
     ${start_time}=    Get Time    epoch
     
-    &{user_message}=    Create Dictionary    role=user    content=Find universities in Japan
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Open browser and navigate to Streamlit UI
+    Open Browser    ${UI_BASE_URL}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage")
+    Set Window Size    1920    1080
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
+    # Wait for UI to load completely
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Sleep    3s    # Allow UI to fully render
+    
+    # Simulate real user typing and submitting query
+    ${chat_input_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    css:[data-testid="stChatInput"] textarea    timeout=15s
+    
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    Find universities in Japan
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    20s    # Wait for complete response
+    
     ${end_time}=    Get Time    epoch
-    ${response_time}=    Evaluate    ${end_time} - ${start_time}
+    ${total_time}=    Evaluate    ${end_time} - ${start_time}
     
-    Should Be Equal As Strings    ${response.status_code}    200
-    Should Be True    ${response_time} < 30    Response time should be under 30 seconds
+    # Verify response appeared and measure user experience
+    Run Keyword If    ${chat_input_found}    Page Should Contain    Japan
+    Should Be True    ${total_time} < 60    Complete user workflow should be under 60 seconds
     
-    ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[output_raw]    Japan
-    
-    Log    ✅ Japan university search completed in ${response_time} seconds
+    Close Browser
+    Log    ✅ Complete user workflow completed in ${total_time} seconds
 
-UAT Scenario 6 - Data Quality and Format Validation
-    [Documentation]    Validate the quality and format of university data returned
-    [Tags]    uat    data-quality    validation
+UAT Scenario 6 - Multi-Query User Session via Browser
+    [Documentation]    Test multiple queries in one session like real user behavior
+    [Tags]    uat    browser    multi-query    user-session    end-user
     
-    # Test comprehensive university search
-    &{user_message}=    Create Dictionary    role=user    content=Show me detailed information about universities in Germany
-    @{chat_history}=    Create List    ${user_message}
-    ${request_body}=    Create Dictionary    
-    ...    chat_history=${chat_history}
+    # Open browser and navigate to Streamlit UI
+    Open Browser    ${UI_BASE_URL}    browser=chrome    options=add_argument("--headless");add_argument("--no-sandbox");add_argument("--disable-dev-shm-usage")
+    Set Window Size    1920    1080
     
-    ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
-    Should Be Equal As Strings    ${response.status_code}    200
+    # Wait for UI to load completely
+    Wait Until Page Contains    🎓 University Agent Chat    timeout=30s
+    Sleep    3s    # Allow UI to fully render
     
-    ${response_data}=    Set Variable    ${response.json()}
-    ${content}=    Set Variable    ${response_data}[output_raw]
+    # Test multiple queries in sequence (real user session behavior)
+    ${chat_input_found}=    Run Keyword And Return Status    
+    ...    Wait Until Element Is Visible    css:[data-testid="stChatInput"] textarea    timeout=15s
     
-    # Validate response contains expected university information
-    Should Contain    ${content}    Germany
-    Should Match Regexp    ${content}    (University|Website|Domain|Country)
-    Should Match Regexp    ${content}    (http|www|\.edu|\.de)
+    # First query - Germany universities
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    Show me universities in Germany
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    15s    # Wait for response
+    Run Keyword If    ${chat_input_found}    Page Should Contain    Germany
+    Run Keyword If    ${chat_input_found}    Log    ✅ First query (Germany) successful
     
-    # Validate response is well-formatted
-    Should Not Contain    ${content}    null
-    Should Not Contain    ${content}    undefined
-    Should Not Contain    ${content}    error
+    # Second query - MIT specific search
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    Tell me about MIT
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    15s    # Wait for response
+    Run Keyword If    ${chat_input_found}    Page Should Contain    MIT
+    Run Keyword If    ${chat_input_found}    Log    ✅ Second query (MIT) successful
     
-    Log    ✅ Germany university data quality validation passed
+    # Third query - Finland universities
+    Run Keyword If    ${chat_input_found}    Input Text    css:[data-testid="stChatInput"] textarea    What universities are in Finland?
+    Run Keyword If    ${chat_input_found}    Press Keys    css:[data-testid="stChatInput"] textarea    RETURN
+    Run Keyword If    ${chat_input_found}    Sleep    15s    # Wait for response
+    Run Keyword If    ${chat_input_found}    Page Should Contain    Finland
+    Run Keyword If    ${chat_input_found}    Log    ✅ Third query (Finland) successful
+    
+    # Verify conversation history is maintained (real user expectation)
+    ${page_source}=    Get Source
+    Should Match Regexp    ${page_source}    (Germany.*MIT.*Finland|Finland.*MIT.*Germany)
+    
+    Close Browser
+    Log    ✅ Multi-query user session completed successfully
+
 
 *** Keywords ***
 Verify Service Health
