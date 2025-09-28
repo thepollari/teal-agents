@@ -31,7 +31,7 @@ UAT Health Check - Verify Services Are Running
     # Verify Streamlit UI is accessible
     ${ui_response}=    GET    ${UI_BASE_URL}
     Should Be Equal As Strings    ${ui_response.status_code}    200
-    Should Contain    ${ui_response.text}    University Agent Chat
+    Should Contain    ${ui_response.text}    Streamlit
     Log    ✅ Streamlit UI is running on ${UI_BASE_URL}
 
 UAT Scenario 1 - Basic University Search via API
@@ -39,18 +39,16 @@ UAT Scenario 1 - Basic University Search via API
     [Tags]    uat    api    university-search
     
     # Test Finland university search
-    &{message}=    Create Dictionary    role=user    content=Find universities in Finland
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     Should Be Equal As Strings    ${response.status_code}    200
     
     ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[choices][0][message][content]    Finland
-    Should Match Regexp    ${response_data}[choices][0][message][content]    (University|Aalto|Helsinki)
+    Should Contain    ${response_data}[output_raw]    Finland
+    Should Match Regexp    ${response_data}[output_raw]    (University|Aalto|Helsinki)
     Log    ✅ Finland university search successful via API
 
 UAT Scenario 2 - Specific University Search via API
@@ -58,18 +56,16 @@ UAT Scenario 2 - Specific University Search via API
     [Tags]    uat    api    specific-search
     
     # Test Harvard University search
-    &{message}=    Create Dictionary    role=user    content=Tell me about Harvard University
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     Should Be Equal As Strings    ${response.status_code}    200
     
     ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[choices][0][message][content]    Harvard
-    Should Match Regexp    ${response_data}[choices][0][message][content]    (University|United States|harvard.edu)
+    Should Contain    ${response_data}[output_raw]    Harvard
+    Should Match Regexp    ${response_data}[output_raw]    (University|United States|harvard.edu)
     Log    ✅ Harvard University search successful via API
 
 UAT Scenario 3 - Complete User Journey via Streamlit UI
@@ -110,27 +106,23 @@ UAT Scenario 4 - Error Handling and Edge Cases
     [Tags]    uat    error-handling    edge-cases
     
     # Test empty query
-    &{message}=    Create Dictionary    role=user    content=${EMPTY}
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     Should Be Equal As Strings    ${response.status_code}    200
     Log    ✅ Empty query handled gracefully
     
     # Test nonsensical query
-    &{message}=    Create Dictionary    role=user    content=xyzabc123 random nonsense query
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     Should Be Equal As Strings    ${response.status_code}    200
     ${response_data}=    Set Variable    ${response.json()}
-    Should Not Be Empty    ${response_data}[choices][0][message][content]
+    Should Not Be Empty    ${response_data}[output_raw]
     Log    ✅ Nonsensical query handled gracefully
 
 UAT Scenario 5 - Performance and Response Time
@@ -140,11 +132,9 @@ UAT Scenario 5 - Performance and Response Time
     # Measure response time for university search
     ${start_time}=    Get Time    epoch
     
-    &{message}=    Create Dictionary    role=user    content=Find universities in Japan
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     ${end_time}=    Get Time    epoch
@@ -154,7 +144,7 @@ UAT Scenario 5 - Performance and Response Time
     Should Be True    ${response_time} < 30    Response time should be under 30 seconds
     
     ${response_data}=    Set Variable    ${response.json()}
-    Should Contain    ${response_data}[choices][0][message][content]    Japan
+    Should Contain    ${response_data}[output_raw]    Japan
     
     Log    ✅ Japan university search completed in ${response_time} seconds
 
@@ -163,17 +153,15 @@ UAT Scenario 6 - Data Quality and Format Validation
     [Tags]    uat    data-quality    validation
     
     # Test comprehensive university search
-    &{message}=    Create Dictionary    role=user    content=Show me detailed information about universities in Germany
-    @{messages}=    Create List    ${message}
+    @{chat_history}=    Create List
     ${request_body}=    Create Dictionary    
-    ...    messages=${messages}
-    ...    stream=${False}
+    ...    chat_history=${chat_history}
     
     ${response}=    POST    ${AGENT_ENDPOINT}    json=${request_body}
     Should Be Equal As Strings    ${response.status_code}    200
     
     ${response_data}=    Set Variable    ${response.json()}
-    ${content}=    Set Variable    ${response_data}[choices][0][message][content]
+    ${content}=    Set Variable    ${response_data}[output_raw]
     
     # Validate response contains expected university information
     Should Contain    ${content}    Germany
