@@ -133,6 +133,21 @@ uv run robot --outputdir results tests/e2e/
 - [x] Automatic fallback to mock university data
 - [x] Timeout and retry behavior testing
 
+## UAT Test Suite
+
+For **User Acceptance Testing** against a running system, use the dedicated UAT suite:
+
+```bash
+cd src/sk-agents
+uv run robot tests/e2e/uat_live_system.robot
+```
+
+**Key Differences:**
+- **E2E Tests**: Automatically start/stop services with mocks for development testing
+- **UAT Tests**: Assume services are already running with real API keys for production-like testing
+
+See [UAT_README.md](UAT_README.md) for detailed UAT testing instructions.
+
 ## Troubleshooting
 
 ### Common Issues
