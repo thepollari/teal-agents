@@ -39,7 +39,8 @@ UAT Scenario 1 - Basic University Search via API
     [Tags]    uat    api    university-search
     
     # Test Finland university search
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=Find universities in Finland
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
@@ -56,7 +57,8 @@ UAT Scenario 2 - Specific University Search via API
     [Tags]    uat    api    specific-search
     
     # Test Harvard University search
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=Tell me about Harvard University
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
@@ -106,7 +108,8 @@ UAT Scenario 4 - Error Handling and Edge Cases
     [Tags]    uat    error-handling    edge-cases
     
     # Test empty query
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=${EMPTY}
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
@@ -115,7 +118,8 @@ UAT Scenario 4 - Error Handling and Edge Cases
     Log    ✅ Empty query handled gracefully
     
     # Test nonsensical query
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=xyzabc123 random nonsense query
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
@@ -132,7 +136,8 @@ UAT Scenario 5 - Performance and Response Time
     # Measure response time for university search
     ${start_time}=    Get Time    epoch
     
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=Find universities in Japan
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
@@ -153,7 +158,8 @@ UAT Scenario 6 - Data Quality and Format Validation
     [Tags]    uat    data-quality    validation
     
     # Test comprehensive university search
-    @{chat_history}=    Create List
+    &{user_message}=    Create Dictionary    role=user    content=Show me detailed information about universities in Germany
+    @{chat_history}=    Create List    ${user_message}
     ${request_body}=    Create Dictionary    
     ...    chat_history=${chat_history}
     
