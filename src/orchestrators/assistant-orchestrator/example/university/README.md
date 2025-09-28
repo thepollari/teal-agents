@@ -1,270 +1,437 @@
-# University Agent
+# University Agent - Reference Implementation
 
-A comprehensive university agent powered by Google Gemini that provides information about universities and higher education institutions worldwide.
+The University Agent is a comprehensive working example that demonstrates the full capabilities of the Teal Agents Framework. It showcases custom completion factory integration, plugin development patterns, API integration, and UI development using Streamlit.
 
-## Overview
+## Architecture Overview
 
-The University Agent demonstrates the full Teal Agents Framework capabilities by integrating:
-- **Google Gemini 2.0 Flash-Lite** for natural language processing via custom chat completion factory
-- **Universities API** (universities.hipolabs.com) for real-time university data
-- **Streamlit UI** for interactive testing and user experience
+The University Agent implements a complete agent system with the following components:
+
+### Core Components
+
+**Agent Configuration** (`config.yaml`)
+- Google Gemini 2.0 Flash-Lite model integration
+- Sequential task execution pattern
+- Custom plugin registration
+- Input/output type definitions
+
+**Custom Completion Factory** (`GeminiChatCompletionFactory`)
+- Demonstrates custom LLM provider integration
+- Model validation and capability detection
+- Structured output support
+- API key management through AppConfig
+
+**Custom Plugin Development** (`UniversityPlugin`)
+- Real-world API integration with universities.hipolabs.com
+- Pydantic model definitions for structured data
+- Error handling and validation patterns
+- Function calling with typed parameters
+
+**Streamlit UI Integration**
+- Interactive web interface for agent testing
+- Real-time streaming responses
+- Session state management
+- User-friendly query interface
 
 ## Features
 
-- Search universities by name or partial name
-- Find universities in specific countries
-- Get detailed information including:
-  - University name and location
-  - Official websites
-  - Domain names
-  - Country and state/province information
-- Natural language conversation interface
-- Real-time API integration with comprehensive error handling
+- **University Search**: Find universities by name, country, or domain
+- **Real-time Data**: Live integration with universities.hipolabs.com API
+- **Structured Responses**: Pydantic models for consistent data handling
+- **Streaming Support**: Real-time response streaming via SSE and WebSocket
+- **Multi-interface Access**: REST API, Streamlit UI, and programmatic access
+- **Production Patterns**: Error handling, logging, and configuration management
 
-## Setup
+## Setup and Installation
 
 ### Prerequisites
 
-Before running the University Agent, ensure you have the following installed and configured:
+- Python 3.13+
+- uv (Python package manager)
+- Google Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-1. **Python 3.12+**: The Teal Agents framework requires Python 3.12 or higher
-2. **UV Package Manager**: Install UV for dependency management
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-3. **Teal Agents Framework**: Clone and set up the repository
-   ```bash
-   git clone https://github.com/thepollari/teal-agents.git
-   cd teal-agents
-   ```
-4. **Google Gemini API Key**: Get a free API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+### Environment Setup
 
-### Installation
-
-1. **Install Dependencies**: Navigate to the sk-agents directory and install required packages
+1. **Install Dependencies:**
    ```bash
-   cd ~/repos/teal-agents/src/sk-agents
-   uv add google-generativeai
+   cd /path/to/teal-agents/src/sk-agents
+   uv sync --dev
    ```
 
-2. **Install Streamlit**: Navigate to the orchestrator directory and add Streamlit
+2. **Configure Environment Variables:**
    ```bash
-   cd ~/repos/teal-agents/src/orchestrators/assistant-orchestrator/orchestrator
-   uv add streamlit
+   # Required: Google Gemini API key
+   export TA_API_KEY=your_gemini_api_key_here
+   
+   # Required: Agent configuration (use absolute path)
+   export TA_SERVICE_CONFIG=/absolute/path/to/teal-agents/src/orchestrators/assistant-orchestrator/example/university/config.yaml
+   
+   # Required: Custom completion factory (use absolute path)
+   export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE=/absolute/path/to/teal-agents/src/sk-agents/src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py
    ```
 
-3. **Verify Installation**: Check that all dependencies are installed correctly
-   ```bash
-   cd ~/repos/teal-agents/src/sk-agents
-   uv run python -c "import google.generativeai; print('Google AI SDK installed successfully')"
-   uv run python -c "import streamlit; print('Streamlit installed successfully')"
-   ```
-
-### Configuration
-
-1. **Set your Gemini API key** (replace with your actual API key):
-   ```bash
-   export GEMINI_API_KEY="your_gemini_api_key_here"
-   ```
-
-2. **Configure the agent paths** (use absolute paths for reliability):
-   ```bash
-   export TA_SERVICE_CONFIG="/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university/config.yaml"
-   export TA_PLUGIN_MODULE="/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university/custom_plugins.py"
-   ```
-
-3. **Configure the custom Gemini completion factory**:
-   ```bash
-   export TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE="src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py"
-   export TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME="GeminiChatCompletionFactory"
-   ```
-
-4. **Verify Configuration**: Test that all environment variables are set correctly
-   ```bash
-   echo "API Key: ${GEMINI_API_KEY:0:10}..." # Shows first 10 chars of API key
-   echo "Service Config: $TA_SERVICE_CONFIG"
-   echo "Plugin Module: $TA_PLUGIN_MODULE"
-   echo "Factory Module: $TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE"
-   echo "Factory Class: $TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME"
-   ```
+   **Critical**: Use absolute paths for configuration files to avoid import issues.
 
 ### Running the Agent
 
-**Important**: Complete all setup and configuration steps above before running the agent.
-
-#### Option 1: Streamlit UI (Recommended)
-
-1. **Start the Agent Server** (in terminal 1):
+1. **Start the Agent Service:**
    ```bash
-   cd ~/repos/teal-agents/src/sk-agents
+   cd /path/to/teal-agents/src/sk-agents
    uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8001
    ```
 
-2. **Start the Streamlit UI** (in terminal 2):
+2. **Verify Agent is Running:**
    ```bash
-   cd ~/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university
-   uv run streamlit run streamlit_ui.py --server.port 8502
+   curl http://localhost:8001/.well-known/agent.json
    ```
 
-3. **Access the UI**: Open your browser and navigate to `http://localhost:8502`
-
-#### Option 2: Direct Agent API
-
-1. **Start the Agent Server**:
+3. **Test Basic Functionality:**
    ```bash
-   cd ~/repos/teal-agents/src/sk-agents
-   uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8001
-   ```
-
-2. **Test with curl**:
-   ```bash
-   curl -X POST http://localhost:8001/UniversityAgent/0.1 \
+   curl -X POST http://localhost:8001/invoke \
      -H "Content-Type: application/json" \
-     -d '{"chat_history": [{"role": "user", "content": "Find universities in Finland"}]}'
+     -d '{"chat_history": [{"role": "user", "content": "Tell me about universities in Finland"}]}'
    ```
 
-#### Verification
+## Streamlit UI Interface
 
-After starting the services, verify they're working:
+The University Agent includes a production-ready Streamlit interface demonstrating UI integration patterns:
 
-1. **Check Agent Status**: Visit `http://localhost:8001/UniversityAgent/0.1/docs` in your browser
-2. **Check Streamlit UI**: Visit `http://localhost:8502` and click "Check Agent Status"
-3. **Test a Query**: Try asking "Find universities in Finland" in the Streamlit chat interface
+### Running the UI
 
-## Usage Examples
+1. **Start Streamlit Interface:**
+   ```bash
+   cd /path/to/teal-agents/src/orchestrators/assistant-orchestrator/example/university
+   uv run streamlit run streamlit_ui.py
+   ```
 
-### Example Queries
+2. **Access the Interface:**
+   - Open browser to `http://localhost:8501`
+   - Interface connects to agent service at `http://localhost:8001`
 
-- "Find universities in Finland"
-- "Search for Aalto University"
-- "What universities are in the United States?"
-- "Tell me about universities in Japan"
-- "Find technical universities in Germany"
+### UI Features
 
-### API Response Format
+- **Interactive Chat**: Natural language queries about universities
+- **Streaming Responses**: Real-time response display using SSE
+- **Session Management**: Maintains conversation context
+- **Error Handling**: User-friendly error messages and retry logic
+- **Responsive Design**: Clean, professional interface
 
-The agent returns structured information about universities:
+## Implementation Deep Dive
 
+### Custom Completion Factory Pattern
+
+The `GeminiChatCompletionFactory` demonstrates how to integrate custom LLM providers:
+
+```python
+class GeminiChatCompletionFactory(ChatCompletionFactory):
+    _GEMINI_MODELS = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite"]
+    
+    def get_chat_completion_for_model_name(self, model_name: str, service_id: str):
+        return GoogleAIChatCompletion(
+            service_id=service_id,
+            gemini_model_id=model_name,
+            api_key=self.api_key,
+        )
+```
+
+**Key Patterns**:
+- Model validation and capability detection
+- API key management through AppConfig
+- Structured output support detection
+- Error handling for unsupported models
+
+### Plugin Development Patterns
+
+The `UniversityPlugin` showcases best practices for plugin development:
+
+```python
+class UniversityPlugin:
+    @kernel_function(description="Search for universities by name and/or country")
+    def search_universities(self, name: str = "", country: str = "") -> str:
+        # Implementation with error handling and validation
+```
+
+**Implementation Highlights**:
+- **Pydantic Models**: Structured data handling with `University` model
+- **API Integration**: HTTP client with error handling and retries
+- **Parameter Validation**: Type hints and default values
+- **Response Formatting**: JSON serialization for agent consumption
+- **Error Handling**: Graceful degradation and user-friendly error messages
+
+### Configuration Patterns
+
+The agent configuration demonstrates production-ready patterns:
+
+```yaml
+apiVersion: skagents/v1
+kind: Sequential
+description: University agent powered by Google Gemini
+service_name: UniversityAgent
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: default
+      role: University Assistant
+      model: gemini-2.0-flash-lite
+      system_prompt: You are a helpful university assistant.
+      plugins:
+        - UniversityPlugin
+  tasks:
+    - name: university_assistance
+      description: Help users with university-related queries
+      instructions: Assist with university questions using the UniversityPlugin
+      agent: default
+```
+
+## API Endpoints and Usage
+
+### Available Endpoints
+
+The University Agent automatically generates multiple API interfaces:
+
+1. **Synchronous Invocation**
+   ```bash
+   POST /invoke
+   Content-Type: application/json
+   
+   {
+     "chat_history": [
+       {"role": "user", "content": "Find universities in Tokyo"}
+     ]
+   }
+   ```
+
+2. **Server-Sent Events (Streaming)**
+   ```bash
+   POST /sse
+   Content-Type: application/json
+   
+   # Same payload as /invoke, returns streaming response
+   ```
+
+3. **WebSocket Streaming**
+   ```bash
+   WebSocket /stream
+   
+   # Send JSON payload, receive streaming responses
+   ```
+
+4. **Agent Card Information**
+   ```bash
+   GET /.well-known/agent.json
+   
+   # Returns agent metadata and capabilities
+   ```
+
+### Example Queries and Responses
+
+**Query**: "Tell me about universities in Finland"
+
+**Response Structure**:
 ```json
 {
-  "message": "Found 5 universities for query: Aalto",
-  "universities": [
-    {
-      "name": "Aalto University",
-      "web_pages": ["https://www.aalto.fi"],
-      "domains": ["aalto.fi"],
-      "country": "Finland",
-      "state_province": null,
-      "alpha_two_code": "FI"
-    }
-  ]
+  "token_usage": {
+    "completion_tokens": 150,
+    "prompt_tokens": 89,
+    "total_tokens": 239
+  },
+  "output_raw": "I found several universities in Finland...",
+  "extra_data": null
 }
 ```
 
-## Architecture
+**Advanced Queries**:
+- "Find universities with 'technology' in their name"
+- "What universities are available in MIT's domain?"
+- "Show me universities in both Finland and Sweden"
+- "Compare universities in Tokyo and Kyoto"
 
-### Components
+## Testing and Validation
 
-1. **GeminiChatCompletionFactory** (`src/sk-agents/src/sk_agents/chat_completion/custom/gemini_chat_completion_factory.py`)
-   - Custom completion factory for Google Gemini integration
-   - Supports Gemini 2.0 Flash-Lite model with structured output
-   - Environment variable configuration for API key
+### Unit Testing Patterns
 
-2. **UniversityPlugin** (`custom_plugins.py`)
-   - `search_universities(query: str)` - Search by name or partial name
-   - `get_universities_by_country(country: str)` - Find universities in specific country
-   - Integration with universities.hipolabs.com API
-   - Comprehensive error handling and response formatting
+The University Agent demonstrates testing approaches:
 
-3. **Agent Configuration** (`config.yaml`)
-   - Sequential agent using Gemini 2.0 Flash-Lite model
-   - University-focused system prompt
-   - Plugin integration and task definition
+1. **Plugin Testing**: Mock external API calls
+2. **Configuration Validation**: YAML schema validation
+3. **Integration Testing**: End-to-end agent workflows
+4. **UI Testing**: Streamlit interface validation
 
-4. **Streamlit UI** (`streamlit_ui.py`)
-   - Chat-style interface with conversation history
-   - Real-time agent communication
-   - User-friendly university data presentation
+### Manual Testing Checklist
 
-### Data Flow
+- [ ] Agent starts without errors
+- [ ] Plugin loads and functions correctly
+- [ ] API endpoints respond appropriately
+- [ ] Streaming responses work properly
+- [ ] Streamlit UI connects and functions
+- [ ] Error handling works for invalid queries
+- [ ] Configuration changes take effect
 
-```
-User Query → Streamlit UI → University Agent → Gemini API → University API → Formatted Response
-```
+### Performance Considerations
 
-## API Integration
+- **API Rate Limits**: Universities API has reasonable limits
+- **Response Caching**: Consider caching for repeated queries
+- **Streaming Efficiency**: SSE provides better UX for long responses
+- **Error Recovery**: Graceful handling of API failures
 
-### Universities API (universities.hipolabs.com)
+## Deployment Patterns
 
-- **Endpoint**: `http://universities.hipolabs.com/search`
-- **Parameters**: 
-  - `name` - University name search
-  - `country` - Country filter
-- **Rate Limits**: Free tier, no API key required
-- **Response**: JSON array of university objects
-
-### Google Gemini API
-
-- **Model**: gemini-2.0-flash-lite
-- **Rate Limits**: 15 requests/minute (free tier)
-- **Features**: Natural language processing, structured output support
-
-## Error Handling
-
-The agent includes comprehensive error handling for:
-- API timeouts and network issues
-- Invalid search queries
-- Empty result sets
-- Malformed API responses
-- Rate limiting scenarios
-
-## Development
-
-### Testing
-
+### Development Deployment
 ```bash
-# Lint checks
-cd ~/repos/teal-agents/src/sk-agents && uv run ruff check
-cd ~/repos/teal-agents/src/orchestrators/assistant-orchestrator/orchestrator && uv run ruff check
-
-# Run tests
-cd ~/repos/teal-agents/src/sk-agents && uv run pytest
+# Local development with hot reload
+uv run uvicorn sk_agents.app:app --reload --host 0.0.0.0 --port 8001
 ```
 
-### Extending the Agent
+### Production Deployment
+```bash
+# Production deployment with proper configuration
+export TA_TELEMETRY_ENABLED=true
+export TA_OTEL_ENDPOINT=your_telemetry_endpoint
+uv run uvicorn sk_agents.app:app --host 0.0.0.0 --port 8001 --workers 4
+```
 
-To add new functionality:
+### Container Deployment
+```dockerfile
+FROM python:3.13-slim
+COPY . /app
+WORKDIR /app/src/sk-agents
+RUN pip install uv && uv sync --dev
+CMD ["uv", "run", "uvicorn", "sk_agents.app:app", "--host", "0.0.0.0", "--port", "8001"]
+```
 
-1. **New Plugin Methods**: Add `@kernel_function` decorated methods to `UniversityPlugin`
-2. **Additional APIs**: Integrate other education-related APIs
-3. **Enhanced UI**: Extend Streamlit interface with new features
-4. **Custom Models**: Support additional Gemini models or other LLM providers
+## Troubleshooting Guide
 
-## Troubleshooting
+### Common Issues and Solutions
 
-### Common Issues
+**1. Import/Configuration Errors**
+```
+Error: Cannot load configuration file
+Solution: Use absolute paths for TA_SERVICE_CONFIG and TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE
+```
 
-1. **"ModuleNotFoundError: No module named 'google.generativeai'"**
+**2. API Key Issues**
+```
+Error: Invalid API key or quota exceeded
+Solution: Verify Gemini API key at https://makersuite.google.com/app/apikey
+```
+
+**3. Plugin Loading Failures**
+```
+Error: UniversityPlugin not found
+Solution: Ensure plugin class is properly defined and importable
+```
+
+**4. Network/API Issues**
+```
+Error: Cannot connect to universities.hipolabs.com
+Solution: Check internet connectivity and API availability
+```
+
+**5. Streamlit Connection Issues**
+```
+Error: Cannot connect to agent service
+Solution: Ensure agent is running on port 8001 before starting Streamlit
+```
+
+### Debugging Techniques
+
+1. **Enable Debug Logging**:
    ```bash
-   cd ~/repos/teal-agents/src/sk-agents && uv add google-generativeai
+   export TA_LOG_LEVEL=debug
    ```
 
-2. **"Custom completion factory not found"**
-   - Check `TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE` and `TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME` environment variables
+2. **Test External API Directly**:
+   ```bash
+   curl "http://universities.hipolabs.com/search?name=MIT"
+   ```
 
-3. **"Universities API error"**
-   - Check internet connection and API endpoint availability
+3. **Validate Configuration**:
+   ```bash
+   python -c "import yaml; print(yaml.safe_load(open('config.yaml')))"
+   ```
 
-4. **"Gemini API key error"**
-   - Verify `GEMINI_API_KEY` environment variable is set correctly
+4. **Check Plugin Import**:
+   ```bash
+   python -c "from custom_plugins import UniversityPlugin; print('Plugin loaded successfully')"
+   ```
 
-### Debug Mode
+## Extension Patterns
 
-Enable debug logging:
-```bash
-export TA_LOG_LEVEL="debug"
-```
+### Adding New Plugins
 
-## License
+1. **Create Plugin Class**:
+   ```python
+   class NewPlugin:
+       @kernel_function(description="New functionality")
+       def new_function(self, param: str) -> str:
+           return f"Processed: {param}"
+   ```
 
-This project is part of the Teal Agents Framework. See the main repository for license information.
+2. **Register in Configuration**:
+   ```yaml
+   plugins:
+     - UniversityPlugin
+     - NewPlugin
+   ```
+
+### Custom Input Types
+
+1. **Define Pydantic Model**:
+   ```python
+   class CustomInput(KernelBaseModel):
+       query: str
+       filters: dict = {}
+   ```
+
+2. **Update Configuration**:
+   ```yaml
+   input_type: CustomInput
+   ```
+
+### UI Enhancements
+
+1. **Add New Streamlit Components**:
+   ```python
+   st.sidebar.selectbox("Country Filter", countries)
+   st.map(university_locations)
+   ```
+
+2. **Integrate with Agent State**:
+   ```python
+   if "conversation" not in st.session_state:
+       st.session_state.conversation = []
+   ```
+
+## Production Considerations
+
+### Security
+- API key management through environment variables
+- Input validation and sanitization
+- Rate limiting and abuse prevention
+- HTTPS deployment for production
+
+### Monitoring
+- OpenTelemetry integration for observability
+- Health check endpoints
+- Performance metrics collection
+- Error tracking and alerting
+
+### Scalability
+- Horizontal scaling with multiple workers
+- Load balancing for high availability
+- Caching strategies for API responses
+- Database integration for persistent state
+
+## Next Steps
+
+After understanding the University Agent:
+
+1. **Create Custom Agent**: Use this as template for your domain
+2. **Develop Custom Plugins**: Integrate your APIs and services
+3. **Enhance UI**: Build domain-specific interfaces
+4. **Deploy to Production**: Follow deployment patterns for your environment
+
+For additional guidance, see:
+- [AGENT_DEVELOPMENT.md](../../../../AGENT_DEVELOPMENT.md) - Step-by-step agent creation
+- [DEVELOPER_GUIDE.md](../../../../DEVELOPER_GUIDE.md) - Development environment setup
+- [TESTING_GUIDE.md](../../../../TESTING_GUIDE.md) - Testing patterns and best practices
