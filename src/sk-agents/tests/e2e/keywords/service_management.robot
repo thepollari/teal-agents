@@ -28,13 +28,14 @@ Start University Agent Service
     
     Set Environment Variable    GEMINI_API_KEY                              test_gemini_api_key
     Set Environment Variable    TA_API_KEY                                  test_teal_agents_key
-    Set Environment Variable    TA_SERVICE_CONFIG                           /home/ubuntu/repos/teal-agents/src/sk-agents/tests/e2e/configs/test_university_config.yaml
-    Set Environment Variable    TA_PLUGIN_MODULE                            /home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university/custom_plugins.py
-    Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE    /home/ubuntu/repos/teal-agents/src/sk-agents/tests/e2e/libraries/MockGeminiFactory.py
+    ${CURDIR_PARENT}=    Set Variable    ${CURDIR}/../../../..
+    Set Environment Variable    TA_SERVICE_CONFIG                           ${CURDIR}/configs/test_university_config.yaml
+    Set Environment Variable    TA_PLUGIN_MODULE                            ${CURDIR_PARENT}/orchestrators/assistant-orchestrator/example/university/custom_plugins.py
+    Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_MODULE    ${CURDIR}/libraries/MockGeminiFactory.py
     Set Environment Variable    TA_CUSTOM_CHAT_COMPLETION_FACTORY_CLASS_NAME    MockGeminiChatCompletionFactory
     
     ${agent_process}=    Start Process    uv    run    uvicorn    sk_agents.app:app    --host    0.0.0.0    --port    ${AGENT_PORT}
-    ...    cwd=/home/ubuntu/repos/teal-agents/src/sk-agents    alias=university_agent    stdout=agent.log    stderr=agent.log
+    ...    cwd=${CURDIR}/../../..    alias=university_agent    stdout=${CURDIR}/../../../agent.log    stderr=${CURDIR}/../../../agent.log
     Set Suite Variable    ${AGENT_PROCESS}    ${agent_process}
     
     Wait For University Agent Health    ${AGENT_ENDPOINT}/openapi.json    timeout=60s
@@ -53,7 +54,7 @@ Start Streamlit UI Service
     Run Keyword If    ${port_check.rc} == 0    Log    Port ${UI_PORT} cleanup completed
     
     ${ui_process}=    Start Process    uv    run    streamlit    run    streamlit_ui.py    --server.port    ${UI_PORT}    --server.headless    true
-    ...    cwd=/home/ubuntu/repos/teal-agents/src/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui    stdout=ui.log    stderr=ui.log
+    ...    cwd=${CURDIR_PARENT}/orchestrators/assistant-orchestrator/example/university    alias=streamlit_ui    stdout=${CURDIR_PARENT}/orchestrators/assistant-orchestrator/example/university/ui.log    stderr=${CURDIR_PARENT}/orchestrators/assistant-orchestrator/example/university/ui.log
     Set Suite Variable    ${UI_PROCESS}    ${ui_process}
     
     Wait For Streamlit UI Ready    ${UI_BASE_URL}    timeout=30s
