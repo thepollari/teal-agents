@@ -75,10 +75,8 @@ func (s *Server) handleInvoke(c *gin.Context) {
 	var inputs map[string]interface{}
 	if err := c.ShouldBindJSON(&inputs); err != nil {
 		logger.Error("Invalid JSON in invoke request", "error", err.Error())
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"error":      fmt.Sprintf("invalid request body: %v", err),
-			"request_id": c.GetHeader("X-Request-ID"),
-		})
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(http.StatusUnprocessableEntity, fmt.Sprintf("invalid request body: %v", err))
 		return
 	}
 	
@@ -90,10 +88,8 @@ func (s *Server) handleInvoke(c *gin.Context) {
 	response, err := s.handler.Invoke(ctx, inputs)
 	if err != nil {
 		logger.Error("Handler invoke failed", "error", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":      fmt.Sprintf("invocation failed: %v", err),
-			"request_id": c.GetHeader("X-Request-ID"),
-		})
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(http.StatusInternalServerError, fmt.Sprintf("invocation failed: %v", err))
 		return
 	}
 	
@@ -112,9 +108,8 @@ func (s *Server) handleInvokeSSE(c *gin.Context) {
 	
 	if len(inputs) == 0 {
 		if err := c.ShouldBindJSON(&inputs); err != nil {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{
-				"error": fmt.Sprintf("invalid request body: %v", err),
-			})
+			c.Header("Content-Type", "text/plain; charset=utf-8")
+			c.String(http.StatusUnprocessableEntity, fmt.Sprintf("invalid request body: %v", err))
 			return
 		}
 	}
@@ -167,9 +162,8 @@ var upgrader = websocket.Upgrader{
 func (s *Server) handleWebSocket(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("failed to upgrade connection: %v", err),
-		})
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(http.StatusInternalServerError, fmt.Sprintf("failed to upgrade connection: %v", err))
 		return
 	}
 	defer conn.Close()
