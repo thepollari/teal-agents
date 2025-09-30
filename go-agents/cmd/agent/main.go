@@ -97,9 +97,14 @@ func main() {
 	
 	srv := server.NewServer(cfg, handler)
 	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+	
 	go func() {
-		log.Printf("Starting server on port 8000...")
-		if err := srv.Start(":8000"); err != nil {
+		log.Printf("Starting server on port %s...", port)
+		if err := srv.Start(":" + port); err != nil {
 			log.Fatalf("Server error: %v", err)
 		}
 	}()

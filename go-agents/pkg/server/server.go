@@ -54,33 +54,10 @@ func (s *Server) setupRoutes() {
 	v1.GET("/health/ready", s.handleHealthReady)
 	
 	v1.POST("", s.handleInvoke)
-	v1.GET("/sse", s.handleInvokeSSE)
+	v1.POST("/sse", s.handleInvokeSSE)
 	v1.GET("/ws", s.handleWebSocket)
 }
 
-func (s *Server) handleHealth(c *gin.Context) {
-	logger := logging.WithContext(c.Request.Context())
-	logger.Info("Health check requested")
-	
-	c.JSON(http.StatusOK, gin.H{
-		"status":     "healthy",
-		"service":    s.config.ServiceName,
-		"version":    s.config.Version,
-		"request_id": c.GetHeader("X-Request-ID"),
-	})
-}
-
-func (s *Server) handleHealthReady(c *gin.Context) {
-	logger := logging.WithContext(c.Request.Context())
-	logger.Info("Readiness check requested")
-	
-	c.JSON(http.StatusOK, gin.H{
-		"status":     "ready",
-		"service":    s.config.ServiceName,
-		"version":    s.config.Version,
-		"request_id": c.GetHeader("X-Request-ID"),
-	})
-}
 
 func (s *Server) Start(addr string) error {
 	logger := logging.GetLogger()
@@ -98,7 +75,7 @@ func (s *Server) handleInvoke(c *gin.Context) {
 	var inputs map[string]interface{}
 	if err := c.ShouldBindJSON(&inputs); err != nil {
 		logger.Error("Invalid JSON in invoke request", "error", err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"error":      fmt.Sprintf("invalid request body: %v", err),
 			"request_id": c.GetHeader("X-Request-ID"),
 		})
@@ -135,7 +112,7 @@ func (s *Server) handleInvokeSSE(c *gin.Context) {
 	
 	if len(inputs) == 0 {
 		if err := c.ShouldBindJSON(&inputs); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
 				"error": fmt.Sprintf("invalid request body: %v", err),
 			})
 			return
@@ -234,4 +211,20 @@ func (s *Server) handleWebSocket(c *gin.Context) {
 			break
 		}
 	}
+}
+
+func (s *Server) handleHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "healthy",
+		"service": s.config.ServiceName,
+		"version": s.config.Version,
+	})
+}
+
+func (s *Server) handleHealthReady(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ready",
+		"service": s.config.ServiceName,
+		"version": s.config.Version,
+	})
 }
