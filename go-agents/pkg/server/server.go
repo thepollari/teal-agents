@@ -88,6 +88,10 @@ func (s *Server) Start(addr string) error {
 	return s.router.Run(addr)
 }
 
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
+}
+
 func (s *Server) handleInvoke(c *gin.Context) {
 	logger := logging.WithContext(c.Request.Context())
 	
@@ -121,18 +125,29 @@ func (s *Server) handleInvoke(c *gin.Context) {
 }
 
 func (s *Server) handleInvokeSSE(c *gin.Context) {
-	var inputs map[string]interface{}
-	if err := c.ShouldBindJSON(&inputs); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("invalid request body: %v", err),
-		})
-		return
+	inputs := make(map[string]interface{})
+	
+	for key, values := range c.Request.URL.Query() {
+		if len(values) > 0 {
+			inputs[key] = values[0]
+		}
 	}
 	
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	c.Writer.Header().Set("Cache-Control", "no-cache")
-	c.Writer.Header().Set("Connection", "keep-alive")
-	c.Writer.Header().Set("Transfer-Encoding", "chunked")
+	if len(inputs) == 0 {
+		if err := c.ShouldBindJSON(&inputs); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("invalid request body: %v", err),
+			})
+			return
+		}
+	}
+	
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("Transfer-Encoding", "chunked")
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Headers", "Cache-Control")
 	
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Minute)
 	defer cancel()
