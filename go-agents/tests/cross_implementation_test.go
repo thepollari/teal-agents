@@ -113,7 +113,7 @@ func startGoServer(t *testing.T) *TestServer {
 	
 	env := os.Environ()
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
-	env = append(env, "PORT="+goPort)
+	env = append(env, "TA_PORT="+goPort)
 	
 	if os.Getenv("TA_API_KEY") == "" {
 		env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
@@ -225,39 +225,76 @@ func makeRequest(method, url string, body interface{}) (*ServerResponse, error) 
 
 
 func testAgentInvocation(t *testing.T) {
-	endpoint := "/ChatBot/0.1"
-	payload := map[string]interface{}{
-		"message": "Hello, test agent!",
-		"task":    "respond",
+	t.Run("Error Path", func(t *testing.T) {
+		endpoint := "/ChatBot/0.1"
+		payload := map[string]interface{}{
+			"message": "Hello, test agent!",
+			"task":    "respond",
+		}
+
+		pythonResp, err := makeRequest("POST", pythonURL+endpoint, payload)
+		require.NoError(t, err, "Python request failed")
+
+		goResp, err := makeRequest("POST", goURL+endpoint, payload)
+		require.NoError(t, err, "Go request failed")
+
+		assert.Equal(t, pythonResp.StatusCode, goResp.StatusCode, 
+			"Status codes don't match for agent invocation")
+
+		assert.Equal(t, 500, pythonResp.StatusCode, "Python should return 500 for missing API key")
+		assert.Equal(t, 500, goResp.StatusCode, "Go should return 500 for missing API key")
+
+		if pythonResp.Body != nil && goResp.Body != nil {
+			assert.Contains(t, pythonResp.Body, "error", "Python response missing error field")
+			assert.Contains(t, goResp.Body, "error", "Go response missing error field")
+			
+			pythonError := pythonResp.Body["error"].(string)
+			goError := goResp.Body["error"].(string)
+			
+			pythonErrorLower := strings.ToLower(pythonError)
+			goErrorLower := strings.ToLower(goError)
+			
+			assert.True(t, strings.Contains(pythonErrorLower, "api") || strings.Contains(pythonErrorLower, "auth") || strings.Contains(pythonErrorLower, "key"), 
+				"Python error should mention API/auth/key: %s", pythonError)
+			assert.True(t, strings.Contains(goErrorLower, "api") || strings.Contains(goErrorLower, "auth") || strings.Contains(goErrorLower, "key"), 
+				"Go error should mention API/auth/key: %s", goError)
+		}
+	})
+
+	if os.Getenv("TA_API_KEY") == "sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890" {
+		t.Skip("Skipping happy path test because only dummy API key is provided")
 	}
 
-	pythonResp, err := makeRequest("POST", pythonURL+endpoint, payload)
-	require.NoError(t, err, "Python request failed")
+	t.Run("Happy Path", func(t *testing.T) {
+		endpoint := "/ChatBot/0.1"
+		payload := map[string]interface{}{
+			"message": "Hello, test agent!",
+			"task":    "respond",
+		}
 
-	goResp, err := makeRequest("POST", goURL+endpoint, payload)
-	require.NoError(t, err, "Go request failed")
+		pythonResp, err := makeRequest("POST", pythonURL+endpoint, payload)
+		require.NoError(t, err, "Python request failed")
 
-	assert.Equal(t, pythonResp.StatusCode, goResp.StatusCode, 
-		"Status codes don't match for agent invocation")
+		goResp, err := makeRequest("POST", goURL+endpoint, payload)
+		require.NoError(t, err, "Go request failed")
 
-	assert.Equal(t, 500, pythonResp.StatusCode, "Python should return 500 for missing API key")
-	assert.Equal(t, 500, goResp.StatusCode, "Go should return 500 for missing API key")
+		assert.Equal(t, pythonResp.StatusCode, goResp.StatusCode, 
+			"Status codes don't match for agent invocation")
 
-	if pythonResp.Body != nil && goResp.Body != nil {
-		assert.Contains(t, pythonResp.Body, "error", "Python response missing error field")
-		assert.Contains(t, goResp.Body, "error", "Go response missing error field")
-		
-		pythonError := pythonResp.Body["error"].(string)
-		goError := goResp.Body["error"].(string)
-		
-		pythonErrorLower := strings.ToLower(pythonError)
-		goErrorLower := strings.ToLower(goError)
-		
-		assert.True(t, strings.Contains(pythonErrorLower, "api") || strings.Contains(pythonErrorLower, "auth") || strings.Contains(pythonErrorLower, "key"), 
-			"Python error should mention API/auth/key: %s", pythonError)
-		assert.True(t, strings.Contains(goErrorLower, "api") || strings.Contains(goErrorLower, "auth") || strings.Contains(goErrorLower, "key"), 
-			"Go error should mention API/auth/key: %s", goError)
-	}
+		assert.Equal(t, 200, pythonResp.StatusCode, "Python should return 200 with valid API key")
+		assert.Equal(t, 200, goResp.StatusCode, "Go should return 200 with valid API key")
+
+		if pythonResp.Body != nil && goResp.Body != nil {
+			assert.Contains(t, pythonResp.Body, "session_id", "Python response missing session_id field")
+			assert.Contains(t, goResp.Body, "session_id", "Go response missing session_id field")
+			
+			assert.Contains(t, pythonResp.Body, "request_id", "Python response missing request_id field")
+			assert.Contains(t, goResp.Body, "request_id", "Go response missing request_id field")
+			
+			assert.Contains(t, pythonResp.Body, "token_usage", "Python response missing token_usage field")
+			assert.Contains(t, goResp.Body, "token_usage", "Go response missing token_usage field")
+		}
+	})
 }
 
 func testErrorHandling(t *testing.T) {

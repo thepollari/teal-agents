@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/thepollari/teal-agents/go-agents/pkg/agents/chat"
 	"github.com/thepollari/teal-agents/go-agents/pkg/agents/sequential"
 	"github.com/thepollari/teal-agents/go-agents/pkg/config"
 	"github.com/thepollari/teal-agents/go-agents/pkg/kernel"
@@ -78,7 +82,7 @@ func main() {
 			case "Sequential":
 				handler, err = sequential.NewSequentialAgent(cfg, kernelBuilder)
 			case "Chat":
-				log.Fatalf("Chat agent not implemented yet")
+				handler, err = chat.NewChatAgent(cfg, kernelBuilder)
 			default:
 				log.Fatalf("Unknown kind: %s", cfg.Kind)
 			}
@@ -86,7 +90,12 @@ func main() {
 			log.Fatalf("Unsupported API version: %s", apiVersion)
 		}
 	case "tealagents":
-		log.Fatalf("tealagents not implemented yet")
+		switch apiVersion {
+		case "v1alpha1":
+			handler, err = sequential.NewSequentialAgent(cfg, kernelBuilder)
+		default:
+			log.Fatalf("Unsupported API version: %s", apiVersion)
+		}
 	default:
 		log.Fatalf("Unknown root handler: %s", rootHandler)
 	}
@@ -97,23 +106,36 @@ func main() {
 	
 	srv := server.NewServer(cfg, handler)
 	
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8000"
-	}
+	port := fmt.Sprintf("%d", appConfig.Port)
+	logger.Info("Using port from config", "port", port)
 	
+	httpServer := &http.Server{
+		Addr:    ":" + port,
+		Handler: srv,
+	}
+
 	go func() {
-		log.Printf("Starting server on port %s...", port)
-		if err := srv.Start(":" + port); err != nil {
+		logger.Info("Starting server", "address", httpServer.Addr, "service", cfg.ServiceName)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("Server error", "error", err.Error())
 			log.Fatalf("Server error: %v", err)
 		}
 	}()
-	
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	
-	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	logger.Info("Shutting down server...")
+	if err := httpServer.Shutdown(ctx); err != nil {
+		logger.Error("Server forced to shutdown", "error", err.Error())
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	logger.Info("Server exited gracefully")
 }
 
 func parseAPIVersion(apiVersion string) (string, string, error) {
