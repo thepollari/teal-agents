@@ -1,0 +1,13 @@
+{
+  "country_response": [
+    {
+      "name": "University of Oxford",
+      "web_pages": ["http://www.ox.ac.uk"],
+      "domains": ["ox.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    }
+  ],
+  "empty_response": []
+}
