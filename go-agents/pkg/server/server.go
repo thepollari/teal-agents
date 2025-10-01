@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -89,7 +90,13 @@ func (s *Server) handleInvoke(c *gin.Context) {
 	if err != nil {
 		logger.Error("Handler invoke failed", "error", err.Error())
 		c.Header("Content-Type", "text/plain; charset=utf-8")
-		c.String(http.StatusInternalServerError, fmt.Sprintf("invocation failed: %v", err))
+		
+		errStr := err.Error()
+		if strings.Contains(errStr, "authentication failed") || strings.Contains(errStr, "api key") {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("invocation failed: %v", err))
+		} else {
+			c.String(http.StatusInternalServerError, fmt.Sprintf("invocation failed: %v", err))
+		}
 		return
 	}
 	

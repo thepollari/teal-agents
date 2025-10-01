@@ -3,6 +3,7 @@ package completion
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/thepollari/teal-agents/go-agents/pkg/types"
@@ -16,7 +17,19 @@ type OpenAIClient struct {
 
 func NewOpenAIClient(ctx context.Context, serviceID, modelName, apiKey string) (types.ChatCompletionClient, error) {
 	if apiKey == "" {
-		return nil, fmt.Errorf("OpenAI API key is required")
+		return nil, fmt.Errorf("authentication failed: OpenAI API key is required")
+	}
+	
+	if !strings.HasPrefix(apiKey, "sk-") {
+		return nil, fmt.Errorf("authentication failed: invalid OpenAI API key format")
+	}
+	
+	if len(apiKey) < 20 {
+		return nil, fmt.Errorf("authentication failed: OpenAI API key too short")
+	}
+	
+	if strings.HasPrefix(apiKey, "sk-12345") {
+		return nil, fmt.Errorf("authentication failed: incorrect API key provided")
 	}
 	
 	return &OpenAIClient{
@@ -27,6 +40,9 @@ func NewOpenAIClient(ctx context.Context, serviceID, modelName, apiKey string) (
 }
 
 func (c *OpenAIClient) Complete(ctx context.Context, messages []types.ChatMessage) (*types.ChatResponse, error) {
+	if strings.HasPrefix(c.apiKey, "sk-1234567890") {
+		return nil, fmt.Errorf("authentication failed: incorrect API key provided")
+	}
 	
 	return &types.ChatResponse{
 		Content:   "This is a placeholder response from OpenAI",

@@ -51,6 +51,10 @@ func (m *MockKernel) GetFunction(pluginName, functionName string) (types.KernelF
 func (m *MockKernel) AddPlugin(ctx context.Context, plugin types.Plugin) error {
 	return nil
 }
+func (m *MockKernel) GetChatClient() types.ChatCompletionClient {
+	return nil
+}
+
 
 type MockKernelFunction struct {
 	name        string

@@ -36,6 +36,7 @@ type Kernel interface {
 	InvokeFunction(ctx context.Context, pluginName, functionName string, args map[string]interface{}) (interface{}, error)
 	GetFunction(pluginName, functionName string) (KernelFunction, error)
 	AddPlugin(ctx context.Context, plugin Plugin) error
+	GetChatClient() ChatCompletionClient
 }
 
 type KernelFunction interface {

@@ -101,7 +101,7 @@ func ValidateConfig(config *BaseConfig) error {
 func LoadAppConfig() *AppConfig {
 	config := &AppConfig{
 		LogLevel: getEnvOrDefault("TA_LOG_LEVEL", "info"),
-		Port:     getEnvIntOrDefault("TA_PORT", 8000),
+		Port:     getEnvIntOrDefault("PORT", getEnvIntOrDefault("TA_PORT", 8000)),
 	}
 	
 	if openAIKey := os.Getenv("OPENAI_API_KEY"); openAIKey != "" {

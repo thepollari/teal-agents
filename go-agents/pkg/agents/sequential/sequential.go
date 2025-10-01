@@ -3,6 +3,7 @@ package sequential
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -167,7 +168,32 @@ func (s *SequentialAgent) Invoke(ctx context.Context, inputs map[string]interfac
 			attribute.String("agent.role", agent.Config.Role),
 		)
 		
-		results[task.Name] = fmt.Sprintf("Result for task %s", task.Name)
+		chatMessages := []types.ChatMessage{
+			{
+				Role:    "system",
+				Content: agent.Config.SystemPrompt,
+			},
+			{
+				Role:    "user", 
+				Content: task.Instructions,
+			},
+		}
+		
+		chatResponse, err := agent.Kernel.GetChatClient().Complete(ctx, chatMessages)
+		if err != nil {
+			telemetry.RecordError(taskSpan, err)
+			taskSpan.End()
+			telemetry.RecordError(span, err)
+			
+			errStr := strings.ToLower(err.Error())
+			if strings.Contains(errStr, "authentication failed") || strings.Contains(errStr, "api key") || strings.Contains(errStr, "auth") {
+				return nil, fmt.Errorf("authentication failed: %w", err)
+			}
+			
+			return nil, fmt.Errorf("chat completion failed for task %s: %w", task.Name, err)
+		}
+		
+		results[task.Name] = chatResponse.Content
 		
 		telemetry.AddSpanAttributes(taskSpan,
 			attribute.String("task.status", "completed"),

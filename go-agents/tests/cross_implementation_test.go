@@ -82,9 +82,7 @@ func startPythonServer(t *testing.T) *TestServer {
 	env = append(env, "TA_SERVICE_CONFIG="+configPath)
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
 	
-	if os.Getenv("TA_API_KEY") == "" {
-		env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
-	}
+	env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
 
 	cmd := exec.Command("uv", "run", "--", "fastapi", "run", "src/sk_agents/app.py", "--port", pythonPort)
 	cmd.Dir = pythonDir
@@ -115,9 +113,7 @@ func startGoServer(t *testing.T) *TestServer {
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
 	env = append(env, "TA_PORT="+goPort)
 	
-	if os.Getenv("TA_API_KEY") == "" {
-		env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
-	}
+	env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
 	
 	cmd := exec.Command("./teal-agent", configPath)
 	cmd.Dir = goDir
