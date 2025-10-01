@@ -161,6 +161,17 @@ class TestUniversityPlugin:
         assert "Connection failed" in result.error
 
     @patch("custom_plugins.requests.get")
+    def test_get_universities_by_country_generic_exception(self, mock_get):
+        mock_get.side_effect = Exception("Unexpected error")
+
+        plugin = UniversityPlugin()
+        result = plugin.get_universities_by_country("France")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert "Unexpected error" in result.error
+
+    @patch("custom_plugins.requests.get")
     def test_get_universities_by_country_limits_results(self, mock_get):
         mock_response = MagicMock()
         large_response = [
