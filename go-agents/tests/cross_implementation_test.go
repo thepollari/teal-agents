@@ -75,13 +75,16 @@ func TestCrossImplementationCompatibility(t *testing.T) {
 }
 
 func startPythonServer(t *testing.T) *TestServer {
-	pythonDir := "/home/ubuntu/repos/teal-agents/src/sk-agents"
+	pythonDir := "../../src/sk-agents"
 	configPath := filepath.Join(pythonDir, "docs/demos/01_getting_started/config.yaml")
 
 	env := os.Environ()
 	env = append(env, "TA_SERVICE_CONFIG="+configPath)
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
-	env = append(env, "TA_API_KEY=sk-dummy-api-key-for-testing") // Use dummy API key for testing
+	
+	if os.Getenv("TA_API_KEY") == "" {
+		env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
+	}
 
 	cmd := exec.Command("uv", "run", "--", "fastapi", "run", "src/sk_agents/app.py", "--port", pythonPort)
 	cmd.Dir = pythonDir
@@ -100,18 +103,21 @@ func startPythonServer(t *testing.T) *TestServer {
 }
 
 func startGoServer(t *testing.T) *TestServer {
-	goDir := "/home/ubuntu/repos/teal-agents/go-agents"
+	goDir := ".."
 	buildCmd := exec.Command("go", "build", "-o", "teal-agent", "./cmd/agent")
 	buildCmd.Dir = goDir
 	err := buildCmd.Run()
 	require.NoError(t, err, "Failed to build Go server")
 
-	configPath := filepath.Join(goDir, "examples/getting_started/config.yaml")
+	configPath := "examples/getting_started/config.yaml"
 	
 	env := os.Environ()
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
 	env = append(env, "PORT="+goPort)
-	env = append(env, "TA_API_KEY=sk-dummy-api-key-for-testing") // Use dummy API key for testing
+	
+	if os.Getenv("TA_API_KEY") == "" {
+		env = append(env, "TA_API_KEY=sk-1234567890abcdefghijklmnopqrstuvwxyz1234567890")
+	}
 	
 	cmd := exec.Command("./teal-agent", configPath)
 	cmd.Dir = goDir
