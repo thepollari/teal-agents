@@ -81,6 +81,7 @@ func startPythonServer(t *testing.T) *TestServer {
 	env := os.Environ()
 	env = append(env, "TA_SERVICE_CONFIG="+configPath)
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
+	env = append(env, "TA_API_KEY=sk-dummy-api-key-for-testing") // Use dummy API key for testing
 
 	cmd := exec.Command("uv", "run", "--", "fastapi", "run", "src/sk_agents/app.py", "--port", pythonPort)
 	cmd.Dir = pythonDir
@@ -110,6 +111,7 @@ func startGoServer(t *testing.T) *TestServer {
 	env := os.Environ()
 	env = append(env, "OTEL_ENABLED=false") // Disable telemetry for cleaner comparison
 	env = append(env, "PORT="+goPort)
+	env = append(env, "TA_API_KEY=sk-dummy-api-key-for-testing") // Use dummy API key for testing
 	
 	cmd := exec.Command("./teal-agent", configPath)
 	cmd.Dir = goDir
