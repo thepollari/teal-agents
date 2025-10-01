@@ -14,9 +14,9 @@ from custom_plugins import University, UniversityPlugin, UniversitySearchResult
 class TestUniversityPlugin:
 
     @patch("custom_plugins.requests.get")
-    def test_search_universities_success(self, mock_get, mock_university_data):
+    def test_search_universities_success(self, mock_get, mock_university_search_data):
         mock_response = MagicMock()
-        mock_response.json.return_value = mock_university_data["success_response"]
+        mock_response.json.return_value = mock_university_search_data["success_response"]
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 
@@ -117,9 +117,9 @@ class TestUniversityPlugin:
         assert len(result.universities) == 10
 
     @patch("custom_plugins.requests.get")
-    def test_get_universities_by_country_success(self, mock_get, mock_university_data):
+    def test_get_universities_by_country_success(self, mock_get, mock_university_api_data):
         mock_response = MagicMock()
-        mock_response.json.return_value = mock_university_data["country_response"]
+        mock_response.json.return_value = mock_university_api_data["country_response"]
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 
@@ -194,8 +194,8 @@ class TestUniversityPlugin:
 
         assert len(result.universities) == 20
 
-    def test_university_data_parsing(self, mock_university_data):
-        uni_data = mock_university_data["success_response"][0]
+    def test_university_data_parsing(self, mock_university_search_data):
+        uni_data = mock_university_search_data["success_response"][0]
         university = University(
             name=uni_data["name"],
             web_pages=uni_data["web_pages"],
@@ -265,9 +265,11 @@ class TestUniversityPlugin:
         assert url == "http://universities.hipolabs.com/search"
 
     @patch("custom_plugins.requests.get")
-    def test_search_universities_with_special_characters(self, mock_get, mock_university_data):
+    def test_search_universities_with_special_characters(
+        self, mock_get, mock_university_search_data
+    ):
         mock_response = MagicMock()
-        mock_response.json.return_value = mock_university_data["success_response"]
+        mock_response.json.return_value = mock_university_search_data["success_response"]
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 

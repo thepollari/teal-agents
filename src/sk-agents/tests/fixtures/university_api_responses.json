@@ -1,23 +1,4 @@
 {
-  "success_response": [
-    {
-      "name": "Massachusetts Institute of Technology",
-      "web_pages": ["http://web.mit.edu"],
-      "domains": ["mit.edu"],
-      "country": "United States",
-      "state-province": "Massachusetts",
-      "alpha_two_code": "US"
-    },
-    {
-      "name": "Stanford University",
-      "web_pages": ["http://www.stanford.edu"],
-      "domains": ["stanford.edu"],
-      "country": "United States",
-      "state-province": "California",
-      "alpha_two_code": "US"
-    }
-  ],
-  "empty_response": [],
   "country_response": [
     {
       "name": "University of Oxford",
@@ -27,5 +8,6 @@
       "state-province": null,
       "alpha_two_code": "GB"
     }
-  ]
+  ],
+  "empty_response": []
 }

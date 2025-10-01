@@ -16,7 +16,14 @@ def app_config_fixture():
 
 
 @pytest.fixture
-def mock_university_data():
+def mock_university_search_data():
+    fixtures_path = Path(__file__).parent / "fixtures" / "university_search_responses.json"
+    with open(fixtures_path) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def mock_university_api_data():
     fixtures_path = Path(__file__).parent / "fixtures" / "university_api_responses.json"
     with open(fixtures_path) as f:
         return json.load(f)
