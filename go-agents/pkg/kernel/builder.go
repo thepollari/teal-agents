@@ -17,11 +17,7 @@ type KernelBuilder struct {
 }
 
 func NewKernelBuilder() types.KernelBuilder {
-	appConfig := &config.AppConfig{
-		OpenAIAPIKey: "", // Will be loaded from environment
-		LogLevel:     "info",
-		Port:         8000,
-	}
+	appConfig := config.LoadAppConfig()
 	
 	return &KernelBuilder{
 		chatFactory: completion.NewDefaultChatCompletionFactory(appConfig),

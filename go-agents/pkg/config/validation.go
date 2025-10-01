@@ -108,6 +108,10 @@ func LoadAppConfig() *AppConfig {
 		config.OpenAIAPIKey = openAIKey
 	}
 	
+	if taAPIKey := os.Getenv("TA_API_KEY"); taAPIKey != "" {
+		config.OpenAIAPIKey = taAPIKey
+	}
+	
 	if geminiKey := os.Getenv("GEMINI_API_KEY"); geminiKey != "" {
 		config.GeminiAPIKey = geminiKey
 	}
