@@ -9,7 +9,7 @@ spec:
   agents:
     - name: default
       role: Default Agent
-      model: gpt-4o-mini
+      model: gemini-1.5-flash
       system_prompt: >
         You are a helpful assistant.
   tasks:
