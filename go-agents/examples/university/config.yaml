@@ -1,0 +1,27 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: >
+  University search agent with Go plugin implementation
+service_name: UniversityBot
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: university_agent
+      role: University Search Assistant
+      model: gpt-4o-mini
+      system_prompt: >
+        You are a helpful assistant that can search for universities.
+        Use the search_universities function to find universities by name.
+        Use the get_universities_by_country function to find universities in a specific country.
+        Always provide helpful information about the universities you find.
+      plugins:
+        - university
+  tasks:
+    - name: university_search
+      task_no: 1
+      description: Help users find universities
+      instructions: >
+        Help the user search for universities by name or country.
+        Provide detailed information about the universities found.
+      agent: university_agent
