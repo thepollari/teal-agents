@@ -86,10 +86,10 @@ def test_get_agent_card_success():
     assert agent_card.url == "http://base.url/agent_name/1.0/a2a"
     assert agent_card.provider.organization == "org"
     assert agent_card.provider.url == "http://provider.url"
-    assert agent_card.documentationUrl == metadata.documentation_url
+    assert agent_card.documentation_url == metadata.documentation_url
     assert agent_card.capabilities.streaming is True
-    assert agent_card.defaultInputModes == ["text"]
-    assert agent_card.defaultOutputModes == ["text"]
+    assert agent_card.default_input_modes == ["text"]
+    assert agent_card.default_output_modes == ["text"]
     assert len(agent_card.skills) == 1
     skill_out = agent_card.skills[0]
     assert isinstance(skill_out, AgentSkill)
@@ -98,8 +98,8 @@ def test_get_agent_card_success():
     assert skill_out.description == skill.description
     assert skill_out.tags == skill.tags
     assert skill_out.examples == skill.examples
-    assert skill_out.inputModes == skill.input_modes
-    assert skill_out.outputModes == skill.output_modes
+    assert skill_out.input_modes == skill.input_modes
+    assert skill_out.output_modes == skill.output_modes
 
 
 def test_get_agent_card_raises_without_metadata():

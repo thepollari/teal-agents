@@ -1,7 +1,7 @@
 import logging
 from contextlib import nullcontext
 
-from a2a.server.apps.starlette_app import A2AStarletteApplication
+from a2a.server.apps.jsonrpc.starlette_app import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks.task_store import TaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
@@ -72,8 +72,8 @@ class Routes:
                 description=skill.description,
                 tags=skill.tags,
                 examples=skill.examples,
-                inputModes=skill.input_modes,
-                outputModes=skill.output_modes,
+                input_modes=skill.input_modes,
+                output_modes=skill.output_modes,
             )
             for skill in metadata.skills
         ]
@@ -83,12 +83,12 @@ class Routes:
             description=metadata.description,
             url=Routes.get_url(config.name, config.version, app_config),
             provider=Routes.get_provider(app_config),
-            documentationUrl=config.metadata.documentation_url,
+            documentation_url=config.metadata.documentation_url,
             capabilities=AgentCapabilities(
-                streaming=True, pushNotifications=False, stateTransitionHistory=True
+                streaming=True, push_notifications=False, state_transition_history=True
             ),
-            defaultInputModes=["text"],
-            defaultOutputModes=["text"],
+            default_input_modes=["text"],
+            default_output_modes=["text"],
             skills=skills,
         )
 

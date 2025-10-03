@@ -5,7 +5,7 @@ description = "Teal Agents - Core Agent Framework"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "semantic-kernel==1.33.0",
+    "semantic-kernel",
     "pyyaml",
     "pydantic",
     "pydantic-yaml",
@@ -17,7 +17,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc",
     "ska-utils",
     "lock",
-    "a2a-sdk==0.2.4",
+    "a2a-sdk",
     "redis>=6.0.0",
     "google-generativeai>=0.8.5",
     "google-ai-generativelanguage>=0.6.15",
