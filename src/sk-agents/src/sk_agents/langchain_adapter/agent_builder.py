@@ -7,7 +7,6 @@ building agents using LCEL (LangChain Expression Language) with .bind_tools().
 
 from typing import Any
 
-from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import Runnable
 

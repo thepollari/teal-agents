@@ -4,10 +4,6 @@ from enum import Enum
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict
-from semantic_kernel.connectors.ai.chat_completion_client_base import (
-    ChatCompletionClientBase,
-)
-from semantic_kernel.kernel_pydantic import KernelBaseModel
 from ska_utils import AppConfig, Config as UtilConfig
 
 from sk_agents.extra_data_collector import (
@@ -52,8 +48,9 @@ class BaseConfig(BaseModel):
 
 class ModelType(Enum):
     OPENAI = "openai"
+    AZURE_OPENAI = "azure_openai"
     ANTHROPIC = "anthropic"
-    GOOGLE = "google"
+    GEMINI = "gemini"
 
 
 class ContentType(Enum):
@@ -73,7 +70,7 @@ class EmbeddedImage(BaseModel):
     data: str
 
 
-class BaseEmbeddedImage(KernelBaseModel):
+class BaseEmbeddedImage(BaseModel):
     embedded_image: EmbeddedImage
 
 
@@ -87,7 +84,7 @@ class HistoryMultiModalMessage(BaseModel):
     items: list[MultiModalItem]
 
 
-class BaseMultiModalInput(KernelBaseModel):
+class BaseMultiModalInput(BaseModel):
     session_id: str | None = None
 
     chat_history: list[HistoryMultiModalMessage] | None = None
@@ -103,14 +100,14 @@ class HistoryMessage(BaseModel):
     content: str
 
 
-class BaseInput(KernelBaseModel):
+class BaseInput(BaseModel):
     """The history of a chat interaction between an automated assistant and a
     human."""
 
     chat_history: list[HistoryMessage] | None = None
 
 
-class BaseInputWithUserContext(KernelBaseModel):
+class BaseInputWithUserContext(BaseModel):
     """The history of a chat interaction between an automated assistant and a
     human, along with context about the user."""
 
@@ -188,7 +185,7 @@ class ChatCompletionFactory(ABC):
     @abstractmethod
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> ChatCompletionClientBase:
+    ) -> Any:
         pass
 
     @abstractmethod
