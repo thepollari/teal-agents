@@ -87,10 +87,14 @@ def get_token_usage_for_response(
     if hasattr(message, 'usage_metadata') and message.usage_metadata:
         usage_metadata = message.usage_metadata
         
-        # usage_metadata is typically a UsageMetadata object with attributes
-        input_tokens = getattr(usage_metadata, 'input_tokens', 0)
-        output_tokens = getattr(usage_metadata, 'output_tokens', 0)
-        total_tokens = getattr(usage_metadata, 'total_tokens', input_tokens + output_tokens)
+        if isinstance(usage_metadata, dict):
+            input_tokens = usage_metadata.get('input_tokens', 0)
+            output_tokens = usage_metadata.get('output_tokens', 0)
+            total_tokens = usage_metadata.get('total_tokens', input_tokens + output_tokens)
+        else:
+            input_tokens = getattr(usage_metadata, 'input_tokens', 0)
+            output_tokens = getattr(usage_metadata, 'output_tokens', 0)
+            total_tokens = getattr(usage_metadata, 'total_tokens', input_tokens + output_tokens)
         
         return TokenUsage(
             prompt_tokens=input_tokens,
