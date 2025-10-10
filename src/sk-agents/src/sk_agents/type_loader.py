@@ -1,6 +1,6 @@
 import logging
 
-from semantic_kernel.kernel_pydantic import KernelBaseModel
+from pydantic import BaseModel
 from ska_utils import ModuleLoader
 
 from sk_agents.ska_types import (
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 
 class TypeLoader:
-    base_types: dict[str, type[KernelBaseModel]]
+    base_types: dict[str, type[BaseModel]]
 
     def __init__(self, types_module: str | None = None):
         self.base_types = {}
@@ -46,7 +46,7 @@ class TypeLoader:
             self.custom_module = None
 
     @staticmethod
-    def _get_standard_type(type: str) -> type[KernelBaseModel] | None:
+    def _get_standard_type(type: str) -> type[BaseModel] | None:
         match type:
             case "BaseInput":
                 return BaseInput
@@ -59,7 +59,7 @@ class TypeLoader:
             case _:
                 return None
 
-    def get_type(self, type_name: str) -> type[KernelBaseModel] | None:
+    def get_type(self, type_name: str) -> type[BaseModel] | None:
         standard_type = TypeLoader._get_standard_type(type_name)
         if standard_type:
             return standard_type
