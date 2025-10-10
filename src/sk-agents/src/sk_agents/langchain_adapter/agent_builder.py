@@ -13,7 +13,7 @@ from langchain_core.runnables import Runnable
 from sk_agents.extra_data_collector import ExtraDataCollector
 from sk_agents.langchain_adapter.chain_builder import ChainBuilder
 from sk_agents.langchain_adapter.langchain_agent import LangChainAgent
-from sk_agents.skagents.v1.sequential.config import AgentConfig
+from sk_agents.langchain_skagents.v1.config import AgentConfig
 from sk_agents.type_loader import get_type_loader
 
 
