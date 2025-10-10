@@ -4,6 +4,10 @@ from enum import Enum
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict
+from semantic_kernel.connectors.ai.chat_completion_client_base import (
+    ChatCompletionClientBase,
+)
+from semantic_kernel.kernel_pydantic import KernelBaseModel
 from ska_utils import AppConfig, Config as UtilConfig
 
 from sk_agents.extra_data_collector import (
@@ -70,7 +74,7 @@ class EmbeddedImage(BaseModel):
     data: str
 
 
-class BaseEmbeddedImage(BaseModel):
+class BaseEmbeddedImage(KernelBaseModel):
     embedded_image: EmbeddedImage
 
 
@@ -84,7 +88,7 @@ class HistoryMultiModalMessage(BaseModel):
     items: list[MultiModalItem]
 
 
-class BaseMultiModalInput(BaseModel):
+class BaseMultiModalInput(KernelBaseModel):
     session_id: str | None = None
 
     chat_history: list[HistoryMultiModalMessage] | None = None
@@ -100,14 +104,14 @@ class HistoryMessage(BaseModel):
     content: str
 
 
-class BaseInput(BaseModel):
+class BaseInput(KernelBaseModel):
     """The history of a chat interaction between an automated assistant and a
     human."""
 
     chat_history: list[HistoryMessage] | None = None
 
 
-class BaseInputWithUserContext(BaseModel):
+class BaseInputWithUserContext(KernelBaseModel):
     """The history of a chat interaction between an automated assistant and a
     human, along with context about the user."""
 
@@ -185,7 +189,7 @@ class ChatCompletionFactory(ABC):
     @abstractmethod
     def get_chat_completion_for_model_name(
         self, model_name: str, service_id: str
-    ) -> Any:
+    ) -> ChatCompletionClientBase:
         pass
 
     @abstractmethod
