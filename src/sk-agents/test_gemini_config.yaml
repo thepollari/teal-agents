@@ -1,0 +1,20 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: Test agent using Gemini
+service_name: GeminiTestBot
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: default
+      role: Default Agent
+      model: gemini-2.0-flash
+      system_prompt: >
+        You are a helpful assistant. Respond concisely.
+  tasks:
+    - name: action_task
+      task_no: 1
+      description: Chat with user
+      instructions: >
+        Answer the user's question briefly.
+      agent: default

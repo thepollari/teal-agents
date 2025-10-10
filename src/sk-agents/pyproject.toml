@@ -5,7 +5,17 @@ description = "Teal Agents - Core Agent Framework"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    # LangChain core and ecosystem
+    "langchain>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-anthropic>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    "langchain-community>=0.3.0",
+    "langserve>=0.3.0",
+    # Semantic Kernel (for backward compatibility with old handlers)
     "semantic-kernel==1.33.0",
+    # Existing dependencies
     "pyyaml",
     "pydantic",
     "pydantic-yaml",
@@ -21,6 +31,8 @@ dependencies = [
     "redis>=6.0.0",
     "google-generativeai>=0.8.5",
     "google-ai-generativelanguage>=0.6.15",
+    "httpx>=0.27.0",
+    "pillow>=11.3.0",
 ]
 
 [project.urls]
