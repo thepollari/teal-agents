@@ -67,8 +67,8 @@ def _create_skagents_handler(
     Returns:
         BaseHandler: Sequential or Chat agent handler using LangChain
     """
-    from sk_agents.langchain_skagents.v1.sequential.sequential_skagents import (
-        LangChainSequentialSkagents,
+    from sk_agents.langchain_skagents.v1.sequential.sequential_agents import (
+        LangChainSequentialAgents,
     )
     from sk_agents.langchain_skagents.v1.chat.chat_agents import LangChainChatAgents
     
@@ -92,7 +92,7 @@ def _create_skagents_handler(
         kind = config.kind.lower()
         
         if kind == "sequential":
-            return LangChainSequentialSkagents(
+            return LangChainSequentialAgents(
                 config=config,
                 chain_builder=chain_builder,
                 agent_builder=agent_builder,
@@ -105,7 +105,7 @@ def _create_skagents_handler(
         else:
             raise ValueError(f"Unknown kind: {config.kind}")
     else:
-        return LangChainSequentialSkagents(
+        return LangChainSequentialAgents(
             config=config,
             chain_builder=chain_builder,
             agent_builder=agent_builder,
