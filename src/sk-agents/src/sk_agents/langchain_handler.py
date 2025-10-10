@@ -14,7 +14,6 @@ from sk_agents.langchain_adapter import (
     ChainBuilder,
     ChatModelFactory,
     LangChainAgentBuilder,
-    RemotePluginCatalog,
     RemoteToolLoader,
 )
 from sk_agents.ska_types import BaseConfig, BaseHandler
