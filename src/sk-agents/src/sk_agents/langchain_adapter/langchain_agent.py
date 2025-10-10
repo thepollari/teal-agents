@@ -43,6 +43,7 @@ class LangChainAgent:
         self.model_attributes = model_attributes
         self.runnable = runnable
         self.chat_model = chat_model
+        self.tools = []
 
     def get_model_type(self) -> ModelType:
         """Get the model type (OPENAI, ANTHROPIC, GEMINI, AZURE_OPENAI)."""
