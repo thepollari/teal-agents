@@ -16,6 +16,7 @@ from sk_agents.langchain_adapter import (
     LangChainAgentBuilder,
     RemoteToolLoader,
 )
+from sk_agents.skagents.remote_plugin_catalog import RemotePluginCatalog
 from sk_agents.ska_types import BaseConfig, BaseHandler
 
 logger = logging.getLogger(__name__)
