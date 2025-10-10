@@ -32,6 +32,7 @@ from sk_agents.ska_types import (
     InvokeResponse,
     PartialResponse,
 )
+from sk_agents.langchain_handler import langchain_handle
 from sk_agents.skagents import handle as skagents_handle
 from sk_agents.skagents.chat_completion_builder import ChatCompletionBuilder
 from sk_agents.state import StateManager
@@ -179,7 +180,7 @@ class Routes:
             ):
                 match root_handler_name:
                     case "skagents":
-                        handler: BaseHandler = skagents_handle(config, app_config, authorization)
+                        handler: BaseHandler = langchain_handle(config, app_config, authorization)
                     case _:
                         raise ValueError(f"Unknown apiVersion: {config.apiVersion}")
 
@@ -210,7 +211,7 @@ class Routes:
                 ):
                     match root_handler_name:
                         case "skagents":
-                            handler: BaseHandler = skagents_handle(
+                            handler: BaseHandler = langchain_handle(
                                 config, app_config, authorization
                             )
                             # noinspection PyTypeChecker
@@ -258,7 +259,7 @@ class Routes:
                     inv_inputs = inputs.__dict__
                     match root_handler_name:
                         case "skagents":
-                            handler: BaseHandler = skagents_handle(
+                            handler: BaseHandler = langchain_handle(
                                 config, app_config, authorization
                             )
                             async for content in handler.invoke_stream(inputs=inv_inputs):
