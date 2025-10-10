@@ -114,7 +114,7 @@ class LangChainTask:
         self,
         history: list[BaseMessage],
         inputs: dict[str, Any] | None = None,
-    ) -> AsyncIterable[AIMessageChunk | str]:
+    ) -> AsyncIterable[AIMessageChunk | str | dict]:
         """
         Execute task with streaming.
         
@@ -123,21 +123,44 @@ class LangChainTask:
             inputs: Input variables for task
             
         Yields:
-            AIMessageChunk or string chunks from the agent
+            AIMessageChunk or string chunks from the agent, plus token usage
         """
         message = self._get_message(inputs)
         history.append(message)
         
         contents = []
+        completion_tokens: int = 0
+        prompt_tokens: int = 0
+        total_tokens: int = 0
         
         async for chunk in self.agent.invoke_stream(history):
             contents.append(chunk)
+            
+            # LangChain typically includes usage in the final chunk for streaming
+            chunk_usage = get_token_usage_for_response(
+                self.agent.get_model_type(),
+                chunk
+            )
+            if chunk_usage.total_tokens > 0:
+                completion_tokens = chunk_usage.completion_tokens
+                prompt_tokens = chunk_usage.prompt_tokens
+                total_tokens = chunk_usage.total_tokens
+            
             yield chunk
         
         if not self.extra_data_collector.is_empty():
             yield ExtraDataPartial(
                 extra_data=self.extra_data_collector.get_extra_data()
             ).model_dump_json()
+        
+        if total_tokens > 0:
+            yield {
+                'token_usage': {
+                    'prompt_tokens': prompt_tokens,
+                    'completion_tokens': completion_tokens,
+                    'total_tokens': total_tokens,
+                }
+            }
         
         message_content = "".join([
             chunk.content if hasattr(chunk, 'content') else str(chunk)

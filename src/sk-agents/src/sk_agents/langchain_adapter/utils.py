@@ -69,36 +69,25 @@ def get_token_usage_for_response(
     """
     Extract token usage information from a LangChain message.
     
+    LangChain standardizes token usage across providers:
+    - usage_metadata attribute (preferred, newer LangChain versions)
+    - response_metadata['usage'] (fallback for older versions)
+    
+    Different providers use different field names:
+    - OpenAI: prompt_tokens, completion_tokens, total_tokens
+    - Anthropic/Gemini: input_tokens, output_tokens
+    
     Args:
-        model_type: Type of model (OPENAI, ANTHROPIC, etc.)
+        model_type: Type of model (OPENAI, ANTHROPIC, GEMINI, AZURE_OPENAI)
         message: LangChain message with usage metadata
         
     Returns:
         TokenUsage object with token counts
     """
-    usage_metadata = None
-    
     if hasattr(message, 'usage_metadata') and message.usage_metadata:
         usage_metadata = message.usage_metadata
-    elif hasattr(message, 'response_metadata'):
-        response_metadata = message.response_metadata
-        if isinstance(response_metadata, dict):
-            if 'usage' in response_metadata:
-                usage = response_metadata['usage']
-                return TokenUsage(
-                    prompt_tokens=usage.get('prompt_tokens', 0),
-                    completion_tokens=usage.get('completion_tokens', 0),
-                    total_tokens=usage.get('total_tokens', 0),
-                )
-            elif 'usage' in response_metadata:
-                usage = response_metadata['usage']
-                return TokenUsage(
-                    prompt_tokens=usage.get('input_tokens', 0),
-                    completion_tokens=usage.get('output_tokens', 0),
-                    total_tokens=usage.get('input_tokens', 0) + usage.get('output_tokens', 0),
-                )
-    
-    if usage_metadata:
+        
+        # usage_metadata is typically a UsageMetadata object with attributes
         input_tokens = getattr(usage_metadata, 'input_tokens', 0)
         output_tokens = getattr(usage_metadata, 'output_tokens', 0)
         total_tokens = getattr(usage_metadata, 'total_tokens', input_tokens + output_tokens)
@@ -108,6 +97,36 @@ def get_token_usage_for_response(
             completion_tokens=output_tokens,
             total_tokens=total_tokens,
         )
+    
+    if hasattr(message, 'response_metadata') and message.response_metadata:
+        response_metadata = message.response_metadata
+        
+        if isinstance(response_metadata, dict):
+            if 'usage' in response_metadata:
+                usage = response_metadata['usage']
+                
+                if 'prompt_tokens' in usage:
+                    return TokenUsage(
+                        prompt_tokens=usage.get('prompt_tokens', 0),
+                        completion_tokens=usage.get('completion_tokens', 0),
+                        total_tokens=usage.get('total_tokens', 0),
+                    )
+                elif 'input_tokens' in usage:
+                    input_tokens = usage.get('input_tokens', 0)
+                    output_tokens = usage.get('output_tokens', 0)
+                    return TokenUsage(
+                        prompt_tokens=input_tokens,
+                        completion_tokens=output_tokens,
+                        total_tokens=usage.get('total_tokens', input_tokens + output_tokens),
+                    )
+            
+            if 'token_usage' in response_metadata:
+                token_usage = response_metadata['token_usage']
+                return TokenUsage(
+                    prompt_tokens=token_usage.get('prompt_tokens', 0),
+                    completion_tokens=token_usage.get('completion_tokens', 0),
+                    total_tokens=token_usage.get('total_tokens', 0),
+                )
     
     return TokenUsage(
         prompt_tokens=0,

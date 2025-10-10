@@ -203,6 +203,13 @@ class LangChainSequentialAgents(BaseHandler):
                     average_ttft_ms.append(ttft_ms)
                     first_token_received = True
                 
+                if isinstance(chunk, dict) and 'token_usage' in chunk:
+                    usage = chunk['token_usage']
+                    completion_tokens += usage.get('completion_tokens', 0)
+                    prompt_tokens += usage.get('prompt_tokens', 0)
+                    total_tokens += usage.get('total_tokens', 0)
+                    continue
+                
                 if hasattr(chunk, 'content'):
                     content = chunk.content
                 elif isinstance(chunk, str):
