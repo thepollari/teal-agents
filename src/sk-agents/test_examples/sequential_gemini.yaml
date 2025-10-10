@@ -1,0 +1,31 @@
+apiVersion: skagents/v1
+kind: Sequential
+description: Sequential agent with multiple tasks (Gemini)
+service_name: SequentialBot
+version: 0.1
+input_type: BaseInput
+spec:
+  agents:
+    - name: analyzer
+      role: Analyzer
+      model: gemini-2.0-flash
+      system_prompt: You are an expert analyst. Provide concise analysis.
+    - name: summarizer
+      role: Summarizer
+      model: gemini-2.0-flash
+      system_prompt: You are a summarizer. Create brief summaries.
+  tasks:
+    - name: analyze
+      task_no: 1
+      description: Analyze the input
+      instructions: >
+        Analyze the user's input and identify 2-3 key points.
+      agent: analyzer
+    - name: summarize
+      task_no: 2
+      description: Summarize the analysis
+      instructions: >
+        Based on this analysis: {{_analyze}}
+        
+        Create a one-sentence summary.
+      agent: summarizer
