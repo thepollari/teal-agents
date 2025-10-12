@@ -1,0 +1,49 @@
+{
+  "successful_search": [
+    {
+      "name": "Aalto University",
+      "web_pages": ["https://www.aalto.fi"],
+      "domains": ["aalto.fi"],
+      "country": "Finland",
+      "state-province": null,
+      "alpha_two_code": "FI"
+    }
+  ],
+  "empty_search": [],
+  "country_search_finland": [
+    {
+      "name": "University of Helsinki",
+      "web_pages": ["https://www.helsinki.fi"],
+      "domains": ["helsinki.fi"],
+      "country": "Finland",
+      "state-province": null,
+      "alpha_two_code": "FI"
+    },
+    {
+      "name": "Aalto University",
+      "web_pages": ["https://www.aalto.fi"],
+      "domains": ["aalto.fi"],
+      "country": "Finland",
+      "state-province": null,
+      "alpha_two_code": "FI"
+    }
+  ],
+  "multiple_results": [
+    {
+      "name": "University One",
+      "web_pages": ["https://www.uni1.edu"],
+      "domains": ["uni1.edu"],
+      "country": "Test Country",
+      "state-province": "Test State",
+      "alpha_two_code": "TC"
+    },
+    {
+      "name": "University Two",
+      "web_pages": ["https://www.uni2.edu"],
+      "domains": ["uni2.edu"],
+      "country": "Test Country",
+      "state-province": null,
+      "alpha_two_code": "TC"
+    }
+  ]
+}
