@@ -1,0 +1,401 @@
+{
+  "search_by_name_mit": {
+    "query": "MIT",
+    "limit": 10,
+    "expected_count": 5,
+    "results": [
+      {
+        "name": "Massachusetts Institute of Technology",
+        "web_pages": ["http://web.mit.edu"],
+        "domains": ["mit.edu"],
+        "country": "United States",
+        "state-province": "Massachusetts",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "MIT World Peace University",
+        "web_pages": ["http://www.mitwpu.edu.in/"],
+        "domains": ["mitwpu.edu.in"],
+        "country": "India",
+        "state-province": "Maharashtra",
+        "alpha_two_code": "IN"
+      },
+      {
+        "name": "Manipal Institute of Technology",
+        "web_pages": ["http://www.manipal.edu/mit.html"],
+        "domains": ["manipal.edu"],
+        "country": "India",
+        "state-province": "Karnataka",
+        "alpha_two_code": "IN"
+      },
+      {
+        "name": "MIT Art Design and Technology University",
+        "web_pages": ["http://www.mituniversity.edu.in/"],
+        "domains": ["mituniversity.edu.in"],
+        "country": "India",
+        "state-province": "Maharashtra",
+        "alpha_two_code": "IN"
+      },
+      {
+        "name": "Madras Institute of Technology",
+        "web_pages": ["http://www.mitindia.edu/"],
+        "domains": ["mitindia.edu"],
+        "country": "India",
+        "state-province": "Tamil Nadu",
+        "alpha_two_code": "IN"
+      }
+    ]
+  },
+  "search_by_name_stanford": {
+    "query": "Stanford",
+    "limit": 10,
+    "expected_count": 1,
+    "results": [
+      {
+        "name": "Stanford University",
+        "web_pages": ["http://www.stanford.edu"],
+        "domains": ["stanford.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      }
+    ]
+  },
+  "search_by_name_oxford": {
+    "query": "Oxford",
+    "limit": 10,
+    "expected_count": 2,
+    "results": [
+      {
+        "name": "University of Oxford",
+        "web_pages": ["http://www.ox.ac.uk"],
+        "domains": ["ox.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "Oxford Brookes University",
+        "web_pages": ["http://www.brookes.ac.uk"],
+        "domains": ["brookes.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      }
+    ]
+  },
+  "search_by_name_no_results": {
+    "query": "NonExistentUniversityXYZ123",
+    "limit": 10,
+    "expected_count": 0,
+    "results": []
+  },
+  "search_by_country_us": {
+    "country": "United States",
+    "limit": 20,
+    "expected_count": 20,
+    "results": [
+      {
+        "name": "Massachusetts Institute of Technology",
+        "web_pages": ["http://web.mit.edu"],
+        "domains": ["mit.edu"],
+        "country": "United States",
+        "state-province": "Massachusetts",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Stanford University",
+        "web_pages": ["http://www.stanford.edu"],
+        "domains": ["stanford.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Harvard University",
+        "web_pages": ["http://www.harvard.edu"],
+        "domains": ["harvard.edu"],
+        "country": "United States",
+        "state-province": "Massachusetts",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "California Institute of Technology",
+        "web_pages": ["http://www.caltech.edu"],
+        "domains": ["caltech.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Princeton University",
+        "web_pages": ["http://www.princeton.edu"],
+        "domains": ["princeton.edu"],
+        "country": "United States",
+        "state-province": "New Jersey",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Yale University",
+        "web_pages": ["http://www.yale.edu"],
+        "domains": ["yale.edu"],
+        "country": "United States",
+        "state-province": "Connecticut",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Columbia University",
+        "web_pages": ["http://www.columbia.edu"],
+        "domains": ["columbia.edu"],
+        "country": "United States",
+        "state-province": "New York",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Chicago",
+        "web_pages": ["http://www.uchicago.edu"],
+        "domains": ["uchicago.edu"],
+        "country": "United States",
+        "state-province": "Illinois",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Pennsylvania",
+        "web_pages": ["http://www.upenn.edu"],
+        "domains": ["upenn.edu"],
+        "country": "United States",
+        "state-province": "Pennsylvania",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Johns Hopkins University",
+        "web_pages": ["http://www.jhu.edu"],
+        "domains": ["jhu.edu"],
+        "country": "United States",
+        "state-province": "Maryland",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Northwestern University",
+        "web_pages": ["http://www.northwestern.edu"],
+        "domains": ["northwestern.edu"],
+        "country": "United States",
+        "state-province": "Illinois",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Duke University",
+        "web_pages": ["http://www.duke.edu"],
+        "domains": ["duke.edu"],
+        "country": "United States",
+        "state-province": "North Carolina",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Cornell University",
+        "web_pages": ["http://www.cornell.edu"],
+        "domains": ["cornell.edu"],
+        "country": "United States",
+        "state-province": "New York",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Michigan",
+        "web_pages": ["http://www.umich.edu"],
+        "domains": ["umich.edu"],
+        "country": "United States",
+        "state-province": "Michigan",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of California, Berkeley",
+        "web_pages": ["http://www.berkeley.edu"],
+        "domains": ["berkeley.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of California, Los Angeles",
+        "web_pages": ["http://www.ucla.edu"],
+        "domains": ["ucla.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "New York University",
+        "web_pages": ["http://www.nyu.edu"],
+        "domains": ["nyu.edu"],
+        "country": "United States",
+        "state-province": "New York",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "Carnegie Mellon University",
+        "web_pages": ["http://www.cmu.edu"],
+        "domains": ["cmu.edu"],
+        "country": "United States",
+        "state-province": "Pennsylvania",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Washington",
+        "web_pages": ["http://www.washington.edu"],
+        "domains": ["washington.edu"],
+        "country": "United States",
+        "state-province": "Washington",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Texas at Austin",
+        "web_pages": ["http://www.utexas.edu"],
+        "domains": ["utexas.edu"],
+        "country": "United States",
+        "state-province": "Texas",
+        "alpha_two_code": "US"
+      }
+    ]
+  },
+  "search_by_country_uk": {
+    "country": "United Kingdom",
+    "limit": 20,
+    "expected_count": 5,
+    "results": [
+      {
+        "name": "University of Oxford",
+        "web_pages": ["http://www.ox.ac.uk"],
+        "domains": ["ox.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "University of Cambridge",
+        "web_pages": ["http://www.cam.ac.uk"],
+        "domains": ["cam.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "Imperial College London",
+        "web_pages": ["http://www.imperial.ac.uk"],
+        "domains": ["imperial.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "University College London",
+        "web_pages": ["http://www.ucl.ac.uk"],
+        "domains": ["ucl.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "London School of Economics",
+        "web_pages": ["http://www.lse.ac.uk"],
+        "domains": ["lse.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      }
+    ]
+  },
+  "search_by_country_no_results": {
+    "country": "NonExistentCountryXYZ",
+    "limit": 20,
+    "expected_count": 0,
+    "results": []
+  },
+  "search_exceeding_name_limit": {
+    "query": "University",
+    "limit": 10,
+    "total_available": 50,
+    "expected_count": 10,
+    "results": [
+      {
+        "name": "University of Cambridge",
+        "web_pages": ["http://www.cam.ac.uk"],
+        "domains": ["cam.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "University of Oxford",
+        "web_pages": ["http://www.ox.ac.uk"],
+        "domains": ["ox.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      },
+      {
+        "name": "University of California, Berkeley",
+        "web_pages": ["http://www.berkeley.edu"],
+        "domains": ["berkeley.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of California, Los Angeles",
+        "web_pages": ["http://www.ucla.edu"],
+        "domains": ["ucla.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Michigan",
+        "web_pages": ["http://www.umich.edu"],
+        "domains": ["umich.edu"],
+        "country": "United States",
+        "state-province": "Michigan",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Washington",
+        "web_pages": ["http://www.washington.edu"],
+        "domains": ["washington.edu"],
+        "country": "United States",
+        "state-province": "Washington",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Texas at Austin",
+        "web_pages": ["http://www.utexas.edu"],
+        "domains": ["utexas.edu"],
+        "country": "United States",
+        "state-province": "Texas",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Pennsylvania",
+        "web_pages": ["http://www.upenn.edu"],
+        "domains": ["upenn.edu"],
+        "country": "United States",
+        "state-province": "Pennsylvania",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University of Chicago",
+        "web_pages": ["http://www.uchicago.edu"],
+        "domains": ["uchicago.edu"],
+        "country": "United States",
+        "state-province": "Illinois",
+        "alpha_two_code": "US"
+      },
+      {
+        "name": "University College London",
+        "web_pages": ["http://www.ucl.ac.uk"],
+        "domains": ["ucl.ac.uk"],
+        "country": "United Kingdom",
+        "state-province": null,
+        "alpha_two_code": "GB"
+      }
+    ]
+  }
+}

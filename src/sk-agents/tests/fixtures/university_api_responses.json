@@ -1,0 +1,279 @@
+{
+  "multiple_universities": [
+    {
+      "name": "Massachusetts Institute of Technology",
+      "web_pages": ["http://web.mit.edu"],
+      "domains": ["mit.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Stanford University",
+      "web_pages": ["http://www.stanford.edu"],
+      "domains": ["stanford.edu"],
+      "country": "United States",
+      "state-province": "California",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Harvard University",
+      "web_pages": ["http://www.harvard.edu"],
+      "domains": ["harvard.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Cambridge",
+      "web_pages": ["http://www.cam.ac.uk"],
+      "domains": ["cam.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    },
+    {
+      "name": "University of Oxford",
+      "web_pages": ["http://www.ox.ac.uk"],
+      "domains": ["ox.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    }
+  ],
+  "single_university": [
+    {
+      "name": "Massachusetts Institute of Technology",
+      "web_pages": ["http://web.mit.edu"],
+      "domains": ["mit.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    }
+  ],
+  "empty_response": [],
+  "us_universities": [
+    {
+      "name": "Massachusetts Institute of Technology",
+      "web_pages": ["http://web.mit.edu"],
+      "domains": ["mit.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Stanford University",
+      "web_pages": ["http://www.stanford.edu"],
+      "domains": ["stanford.edu"],
+      "country": "United States",
+      "state-province": "California",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Harvard University",
+      "web_pages": ["http://www.harvard.edu"],
+      "domains": ["harvard.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "California Institute of Technology",
+      "web_pages": ["http://www.caltech.edu"],
+      "domains": ["caltech.edu"],
+      "country": "United States",
+      "state-province": "California",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Princeton University",
+      "web_pages": ["http://www.princeton.edu"],
+      "domains": ["princeton.edu"],
+      "country": "United States",
+      "state-province": "New Jersey",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Yale University",
+      "web_pages": ["http://www.yale.edu"],
+      "domains": ["yale.edu"],
+      "country": "United States",
+      "state-province": "Connecticut",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Columbia University",
+      "web_pages": ["http://www.columbia.edu"],
+      "domains": ["columbia.edu"],
+      "country": "United States",
+      "state-province": "New York",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Chicago",
+      "web_pages": ["http://www.uchicago.edu"],
+      "domains": ["uchicago.edu"],
+      "country": "United States",
+      "state-province": "Illinois",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Pennsylvania",
+      "web_pages": ["http://www.upenn.edu"],
+      "domains": ["upenn.edu"],
+      "country": "United States",
+      "state-province": "Pennsylvania",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Johns Hopkins University",
+      "web_pages": ["http://www.jhu.edu"],
+      "domains": ["jhu.edu"],
+      "country": "United States",
+      "state-province": "Maryland",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Northwestern University",
+      "web_pages": ["http://www.northwestern.edu"],
+      "domains": ["northwestern.edu"],
+      "country": "United States",
+      "state-province": "Illinois",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Duke University",
+      "web_pages": ["http://www.duke.edu"],
+      "domains": ["duke.edu"],
+      "country": "United States",
+      "state-province": "North Carolina",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Cornell University",
+      "web_pages": ["http://www.cornell.edu"],
+      "domains": ["cornell.edu"],
+      "country": "United States",
+      "state-province": "New York",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Michigan",
+      "web_pages": ["http://www.umich.edu"],
+      "domains": ["umich.edu"],
+      "country": "United States",
+      "state-province": "Michigan",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of California, Berkeley",
+      "web_pages": ["http://www.berkeley.edu"],
+      "domains": ["berkeley.edu"],
+      "country": "United States",
+      "state-province": "California",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of California, Los Angeles",
+      "web_pages": ["http://www.ucla.edu"],
+      "domains": ["ucla.edu"],
+      "country": "United States",
+      "state-province": "California",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "New York University",
+      "web_pages": ["http://www.nyu.edu"],
+      "domains": ["nyu.edu"],
+      "country": "United States",
+      "state-province": "New York",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "Carnegie Mellon University",
+      "web_pages": ["http://www.cmu.edu"],
+      "domains": ["cmu.edu"],
+      "country": "United States",
+      "state-province": "Pennsylvania",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Washington",
+      "web_pages": ["http://www.washington.edu"],
+      "domains": ["washington.edu"],
+      "country": "United States",
+      "state-province": "Washington",
+      "alpha_two_code": "US"
+    },
+    {
+      "name": "University of Texas at Austin",
+      "web_pages": ["http://www.utexas.edu"],
+      "domains": ["utexas.edu"],
+      "country": "United States",
+      "state-province": "Texas",
+      "alpha_two_code": "US"
+    }
+  ],
+  "uk_universities": [
+    {
+      "name": "University of Oxford",
+      "web_pages": ["http://www.ox.ac.uk"],
+      "domains": ["ox.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    },
+    {
+      "name": "University of Cambridge",
+      "web_pages": ["http://www.cam.ac.uk"],
+      "domains": ["cam.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    },
+    {
+      "name": "Imperial College London",
+      "web_pages": ["http://www.imperial.ac.uk"],
+      "domains": ["imperial.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    },
+    {
+      "name": "University College London",
+      "web_pages": ["http://www.ucl.ac.uk"],
+      "domains": ["ucl.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    },
+    {
+      "name": "London School of Economics",
+      "web_pages": ["http://www.lse.ac.uk"],
+      "domains": ["lse.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    }
+  ],
+  "universities_with_state": [
+    {
+      "name": "Massachusetts Institute of Technology",
+      "web_pages": ["http://web.mit.edu"],
+      "domains": ["mit.edu"],
+      "country": "United States",
+      "state-province": "Massachusetts",
+      "alpha_two_code": "US"
+    }
+  ],
+  "universities_without_state": [
+    {
+      "name": "University of Oxford",
+      "web_pages": ["http://www.ox.ac.uk"],
+      "domains": ["ox.ac.uk"],
+      "country": "United Kingdom",
+      "state-province": null,
+      "alpha_two_code": "GB"
+    }
+  ]
+}
