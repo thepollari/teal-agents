@@ -1,0 +1,75 @@
+{
+  "search_by_name_aalto": {
+    "query": "Aalto",
+    "response": [
+      {
+        "name": "Aalto University",
+        "web_pages": ["https://www.aalto.fi"],
+        "domains": ["aalto.fi"],
+        "country": "Finland",
+        "state-province": null,
+        "alpha_two_code": "FI"
+      }
+    ]
+  },
+  "search_by_name_stanford": {
+    "query": "Stanford",
+    "response": [
+      {
+        "name": "Stanford University",
+        "web_pages": ["https://www.stanford.edu"],
+        "domains": ["stanford.edu"],
+        "country": "United States",
+        "state-province": "California",
+        "alpha_two_code": "US"
+      }
+    ]
+  },
+  "search_by_country_finland": {
+    "country": "Finland",
+    "response": [
+      {
+        "name": "University of Helsinki",
+        "web_pages": ["https://www.helsinki.fi"],
+        "domains": ["helsinki.fi"],
+        "country": "Finland",
+        "state-province": null,
+        "alpha_two_code": "FI"
+      },
+      {
+        "name": "Aalto University",
+        "web_pages": ["https://www.aalto.fi"],
+        "domains": ["aalto.fi"],
+        "country": "Finland",
+        "state-province": null,
+        "alpha_two_code": "FI"
+      },
+      {
+        "name": "University of Turku",
+        "web_pages": ["https://www.utu.fi"],
+        "domains": ["utu.fi"],
+        "country": "Finland",
+        "state-province": null,
+        "alpha_two_code": "FI"
+      }
+    ]
+  },
+  "search_empty_result": {
+    "query": "NonexistentUniversity12345",
+    "response": []
+  },
+  "error_scenarios": {
+    "network_timeout": {
+      "error_type": "RequestException",
+      "error_message": "Connection timeout"
+    },
+    "api_error": {
+      "error_type": "HTTPError",
+      "error_message": "500 Internal Server Error"
+    },
+    "malformed_json": {
+      "error_type": "ValueError",
+      "error_message": "Invalid JSON response"
+    }
+  }
+}
