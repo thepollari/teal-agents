@@ -1,9 +1,1 @@
 
-## Creating Go Package Structure
-
-<create_file path="/home/ubuntu/repos/teal-agents/pkg/agents/agent.go">
-package agents
-
-type Agent interface {
-	Execute(input string) (string, error)
-}
