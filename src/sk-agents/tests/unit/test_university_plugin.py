@@ -341,3 +341,375 @@ class TestUniversitySearchResultFormat:
 
         for uni in result.universities:
             assert isinstance(uni, University)
+
+
+class TestUniversityPluginErrorHandling:
+    def test_search_universities_network_failure(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = requests.RequestException("Connection timeout")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.search_universities("MIT")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+        assert "Connection timeout" in result.error
+
+    def test_search_universities_generic_exception(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = Exception("Unexpected error")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.search_universities("MIT")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+        assert "Unexpected error" in result.error
+
+    def test_get_universities_by_country_network_failure(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = requests.RequestException("Network unreachable")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.get_universities_by_country("United States")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+        assert "Network unreachable" in result.error
+
+    def test_get_universities_by_country_generic_exception(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = Exception("Generic failure")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.get_universities_by_country("United States")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+        assert "Generic failure" in result.error
+
+    def test_search_universities_timeout(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = requests.Timeout("Request timed out after 10 seconds")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.search_universities("MIT")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+        assert "timed out" in result.error.lower()
+
+    def test_get_universities_by_country_timeout(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_get = Mock()
+        mock_get.side_effect = requests.Timeout("Request timed out after 10 seconds")
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.get_universities_by_country("Canada")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+        assert "timed out" in result.error.lower()
+
+    def test_search_universities_http_error(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            "404 Not Found"
+        )
+        mock_get = Mock(return_value=mock_response)
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.search_universities("MIT")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+
+    def test_get_universities_by_country_http_error(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.HTTPError(
+            "500 Internal Server Error"
+        )
+        mock_get = Mock(return_value=mock_response)
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.get_universities_by_country("Japan")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Failed to fetch universities"
+        assert result.universities == []
+        assert result.error is not None
+
+
+class TestUniversityPluginInputValidation:
+    def test_search_universities_empty_string(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+        assert result.universities == []
+        assert "No universities found" in result.message
+
+    def test_get_universities_by_country_empty_string(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.get_universities_by_country("")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+        assert result.universities == []
+        assert "No universities found" in result.message
+
+    def test_search_universities_special_characters(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("@#$%^&*()")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+        assert result.universities == []
+
+    def test_get_universities_by_country_special_characters(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.get_universities_by_country("!@#$%")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+        assert result.universities == []
+
+    def test_search_universities_very_long_string(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        long_query = "x" * 1000
+        result = plugin.search_universities(long_query)
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+
+    def test_search_universities_unicode_characters(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = []
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("北京大学")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.error is None
+
+
+class TestUniversityPluginMalformedResponses:
+    def test_search_universities_invalid_json(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_response.raise_for_status = Mock()
+        mock_get = Mock(return_value=mock_response)
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.search_universities("MIT")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+        assert "Invalid JSON" in result.error
+
+    def test_get_universities_by_country_invalid_json(self, monkeypatch):
+        import requests
+
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.side_effect = ValueError("Expecting value")
+        mock_response.raise_for_status = Mock()
+        mock_get = Mock(return_value=mock_response)
+        monkeypatch.setattr(requests, "get", mock_get)
+
+        result = plugin.get_universities_by_country("Canada")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+
+    def test_search_universities_missing_required_fields(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        api_data = [
+            {
+                "web_pages": ["http://example.edu"],
+                "domains": ["example.edu"],
+            }
+        ]
+
+        mock_response = Mock()
+        mock_response.json.return_value = api_data
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("Test")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert len(result.universities) == 1
+        uni = result.universities[0]
+        assert uni.name == ""
+        assert uni.country == ""
+        assert uni.alpha_two_code == ""
+
+    def test_search_universities_unexpected_data_types(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        api_data = [
+            {
+                "name": "Test University",
+                "web_pages": "not-a-list",
+                "domains": "not-a-list",
+                "country": "Test Country",
+                "alpha_two_code": "TC",
+            }
+        ]
+
+        mock_response = Mock()
+        mock_response.json.return_value = api_data
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("Test")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+
+    def test_get_universities_by_country_non_list_response(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = {"error": "Invalid request"}
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.get_universities_by_country("Invalid")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert result.message == "Unexpected error occurred"
+        assert result.universities == []
+        assert result.error is not None
+
+    def test_search_universities_null_response(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        mock_response = Mock()
+        mock_response.json.return_value = None
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.search_universities("Test")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert "No universities found" in result.message
+        assert result.universities == []
+        assert result.error is None
+
+    def test_get_universities_by_country_partial_data(self, mock_requests_get):
+        plugin = UniversityPlugin()
+
+        api_data = [
+            {
+                "name": "Partial University",
+                "country": "Test Country",
+                "alpha_two_code": "TC",
+            }
+        ]
+
+        mock_response = Mock()
+        mock_response.json.return_value = api_data
+        mock_response.raise_for_status = Mock()
+        mock_requests_get.return_value = mock_response
+
+        result = plugin.get_universities_by_country("Test")
+
+        assert isinstance(result, UniversitySearchResult)
+        assert len(result.universities) == 1
+        uni = result.universities[0]
+        assert uni.name == "Partial University"
+        assert uni.web_pages == []
+        assert uni.domains == []
