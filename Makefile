@@ -62,6 +62,14 @@ go-docker-build:
 	@docker build ${DOCKER_FLAGS} -t teal-agents-go:latest -f go-agents.Dockerfile --progress=plain .
 	@docker build ${DOCKER_FLAGS} -t go-orchestrators:latest -f go-orchestrators.Dockerfile --progress=plain .
 
+go-test-config:
+	@echo "Testing configuration loading..."
+	@go test -v ./pkg/config/...
+
+go-test-integration:
+	@echo "Running integration tests with real config files..."
+	@go test -v -tags=integration ./pkg/config/loader/tests/...
+
 go-all: go-fmt go-vet go-build go-test
 
 .DEFAULT_GOAL := all
