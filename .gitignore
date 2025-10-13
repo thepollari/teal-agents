@@ -169,3 +169,20 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Go build artifacts
+bin/
+*.exe
+*.exe~
+*.dll
+*.dylib
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Go dependency directories
+vendor/
+
+# Go workspace file
+go.work
