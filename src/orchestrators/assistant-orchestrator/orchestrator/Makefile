@@ -34,3 +34,11 @@ snapshots-fix:
 .PHONY: snapshots-create 
 snapshots-create: 
 	uv run pytest --inline-snapshot=create 
+
+.PHONY: robot-tests
+robot-tests:
+	cd ../example/university && uv run robot tests/e2e/robot/
+
+.PHONY: robot-init
+robot-init:
+	uv run rfbrowser init 

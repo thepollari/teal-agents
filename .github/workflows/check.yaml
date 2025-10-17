@@ -106,3 +106,33 @@ jobs:
       - name: Build docs
         working-directory: ./src/sk-agents
         run: make build-docs
+
+  robot-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+      - name: setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: install dependencies
+        working-directory: ./src/orchestrators/assistant-orchestrator/orchestrator
+        run: make sync
+      - name: initialize browser library
+        working-directory: ./src/orchestrators/assistant-orchestrator/orchestrator
+        run: uv run rfbrowser init
+      - name: run robot framework tests
+        working-directory: ./src/orchestrators/assistant-orchestrator/orchestrator
+        env:
+          GEMINI_API_KEY: ${{ secrets.TA_API_KEY }}
+        run: uv run robot ../example/university/tests/e2e/robot/
+      - name: upload robot test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-test-results
+          path: |
+            src/orchestrators/assistant-orchestrator/example/university/log.html
+            src/orchestrators/assistant-orchestrator/example/university/report.html
+            src/orchestrators/assistant-orchestrator/example/university/output.xml
