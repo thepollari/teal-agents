@@ -19,7 +19,7 @@ Setup Environment Variables
 Start University Agent Service
     [Documentation]    Start the University Agent FastAPI service on port 8001
     ${result}=    Start Process    uv    run    uvicorn    sk_agents.app:app    --host    0.0.0.0    --port    8001
-    ...    cwd=/home/ubuntu/repos/teal-agents/src/sk-agents
+    ...    cwd=${EXECDIR}/../../../sk-agents
     ...    alias=agent_service
     Set Suite Variable    ${AGENT_PROCESS}    ${result}
     Sleep    ${AGENT_STARTUP_WAIT}
