@@ -123,10 +123,10 @@ jobs:
         working-directory: ./src/orchestrators/assistant-orchestrator/orchestrator
         run: uv run rfbrowser init
       - name: run robot framework tests
-        working-directory: ./src/orchestrators/assistant-orchestrator/example/university
+        working-directory: ./src/orchestrators/assistant-orchestrator/orchestrator
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: uv run robot tests/e2e/robot/
+        run: uv run robot ../example/university/tests/e2e/robot/
       - name: upload robot test results
         if: always()
         uses: actions/upload-artifact@v4
