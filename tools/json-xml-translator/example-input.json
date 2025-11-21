@@ -1,0 +1,24 @@
+{
+  "company": {
+    "name": "Tech Corp",
+    "founded": 2020,
+    "active": true,
+    "employees": [
+      {
+        "name": "John Doe",
+        "position": "Software Engineer",
+        "skills": ["JavaScript", "Python", "Node.js"]
+      },
+      {
+        "name": "Jane Smith",
+        "position": "Product Manager",
+        "skills": ["Agile", "Scrum", "Leadership"]
+      }
+    ],
+    "headquarters": {
+      "city": "San Francisco",
+      "state": "CA",
+      "country": "USA"
+    }
+  }
+}
