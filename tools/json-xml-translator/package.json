@@ -1,0 +1,22 @@
+{
+  "name": "json-xml-translator",
+  "version": "1.0.0",
+  "description": "A Node.js interface for translating JSON to XML",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node cli.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "json",
+    "xml",
+    "translator",
+    "converter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
